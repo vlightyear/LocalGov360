@@ -1,4 +1,7 @@
 wwwroot\app.css
+wwwroot\bootstrap\bootstrap.min.css
+wwwroot\bootstrap\bootstrap.min.css.map
+wwwroot\favicon.png
 wwwroot\assets\css\material-dashboard.css
 wwwroot\assets\css\material-dashboard.css.map
 wwwroot\assets\css\material-dashboard.min.css
@@ -318,6 +321,3 @@ wwwroot\assets\scss\material-dashboard\_typography.scss
 wwwroot\assets\scss\material-dashboard\_utilities-extend.scss
 wwwroot\assets\scss\material-dashboard\_utilities.scss
 wwwroot\assets\scss\material-dashboard\_variables.scss
-wwwroot\bootstrap\bootstrap.min.css
-wwwroot\bootstrap\bootstrap.min.css.map
-wwwroot\favicon.png
