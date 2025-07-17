@@ -6,7 +6,7 @@ using static LocalGov360.Data.Models.ServiceModels;
 
 namespace LocalGov360.Data
 {
-    public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<ApplicationUser>(options)
+    public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<ApplicationUser, IdentityRole, string>(options)
     {
         public DbSet<Service> Services { get; set; }
         public DbSet<ServiceField> ServiceFields { get; set; }
