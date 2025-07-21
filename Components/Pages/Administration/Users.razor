@@ -1,0 +1,298 @@
+﻿@page "/Administration/Users"
+@using LocalGov360.Data
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@inject UserManager<ApplicationUser> UserManager
+@inject RoleManager<IdentityRole> RoleManager
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "developer")]
+
+<div class="container-fluid py-2">
+    <div class="row">
+        <div class="col-12">
+            <div class="card my-4">
+                <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                    <div class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3">
+                        <h6 class="text-white text-capitalize ps-3">Users Management</h6>
+                        <div class="ps-3 pb-2">
+                            <button class="btn btn-sm btn-outline-light" @onclick="LoadUsers">
+                                <i class="fas fa-sync-alt me-1"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body px-0 pb-2">
+                    @if (isLoading)
+                    {
+                        <div class="text-center p-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    }
+                    else if (users.Any())
+                    {
+                        <div class="table-responsive p-0">
+                            <table class="table align-items-center mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">User</th>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Roles</th>
+                                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
+                                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Registered</th>
+                                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Last Lockout</th>
+                                        <th class="text-secondary opacity-7"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var userInfo in users)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex px-2 py-1">
+                                                    <div>
+                                                        <div class="avatar avatar-sm me-3 border-radius-lg bg-gradient-@(GetAvatarColor(userInfo.User.Email)) d-flex align-items-center justify-content-center">
+                                                            <span class="text-white text-xs font-weight-bold">
+                                                                @GetUserInitials(userInfo.User.Email, userInfo.User.UserName)
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex flex-column justify-content-center">
+                                                        <h6 class="mb-0 text-sm">@(userInfo.User.UserName ?? "Unknown")</h6>
+                                                        <p class="text-xs text-secondary mb-0">@userInfo.User.Email</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                @if (userInfo.Roles.Any())
+                                                {
+                                                    <p class="text-xs font-weight-bold mb-0">@userInfo.Roles.First()</p>
+                                                    @if (userInfo.Roles.Count > 1)
+                                                    {
+                                                        <p class="text-xs text-secondary mb-0">+@(userInfo.Roles.Count - 1) more</p>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <p class="text-xs text-secondary mb-0">No roles assigned</p>
+                                                }
+                                            </td>
+                                            <td class="align-middle text-center text-sm">
+                                                @if (userInfo.User.EmailConfirmed)
+                                                {
+                                                    <span class="badge badge-sm bg-gradient-success">Verified</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge badge-sm bg-gradient-warning">Pending</span>
+                                                }
+                                                @if (userInfo.User.LockoutEnd.HasValue && userInfo.User.LockoutEnd > DateTimeOffset.UtcNow)
+                                                {
+                                                    <span class="badge badge-sm bg-gradient-danger ms-1">Locked</span>
+                                                }
+                                            </td>
+                                            <td class="align-middle text-center">
+                                                <span class="text-secondary text-xs font-weight-bold">
+                                                    @(userInfo.User.SecurityStamp != null ? "Registered" : "N/A")
+                                                </span>
+                                            </td>
+                                            <td class="align-middle text-center">
+                                                <span class="text-secondary text-xs font-weight-bold">
+                                                    @(userInfo.User.LockoutEnd.HasValue? userInfo.User.LockoutEnd.Value.ToString("dd/MM/yy") : "Never")
+                                                </span>
+                                            </td>
+                                            <td class="align-middle">
+                                                <div class="dropdown">
+                                                    <a href="#" class="text-secondary font-weight-bold text-xs" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        Actions
+                                                    </a>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a class="dropdown-item" href="" @onclick="() => EditUser(userInfo.User.Id)">Edit User</a></li>
+                                                        <li><a class="dropdown-item" href="" @onclick="() => ManageRoles(userInfo.User.Id)">Manage Roles</a></li>
+                                                        @if (userInfo.User.LockoutEnd.HasValue && userInfo.User.LockoutEnd > DateTimeOffset.UtcNow)
+                                                        {
+                                                            <li><a class="dropdown-item text-success" href="" @onclick="() => UnlockUser(userInfo.User.Id)">Unlock User</a></li>
+                                                        }
+                                                        else
+                                                        {
+                                                            <li><a class="dropdown-item text-warning" href="" @onclick="() => LockUser(userInfo.User.Id)">Lock User</a></li>
+                                                        }
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li><a class="dropdown-item text-danger" href="" @onclick="() => DeleteUser(userInfo.User.Id)">Delete User</a></li>
+                                                    </ul>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center p-4">
+                            <p class="text-muted">No users found.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<UserInfo> users = new();
+    private bool isLoading = true;
+
+    public class UserInfo
+    {
+        public IdentityUser User { get; set; } = null!;
+        public List<string> Roles { get; set; } = new();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        isLoading = true;
+        users.Clear();
+
+        try
+        {
+            var allUsers = await UserManager.Users.ToListAsync();
+
+            foreach (var user in allUsers)
+            {
+                var userRoles = await UserManager.GetRolesAsync(user);
+                users.Add(new UserInfo
+                {
+                    User = user,
+                    Roles = userRoles.ToList()
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("console.error", "Error loading users:", ex.Message);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetUserInitials(string? email, string? userName)
+    {
+        var name = !string.IsNullOrEmpty(userName) ? userName : email ?? "U";
+        if (name.Contains('@'))
+        {
+            name = name.Split('@')[0];
+        }
+
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+        {
+            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+        }
+        return name.Length >= 2 ? name.Substring(0, 2).ToUpper() : name.ToUpper();
+    }
+
+    private string GetAvatarColor(string? email)
+    {
+        if (string.IsNullOrEmpty(email)) return "primary";
+
+        var colors = new[] { "primary", "secondary", "success", "info", "warning", "danger" };
+        var hash = email.GetHashCode();
+        var index = Math.Abs(hash) % colors.Length;
+        return colors[index];
+    }
+
+    private async Task EditUser(string userId)
+    {
+        // Navigate to edit user page or open modal
+        await JSRuntime.InvokeVoidAsync("alert", $"Edit user: {userId}");
+    }
+
+    private async Task ManageRoles(string userId)
+    {
+        // Navigate to role management page or open modal
+        await JSRuntime.InvokeVoidAsync("alert", $"Manage roles for user: {userId}");
+    }
+
+    private async Task LockUser(string userId)
+    {
+        try
+        {
+            var user = await UserManager.FindByIdAsync(userId);
+            if (user != null)
+            {
+                var lockoutEnd = DateTimeOffset.UtcNow.AddYears(100); // Permanent lockout
+                await UserManager.SetLockoutEndDateAsync(user, lockoutEnd);
+                await UserManager.SetLockoutEnabledAsync(user, true);
+
+                await JSRuntime.InvokeVoidAsync("alert", "User has been locked successfully.");
+                await LoadUsers();
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error locking user: {ex.Message}");
+        }
+    }
+
+    private async Task UnlockUser(string userId)
+    {
+        try
+        {
+            var user = await UserManager.FindByIdAsync(userId);
+            if (user != null)
+            {
+                await UserManager.SetLockoutEndDateAsync(user, null);
+
+                await JSRuntime.InvokeVoidAsync("alert", "User has been unlocked successfully.");
+                await LoadUsers();
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error unlocking user: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteUser(string userId)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this user? This action cannot be undone.");
+
+        if (confirmed)
+        {
+            try
+            {
+                var user = await UserManager.FindByIdAsync(userId);
+                if (user != null)
+                {
+                    var result = await UserManager.DeleteAsync(user);
+                    if (result.Succeeded)
+                    {
+                        await JSRuntime.InvokeVoidAsync("alert", "User has been deleted successfully.");
+                        await LoadUsers();
+                    }
+                    else
+                    {
+                        var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                        await JSRuntime.InvokeVoidAsync("alert", $"Error deleting user: {errors}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", $"Error deleting user: {ex.Message}");
+            }
+        }
+    }
+}

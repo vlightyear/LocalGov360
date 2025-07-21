@@ -188,6 +188,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcU2lkZUJhci5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/prime/source/repos/LocalGov360/Components/Pages/Administration/Users.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xBZG1pbmlzdHJhdGlvblxVc2Vycy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/prime/source/repos/LocalGov360/Components/Pages/Auth.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xBdXRoLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 

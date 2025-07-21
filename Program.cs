@@ -82,7 +82,7 @@ using (var scope = app.Services.CreateScope())
     {
         // Warm up the connection pool
         context.Database.OpenConnection();
-        context.Users.FirstOrDefault();
+        _ = context.Users.FirstOrDefault();
         context.Database.CloseConnection();
     }
     catch (Exception ex)
