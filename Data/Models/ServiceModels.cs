@@ -6,7 +6,6 @@ namespace LocalGov360.Data.Models
 {
     public class ServiceModels
     {
-        // Enumerations for field types and validation types
         public enum FieldType
         {
             Text,
@@ -36,31 +35,27 @@ namespace LocalGov360.Data.Models
             Custom
         }
 
-        // Entity Models
         public class Service
         {
             public int Id { get; set; }
 
             [Required]
             [MaxLength(200)]
-            public string Name { get; set; }
+            public string Name { get; set; } = string.Empty;
 
             [MaxLength(500)]
-            public string Description { get; set; }
+            public string Description { get; set; } = string.Empty;
 
             public bool IsActive { get; set; } = true;
-
             public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
-
             public DateTime? ModifiedDate { get; set; }
 
             [MaxLength(100)]
-            public string CreatedBy { get; set; }
+            public string CreatedBy { get; set; } = string.Empty;
 
             [MaxLength(100)]
-            public string ModifiedBy { get; set; }
+            public string? ModifiedBy { get; set; }
 
-            // Navigation properties
             public virtual ICollection<ServiceField> Fields { get; set; } = new List<ServiceField>();
             public virtual ICollection<ServiceSubmission> Submissions { get; set; } = new List<ServiceSubmission>();
         }
@@ -68,64 +63,54 @@ namespace LocalGov360.Data.Models
         public class ServiceField
         {
             public int Id { get; set; }
-
             public int ServiceId { get; set; }
 
             [Required]
             [MaxLength(100)]
-            public string Name { get; set; }
+            public string Name { get; set; } = string.Empty;
 
             [Required]
             [MaxLength(200)]
-            public string Label { get; set; }
+            public string Label { get; set; } = string.Empty;
 
             [MaxLength(500)]
-            public string Description { get; set; }
+            public string Description { get; set; } = string.Empty;
 
-            public FieldType FieldType { get; set; }
-
+            public FieldType FieldType { get; set; } = FieldType.Text;
             public bool IsRequired { get; set; }
-
             public int DisplayOrder { get; set; }
 
             [MaxLength(200)]
-            public string DefaultValue { get; set; }
+            public string? DefaultValue { get; set; } 
 
             [MaxLength(500)]
-            public string Placeholder { get; set; }
+            public string Placeholder { get; set; } = string.Empty;
 
-            // JSON column for storing field-specific options (dropdown items, etc.)
-            public string OptionsJson { get; set; }
+            public string OptionsJson { get; set; } = "[]";
+            public string ValidationRulesJson { get; set; } = "[]";
+            public string PropertiesJson { get; set; } = "{}";
 
-            // JSON column for storing validation rules
-            public string ValidationRulesJson { get; set; }
-
-            // JSON column for storing additional field properties
-            public string PropertiesJson { get; set; }
-
-            // Navigation properties
             public virtual Service Service { get; set; }
             public virtual ICollection<ServiceSubmissionValue> SubmissionValues { get; set; } = new List<ServiceSubmissionValue>();
 
-            // Helper properties for working with JSON data
             [NotMapped]
             public List<FieldOption> Options
             {
-                get => string.IsNullOrEmpty(OptionsJson) ? new List<FieldOption>() : JsonSerializer.Deserialize<List<FieldOption>>(OptionsJson);
+                get => JsonSerializer.Deserialize<List<FieldOption>>(OptionsJson) ?? new List<FieldOption>();
                 set => OptionsJson = JsonSerializer.Serialize(value);
             }
 
             [NotMapped]
             public List<ValidationRule> ValidationRules
             {
-                get => string.IsNullOrEmpty(ValidationRulesJson) ? new List<ValidationRule>() : JsonSerializer.Deserialize<List<ValidationRule>>(ValidationRulesJson);
+                get => JsonSerializer.Deserialize<List<ValidationRule>>(ValidationRulesJson) ?? new List<ValidationRule>();
                 set => ValidationRulesJson = JsonSerializer.Serialize(value);
             }
 
             [NotMapped]
             public Dictionary<string, object> Properties
             {
-                get => string.IsNullOrEmpty(PropertiesJson) ? new Dictionary<string, object>() : JsonSerializer.Deserialize<Dictionary<string, object>>(PropertiesJson);
+                get => JsonSerializer.Deserialize<Dictionary<string, object>>(PropertiesJson) ?? new Dictionary<string, object>();
                 set => PropertiesJson = JsonSerializer.Serialize(value);
             }
         }
@@ -133,23 +118,19 @@ namespace LocalGov360.Data.Models
         public class ServiceSubmission
         {
             public int Id { get; set; }
-
             public int ServiceId { get; set; }
-
             public DateTime SubmittedDate { get; set; } = DateTime.UtcNow;
 
             [MaxLength(100)]
-            public string SubmittedBy { get; set; }
+            public string SubmittedBy { get; set; } = string.Empty;
 
             [MaxLength(45)]
-            public string IpAddress { get; set; }
+            public string IpAddress { get; set; } = string.Empty;
 
             [MaxLength(500)]
-            public string UserAgent { get; set; }
-
+            public string UserAgent { get; set; } = string.Empty;
             public bool IsCompleted { get; set; } = true;
 
-            // Navigation properties
             public virtual Service Service { get; set; }
             public virtual ICollection<ServiceSubmissionValue> Values { get; set; } = new List<ServiceSubmissionValue>();
         }
@@ -157,31 +138,26 @@ namespace LocalGov360.Data.Models
         public class ServiceSubmissionValue
         {
             public int Id { get; set; }
-
             public int SubmissionId { get; set; }
-
             public int FieldId { get; set; }
+            public string Value { get; set; } = string.Empty;
 
-            public string Value { get; set; }
-
-            // Navigation properties
             public virtual ServiceSubmission Submission { get; set; }
             public virtual ServiceField Field { get; set; }
         }
 
-        // Supporting classes for JSON serialization
         public class FieldOption
         {
-            public string Value { get; set; }
-            public string Label { get; set; }
+            public string Value { get; set; } = string.Empty;
+            public string Label { get; set; } = string.Empty;
             public bool IsSelected { get; set; } = false;
         }
 
         public class ValidationRule
         {
             public ValidationType Type { get; set; }
-            public string Value { get; set; }
-            public string ErrorMessage { get; set; }
+            public string Value { get; set; } = string.Empty;
+            public string ErrorMessage { get; set; } = string.Empty;
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using LocalGov360.Components;
 using LocalGov360.Components.Account;
 using LocalGov360.Data;
+using LocalGov360.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -16,22 +17,14 @@ builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 
-/*builder.Services.AddAuthentication(options =>
-    {
-        options.DefaultScheme = IdentityConstants.ApplicationScheme;
-        options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-    })
-    .AddIdentityCookies();*/
-
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-/*builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddSignInManager()
-    .AddDefaultTokenProviders();*/
+// Register your application services here
+builder.Services.AddScoped<IServiceService, ServiceService>();
+builder.Services.AddScoped<IFormValidator, FormValidator>();
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
@@ -52,7 +45,6 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -64,7 +56,6 @@ app.UseAntiforgery();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-// Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
 
 // Apply migrations automatically
@@ -74,13 +65,12 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 }
 
-// warm up the database connection or else the pages that get data from the database might take long
+// Warm up the database connection
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     try
     {
-        // Warm up the connection pool
         context.Database.OpenConnection();
         context.Users.FirstOrDefault();
         context.Database.CloseConnection();
@@ -91,7 +81,7 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Adding roles that don't exist
+// Add roles if they don't exist
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
@@ -105,7 +95,7 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Adding default user
+// Add default user if not exists
 using (var scope = app.Services.CreateScope())
 {
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();

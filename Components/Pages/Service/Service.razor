@@ -1,0 +1,770 @@
+﻿@page "/service"
+@rendermode InteractiveServer
+@using System.ComponentModel.DataAnnotations
+@using LocalGov360.Services
+@using LocalGov360.Data.Models
+@using Microsoft.AspNetCore.Html
+@inject IServiceService ServiceService
+@inject IJSRuntime JS
+
+<PageTitle>Service Builder & Portal</PageTitle>
+
+
+
+<div class="container-fluid py-4">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded shadow-sm">
+        <div class="container-fluid">
+            <span class="navbar-brand fw-bold">ServiceBuilder Pro</span>
+            <div>
+                <button class="btn btn-sm btn-outline-primary me-2" @onclick='() => ShowView("builder")'>
+                    <i class="fas fa-plus-circle"></i> Create Service
+                </button>
+                <button class="btn btn-sm btn-outline-primary" @onclick='() => ShowView("list")'>
+                    <i class="fas fa-list"></i> Browse Services
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    @if (!string.IsNullOrWhiteSpace(Feedback))
+    {
+        <div class="alert @(Feedback.Contains("Error") ? "alert-danger" : "alert-success") alert-dismissible fade show" role="alert">
+            @Feedback
+            <button type="button" class="btn-close" @onclick="() => Feedback = null"></button>
+        </div>
+    }
+
+    @if (CurrentView == "builder")
+    {
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-tools me-2"></i> Builder</h5>
+                        @if (EditServiceId != null)
+                        {
+                            <button class="btn btn-sm btn-outline-danger" @onclick="DeleteServiceAsync">
+                                <i class="fas fa-trash"></i> Delete Service
+                            </button>
+                        }
+                    </div>
+                    <div class="card-body">
+                        <EditForm Model="BuilderModel" OnValidSubmit="SaveServiceAsync">
+                            <DataAnnotationsValidator />
+
+                            <div class="mb-3">
+                                <label class="form-label">Service Name *</label>
+                                <InputText class="form-control" @bind-Value="BuilderModel.Name" />
+                                <ValidationMessage For="() => BuilderModel.Name" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Description</label>
+                                <InputTextArea class="form-control" rows="3" @bind-Value="BuilderModel.Description" />
+                            </div>
+
+                            <h6>Fields</h6>
+                            @if (!BuilderModel.Fields.Any())
+                            {
+                                <div class="alert alert-info">
+                                    No fields added yet. Click "Add Field" below to get started.
+                                </div>
+                            }
+                            else
+                            {
+                                @for (int i = 0; i < BuilderModel.Fields.Count; i++)
+                                {
+                                    var idx = i;
+                                    <div class="card mb-2">
+                                        <div class="card-header bg-light d-flex justify-content-between">
+                                            <span>Field @(idx + 1): @BuilderModel.Fields[idx].Label</span>
+                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                    @onclick="() => BuilderModel.Fields.RemoveAt(idx)">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row g-2">
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Name *</label>
+                                                    <InputText class="form-control form-control-sm"
+                                                               @bind-Value="BuilderModel.Fields[idx].Name" />
+                                                    <ValidationMessage For="() => BuilderModel.Fields[idx].Name" />
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Label *</label>
+                                                    <InputText class="form-control form-control-sm"
+                                                               @bind-Value="BuilderModel.Fields[idx].Label" />
+                                                    <ValidationMessage For="() => BuilderModel.Fields[idx].Label" />
+                                                </div>
+                                                <div class="col-12">
+                                                    <label class="form-label">Description</label>
+                                                    <InputTextArea class="form-control form-control-sm"
+                                                                   @bind-Value="BuilderModel.Fields[idx].Description" />
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Type</label>
+                                                    <InputSelect class="form-select form-select-sm"
+                                                                 @bind-Value="BuilderModel.Fields[idx].Type">
+                                                        @foreach (var ft in Enum.GetValues<ServiceModels.FieldType>())
+                                                        {
+                                                            <option value="@ft">@ft</option>
+                                                        }
+                                                    </InputSelect>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Placeholder</label>
+                                                    <InputText class="form-control form-control-sm"
+                                                               @bind-Value="BuilderModel.Fields[idx].Placeholder" />
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Default Value</label>
+                                                    <InputText class="form-control form-control-sm"
+                                                               @bind-Value="BuilderModel.Fields[idx].DefaultValue" />
+                                                    <small class="text-muted">Leave empty for no default value</small>
+                                                </div>
+                                                <div class="col-md-6 d-flex align-items-end">
+                                                    <div class="form-check mb-0">
+                                                        <InputCheckbox class="form-check-input"
+                                                                       @bind-Value="BuilderModel.Fields[idx].IsRequired" />
+                                                        <label class="form-check-label">Required</label>
+                                                    </div>
+                                                </div>
+                                                @if (BuilderModel.Fields[idx].Type is ServiceModels.FieldType.Select or
+                                                                                    ServiceModels.FieldType.Radio or
+                                                                                    ServiceModels.FieldType.Checkbox or
+                                                                                    ServiceModels.FieldType.MultiSelect)
+                                                {
+                                                    <div class="col-12">
+                                                        <label class="form-label">Options (one per line) *</label>
+                                                        <InputTextArea class="form-control form-control-sm" rows="3"
+                                                                       @bind-Value="BuilderModel.Fields[idx].OptionsRaw" />
+                                                        <ValidationMessage For="() => BuilderModel.Fields[idx].OptionsRaw" />
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+
+                            <div class="d-flex gap-2 mt-3">
+                                <button type="button" class="btn btn-outline-primary" @onclick="AddFieldToBuilder">
+                                    <i class="fas fa-plus"></i> Add Field
+                                </button>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save"></i> @(EditServiceId == null ? "Create Service" : "Update Service")
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" @onclick='() => ShowView("list")'>
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Section -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-eye me-2"></i> Live Preview</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (BuilderModel.Fields.Any())
+                        {
+                            <h4 class="mb-3">@BuilderModel.Name</h4>
+                            <p class="text-muted mb-3">@(string.IsNullOrEmpty(BuilderModel.Description) ? "No description provided" : BuilderModel.Description)</p>
+
+                            <div class="border rounded p-3">
+                                @foreach (var f in BuilderModel.Fields)
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label">
+                                            @f.Label
+                                            @if (f.IsRequired)
+                                            {
+                                                <span class="text-danger">*</span>
+                                            }
+                                        </label>
+
+                                        @switch (f.Type)
+                                        {
+                                            case ServiceModels.FieldType.TextArea:
+                                                <textarea class="form-control" placeholder="@f.Placeholder" rows="3">@f.DefaultValue</textarea>
+                                                break;
+                                            case ServiceModels.FieldType.Select:
+                                                <select class="form-select">
+                                                    <option value="">-- choose --</option>
+                                                    @foreach (var o in f.ParsedOptions)
+                                                    {
+                                                        <option value="@o" selected="@(o == f.DefaultValue)">@o</option>
+                                                    }
+                                                </select>
+                                                break;
+                                            case ServiceModels.FieldType.Radio:
+                                                @foreach (var o in f.ParsedOptions)
+                                                {
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio"
+                                                               name="@($"radio-{f.Name}")"
+                                                               value="@o"
+                                                               checked="@(o == f.DefaultValue)" />
+                                                        <label class="form-check-label">@o</label>
+                                                    </div>
+                                                }
+                                                break;
+                                            case ServiceModels.FieldType.Checkbox:
+                                                @foreach (var o in f.ParsedOptions)
+                                                {
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox"
+                                                               name="@($"checkbox-{f.Name}")"
+                                                               value="@o"
+                                                               checked="@(o == f.DefaultValue)" />
+                                                        <label class="form-check-label">@o</label>
+                                                    </div>
+                                                }
+                                                break;
+                                            case ServiceModels.FieldType.File:
+                                                <input type="file" class="form-control" />
+                                                break;
+                                            default:
+                                                <input type="@f.Type.ToString().ToLower()"
+                                                       class="form-control"
+                                                       placeholder="@f.Placeholder"
+                                                       value="@f.DefaultValue" />
+                                                break;
+                                        }
+                                        @if (!string.IsNullOrEmpty(f.Description))
+                                        {
+                                            <small class="text-muted">@f.Description</small>
+                                        }
+                                    </div>
+                                }
+                                <button class="btn btn-primary">Submit Form</button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center text-muted py-5">
+                                <i class="fas fa-plus-circle fa-3x mb-3"></i>
+                                <p>Add fields to see the preview</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (CurrentView == "list")
+    {
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-list me-2"></i> Available Services</h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-primary" @onclick='() => ShowView("builder")'>
+                        <i class="fas fa-plus"></i> New Service
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                @if (Services == null)
+                {
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                }
+                else if (!Services.Any())
+                {
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <h5>No services yet</h5>
+                        <button class="btn btn-primary" @onclick='() => ShowView("builder")'>
+                            <i class="fas fa-plus"></i> Create the first one
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Fields</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var svc in Services.OrderBy(s => s.Name))
+                                {
+                                    <tr>
+                                        <td>@svc.Name</td>
+                                        <td>@(string.IsNullOrEmpty(svc.Description) ? "-" : svc.Description)</td>
+                                        <td>@svc.Fields.Count</td>
+                                        <td>@svc.CreatedDate.ToLocalTime().ToString("g")</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-primary" @onclick="() => FillServiceAsync(svc.Id)">
+                                                    <i class="fas fa-edit"></i> Fill
+                                                </button>
+                                                <button class="btn btn-secondary" @onclick="() => EditServiceAsync(svc.Id)">
+                                                    <i class="fas fa-cog"></i> Edit
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (CurrentView == "fill" && FillModel != null)
+    {
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0">@FillModel.ServiceName</h5>
+                    <p class="mb-0 text-muted">@FillModel.ServiceDescription</p>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary" @onclick='() => ShowView("list")'>
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </button>
+            </div>
+            <div class="card-body">
+                <EditForm Model="FillModel" OnValidSubmit="SubmitFormAsync">
+                    <DataAnnotationsValidator />
+
+                    @foreach (var f in FillModel.Fields)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">
+                                @f.Label
+                                @if (f.IsRequired)
+                                {
+                                    <span class="text-danger">*</span>
+                                }
+                            </label>
+
+                            @if (!string.IsNullOrEmpty(f.Description))
+                            {
+                                <p class="text-muted small mb-1">@f.Description</p>
+                            }
+
+                            @switch (f.Type)
+                            {
+                                case ServiceModels.FieldType.TextArea:
+                                    <InputTextArea class="form-control" @bind-Value="f.Value"
+                                                   placeholder="@f.Placeholder" rows="3" />
+                                    break;
+                                case ServiceModels.FieldType.Select:
+                                    <InputSelect class="form-select" @bind-Value="f.Value">
+                                        <option value="">-- choose --</option>
+                                        @foreach (var o in f.ParsedOptions)
+                                        {
+                                            <option value="@o">@o</option>
+                                        }
+                                    </InputSelect>
+                                    break;
+                                case ServiceModels.FieldType.Radio:
+                                    <InputRadioGroup @bind-Value="f.Value">
+                                        @foreach (var o in f.ParsedOptions)
+                                        {
+                                            <div class="form-check">
+                                                <InputRadio class="form-check-input" Value="@o" />
+                                                <label class="form-check-label">@o</label>
+                                            </div>
+                                        }
+                                    </InputRadioGroup>
+                                    break;
+                                case ServiceModels.FieldType.Checkbox:
+                                    @foreach (var o in f.ParsedOptions)
+                                    {
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox"
+                                                   @bind="f.CheckboxValues[o]" />
+                                            <label class="form-check-label">@o</label>
+                                        </div>
+                                    }
+                                    break;
+                                case ServiceModels.FieldType.File:
+                                    <InputFile class="form-control" OnChange="e => f.Files = e.GetMultipleFiles()" />
+                                    break;
+                                default:
+                                    <InputText type="@f.Type.ToString().ToLower()"
+                                               class="form-control"
+                                               @bind-Value="f.Value"
+                                               placeholder="@f.Placeholder" />
+                                    break;
+                            }
+                            <ValidationMessage For="@(() => f.Value)" />
+                        </div>
+                    }
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-paper-plane"></i> Submit
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" @onclick='() => ShowView("list")'>
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private string CurrentView = "list";
+    private string? Feedback;
+    private List<ServiceModels.Service>? Services;
+
+    private int? EditServiceId;
+    private ServiceBuilderModel BuilderModel = new();
+    private FillServiceModel? FillModel;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadServicesAsync();
+    }
+
+    private async Task LoadServicesAsync()
+    {
+        try
+        {
+            Services = await ServiceService.GetActiveServicesAsync();
+        }
+        catch (Exception ex)
+        {
+            Feedback = $"Error loading services: {ex.Message}";
+        }
+    }
+
+    private void ShowView(string view)
+    {
+        CurrentView = view;
+        StateHasChanged();
+    }
+
+    private void AddFieldToBuilder()
+    {
+        BuilderModel.Fields.Add(new FieldBuilderModel
+        {
+            Type = ServiceModels.FieldType.Text,
+            Name = $"field_{BuilderModel.Fields.Count + 1}",
+            Label = $"Field {BuilderModel.Fields.Count + 1}",
+            Description = "",
+            Placeholder = "",
+            DefaultValue = "",
+            IsRequired = false
+        });
+    }
+
+    private async Task SaveServiceAsync()
+    {
+        try
+        {
+            // Validate required options for select/radio/checkbox fields
+            foreach (var field in BuilderModel.Fields)
+            {
+                if ((field.Type == ServiceModels.FieldType.Select ||
+                     field.Type == ServiceModels.FieldType.Radio ||
+                     field.Type == ServiceModels.FieldType.Checkbox) &&
+                    string.IsNullOrWhiteSpace(field.OptionsRaw))
+                {
+                    Feedback = $"Error: Field '{field.Label}' requires options";
+                    return;
+                }
+            }
+
+            var payloadFields = BuilderModel.Fields.Select(f => new CreateServiceFieldRequest
+            {
+                Name = f.Name,
+                Label = f.Label,
+                Description = f.Description,
+                FieldType = f.Type,
+                IsRequired = f.IsRequired,
+                Placeholder = f.Placeholder,
+                DefaultValue = f.DefaultValue,
+                Options = f.ParsedOptions.Select(o => new ServiceModels.FieldOption
+                {
+                    Value = o,
+                    Label = o
+                }).ToList(),
+                ValidationRules = new List<ServiceModels.ValidationRule>(),
+                Properties = new Dictionary<string, object>()
+            }).ToList();
+
+            if (EditServiceId is null)
+            {
+                await ServiceService.CreateServiceAsync(new CreateServiceRequest
+                {
+                    Name = BuilderModel.Name,
+                    Description = BuilderModel.Description,
+                    CreatedBy = "CurrentUser",
+                    Fields = payloadFields
+                });
+                Feedback = "Service created successfully!";
+            }
+            else
+            {
+                await ServiceService.UpdateServiceAsync(EditServiceId.Value, new UpdateServiceRequest
+                {
+                    Name = BuilderModel.Name,
+                    Description = BuilderModel.Description,
+                    ModifiedBy = "CurrentUser",
+                    Fields = payloadFields
+                });
+                Feedback = "Service updated successfully!";
+            }
+
+            await LoadServicesAsync();
+            ShowView("list");
+        }
+        catch (Exception ex)
+        {
+            Feedback = $"Error: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteServiceAsync()
+    {
+        if (EditServiceId is null) return;
+
+        try
+        {
+            var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this service? This cannot be undone.");
+            if (!confirmed) return;
+
+            var result = await ServiceService.DeleteServiceAsync(EditServiceId.Value);
+            if (result)
+            {
+                Feedback = "Service deleted successfully!";
+                await LoadServicesAsync();
+                ShowView("list");
+            }
+            else
+            {
+                Feedback = "Failed to delete service.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Feedback = $"Error deleting service: {ex.Message}";
+        }
+    }
+
+    private async Task EditServiceAsync(int id)
+    {
+        try
+        {
+            var svc = await ServiceService.GetServiceAsync(id);
+            if (svc is null)
+            {
+                Feedback = "Service not found";
+                return;
+            }
+
+            EditServiceId = id;
+            BuilderModel = new ServiceBuilderModel
+            {
+                Name = svc.Name,
+                Description = svc.Description,
+                Fields = svc.Fields.Select(f => new FieldBuilderModel
+                {
+                    Name = f.Name,
+                    Label = f.Label,
+                    Description = f.Description,
+                    Type = f.FieldType,
+                    IsRequired = f.IsRequired,
+                    Placeholder = f.Placeholder,
+                    DefaultValue = f.DefaultValue,
+                    OptionsRaw = string.Join(Environment.NewLine, f.Options.Select(o => o.Value))
+                }).ToList()
+            };
+            ShowView("builder");
+        }
+        catch (Exception ex)
+        {
+            Feedback = $"Error loading service: {ex.Message}";
+        }
+    }
+
+    private async Task FillServiceAsync(int id)
+    {
+        try
+        {
+            var svc = await ServiceService.GetServiceAsync(id);
+            if (svc is null)
+            {
+                Feedback = "Service not found";
+                return;
+            }
+
+            FillModel = new FillServiceModel
+            {
+                ServiceId = svc.Id,
+                ServiceName = svc.Name,
+                ServiceDescription = svc.Description,
+                Fields = svc.Fields.Select(f => new FieldFillModel
+                {
+                    Id = f.Id,
+                    Name = f.Name,
+                    Label = f.Label,
+                    Description = f.Description,
+                    Type = f.FieldType,
+                    IsRequired = f.IsRequired,
+                    Placeholder = f.Placeholder,
+                    DefaultValue = f.DefaultValue,
+                    OptionsRaw = string.Join(Environment.NewLine, f.Options.Select(o => o.Value)),
+                    Value = f.DefaultValue ?? "",
+                    CheckboxValues = f.Options.ToDictionary(o => o.Value, o => false)
+                }).ToList()
+            };
+            ShowView("fill");
+        }
+        catch (Exception ex)
+        {
+            Feedback = $"Error loading service: {ex.Message}";
+        }
+    }
+
+    private async Task SubmitFormAsync()
+    {
+        if (FillModel is null) return;
+
+        try
+        {
+            var values = new List<SubmissionValue>();
+
+            foreach (var f in FillModel.Fields)
+            {
+                if (f.Type == ServiceModels.FieldType.Checkbox)
+                {
+                    foreach (var kv in f.CheckboxValues.Where(kv => kv.Value))
+                    {
+                        values.Add(new SubmissionValue
+                        {
+                            FieldId = f.Id,
+                            Value = kv.Key
+                        });
+                    }
+                }
+                else if (!string.IsNullOrEmpty(f.Value))
+                {
+                    values.Add(new SubmissionValue
+                    {
+                        FieldId = f.Id,
+                        Value = f.Value
+                    });
+                }
+                else if (f.IsRequired)
+                {
+                    Feedback = $"Field '{f.Label}' is required";
+                    return;
+                }
+            }
+
+            await ServiceService.SubmitServiceAsync(FillModel.ServiceId, new SubmitServiceRequest
+            {
+                SubmittedBy = "Anonymous",
+                IpAddress = "0.0.0.0",
+                UserAgent = "Blazor",
+                Values = values
+            });
+
+            Feedback = "Form submitted successfully!";
+            FillModel = null;
+            ShowView("list");
+        }
+        catch (Exception ex)
+        {
+            Feedback = $"Error submitting form: {ex.Message}";
+        }
+    }
+
+    public class ServiceBuilderModel
+    {
+        [Required(ErrorMessage = "Service name is required")]
+        [StringLength(200, ErrorMessage = "Service name cannot exceed 200 characters")]
+        public string Name { get; set; } = string.Empty;
+
+        [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
+        public string Description { get; set; } = string.Empty;
+
+        public List<FieldBuilderModel> Fields { get; set; } = new();
+    }
+
+    public class FieldBuilderModel
+    {
+        [Required(ErrorMessage = "Field name is required")]
+        [StringLength(100, ErrorMessage = "Field name cannot exceed 100 characters")]
+        [RegularExpression("^[a-zA-Z0-9_-]+$", ErrorMessage = "Only letters, numbers, underscores and hyphens allowed")]
+        public string Name { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Field label is required")]
+        [StringLength(200, ErrorMessage = "Field label cannot exceed 200 characters")]
+        public string Label { get; set; } = string.Empty;
+
+        [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
+        public string Description { get; set; } = string.Empty;
+
+        public ServiceModels.FieldType Type { get; set; } = ServiceModels.FieldType.Text;
+        public bool IsRequired { get; set; }
+
+        [StringLength(500, ErrorMessage = "Placeholder cannot exceed 500 characters")]
+        public string Placeholder { get; set; } = string.Empty;
+
+        [StringLength(200, ErrorMessage = "Default value cannot exceed 200 characters")]
+        public string? DefaultValue { get; set; }
+
+        public string? OptionsRaw { get; set; }
+
+        public List<string> ParsedOptions =>
+            OptionsRaw?.Split(Environment.NewLine,
+                StringSplitOptions.RemoveEmptyEntries |
+                StringSplitOptions.TrimEntries)
+            .ToList() ?? new();
+    }
+
+    public class FillServiceModel
+    {
+        public int ServiceId { get; set; }
+        public string ServiceName { get; set; } = string.Empty;
+        public string ServiceDescription { get; set; } = string.Empty;
+        public List<FieldFillModel> Fields { get; set; } = new();
+    }
+
+    public class FieldFillModel
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Label { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public ServiceModels.FieldType Type { get; set; }
+        public bool IsRequired { get; set; }
+        public string Placeholder { get; set; } = string.Empty;
+        public string? DefaultValue { get; set; }
+        public string? OptionsRaw { get; set; }
+        public List<string> ParsedOptions =>
+            OptionsRaw?.Split(Environment.NewLine,
+                StringSplitOptions.RemoveEmptyEntries |
+                StringSplitOptions.TrimEntries)
+            .ToList() ?? new();
+        public string Value { get; set; } = string.Empty;
+        public Dictionary<string, bool> CheckboxValues { get; set; } = new();
+        public IReadOnlyList<IBrowserFile>? Files { get; set; }
+    }
+}

@@ -1,1 +1,24 @@
 .vs/
+# Ignore appsettings files
+appsettings*.json
+
+# Ignore build output
+bin/
+obj/
+
+# Ignore user-specific files
+*.user
+*.suo
+*.vs
+.vscode/
+
+# Ignore Rider and VS Code settings
+.idea/
+*.iml
+
+# Ignore NuGet packages
+*.nupkg
+packages/
+
+# Ignore logs
+*.log
