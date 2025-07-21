@@ -83,6 +83,7 @@ wwwroot\assets\img\vr-bg.jpg
 wwwroot\assets\js\core\bootstrap.bundle.min.js
 wwwroot\assets\js\core\bootstrap.min.js
 wwwroot\assets\js\core\popper.min.js
+wwwroot\assets\js\form-service.js
 wwwroot\assets\js\material-dashboard.js
 wwwroot\assets\js\material-dashboard.js.map
 wwwroot\assets\js\material-dashboard.min.js

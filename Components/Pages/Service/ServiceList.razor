@@ -1,0 +1,174 @@
+﻿@page "/service-list"
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize]
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+<PageTitle>Local Councils & Services</PageTitle>
+
+<div class="container my-4">
+    <div class="text-center mb-4">
+        <h2 class="fw-bold">Find Council Services</h2>
+        <p class="text-muted">Select your local council to see the services available to you.</p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="input-group mb-3">
+                <span class="input-group-text">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-geo-alt-fill" viewBox="0 0 16 16">
+                        <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z" />
+                    </svg>
+                </span>
+                <select class="form-select form-select-lg" @onchange="OnCouncilSelected">
+                    <option value="">-- Select a Council --</option>
+                    @foreach (var council in Councils)
+                    {
+                        <option value="@council.Name">@council.Name (@council.Type)</option>
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
+
+    @if (SelectedCouncil != null)
+    {
+        <hr class="my-4" />
+        <h4 class="text-center mb-4">Services offered by <strong>@SelectedCouncil.Name</strong></h4>
+        <div class="row g-3">
+            @foreach (var service in SelectedCouncil.Services)
+            {
+                <div class="col-md-4">
+                    <div class="card h-100 text-center service-card" @onclick="() => SelectService(service)">
+                        <div class="card-body">
+                            <h5 class="card-title">@service.Name</h5>
+                            <p class="card-text text-muted">Click to learn more</p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-center mt-5">
+            <p class="text-muted">Please select a council to view its services.</p>
+        </div>
+    }
+</div>
+
+@if (showModal)
+{
+    <div class="modal fade show" tabindex="-1" style="display: block;" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@SelectedService?.Name</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <h3 class="fw-light">🚀 Coming Soon!</h3>
+                    <p class="text-muted">This service will be available shortly. Please check back later.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+
+<style>
+    .service-card {
+        cursor: pointer;
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+</style>
+
+
+@code {
+    // Models
+    private class Council
+    {
+        public string Name { get; set; } = "";
+        public string Type { get; set; } = ""; // City, Municipal, District
+        public List<Service> Services { get; set; } = new();
+    }
+
+    private class Service
+    {
+        public string Name { get; set; } = "";
+        // IsSelected is no longer needed for this UI flow
+    }
+
+    // Component State
+    private List<Council> Councils = new();
+    private Council? SelectedCouncil;
+    private Service? SelectedService;
+    private bool showModal = false;
+
+    protected override void OnInitialized()
+    {
+        // Sample Data - Replace with your actual data source
+        Councils = new List<Council>
+        {
+            new Council
+            {
+                Name = "Lusaka City Council", Type = "City",
+                Services = new List<Service>
+                {
+                    new() { Name = "Water Supply" },
+                    new() { Name = "Waste Management" },
+                    new() { Name = "Urban Planning" },
+                    new() { Name = "Public Health" }
+                }
+            },
+            new Council
+            {
+                Name = "Mumbwa District Council", Type = "District",
+                Services = new List<Service>
+                {
+                    new() { Name = "Road Maintenance" },
+                    new() { Name = "Market Licensing" },
+                    new() { Name = "Cemeteries & Mortuary" }
+                }
+            },
+            new Council
+            {
+                Name = "Chingola Municipal Council", Type = "Municipal",
+                Services = new List<Service>
+                {
+                    new() { Name = "Fire & Rescue Services" },
+                    new() { Name = "Recreation Facilities" },
+                    new() { Name = "Public Sanitation" }
+                }
+            }
+        };
+    }
+
+    private void OnCouncilSelected(ChangeEventArgs e)
+    {
+        var selectedName = e.Value?.ToString();
+        SelectedCouncil = Councils.FirstOrDefault(c => c.Name == selectedName);
+        CloseModal(); // Close modal if it was open from a previous selection
+    }
+
+    private void SelectService(Service service)
+    {
+        SelectedService = service;
+        showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+        SelectedService = null;
+    }
+}

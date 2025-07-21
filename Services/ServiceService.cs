@@ -1,23 +1,23 @@
 ﻿using LocalGov360.Data;
-using Microsoft.AspNetCore.Cors.Infrastructure;
-using Microsoft.AspNetCore.Http;
+using LocalGov360.Data.Models;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
-using static LocalGov360.Data.Models.ServiceModels;
+using System.Linq;
 
 namespace LocalGov360.Services
 {
     public interface IServiceService
     {
-        Task<Service> CreateServiceAsync(CreateServiceRequest request);
-        Task<Service> GetServiceAsync(int formId);
-        Task<List<Service>> GetActiveServicesAsync();
-        Task<Service> UpdateServiceAsync(int formId, UpdateServiceRequest request);
-        Task<bool> DeleteServiceAsync(int formId);
-        Task<ServiceSubmission> SubmitServiceAsync(int formId, SubmitServiceRequest request);
-        Task<List<ServiceSubmission>> GetServiceSubmissionsAsync(int formId);
-        Task<ServiceSubmission> GetSubmissionAsync(int submissionId);
+        Task<ServiceModels.Service> CreateServiceAsync(CreateServiceRequest request);
+        Task<ServiceModels.Service> GetServiceAsync(int serviceId);
+        Task<List<ServiceModels.Service>> GetActiveServicesAsync();
+        Task<ServiceModels.Service> UpdateServiceAsync(int serviceId, UpdateServiceRequest request);
+        Task<bool> DeleteServiceAsync(int serviceId);
+        Task<ServiceModels.ServiceSubmission> SubmitServiceAsync(int serviceId, SubmitServiceRequest request);
+        Task<List<ServiceModels.ServiceSubmission>> GetServiceSubmissionsAsync(int serviceId);
+        Task<ServiceModels.ServiceSubmission> GetSubmissionAsync(int submissionId);
     }
+
     public class ServiceService : IServiceService
     {
         private readonly ApplicationDbContext _context;
@@ -29,43 +29,43 @@ namespace LocalGov360.Services
             _validator = validator;
         }
 
-        public async Task<Service> CreateServiceAsync(CreateServiceRequest request)
+        public async Task<ServiceModels.Service> CreateServiceAsync(CreateServiceRequest request)
         {
-            var Service = new Service
+            var service = new ServiceModels.Service
             {
                 Name = request.Name,
                 Description = request.Description,
                 CreatedBy = request.CreatedBy,
                 CreatedDate = DateTime.UtcNow,
-                Fields = request.Fields.Select((field, index) => new ServiceField
+                Fields = request.Fields.Select((field, index) => new ServiceModels.ServiceField
                 {
-                    Name = field.Name,
+                    Name = !string.IsNullOrWhiteSpace(field.Name) ? field.Name : field.Label,
                     Label = field.Label,
-                    Description = field.Description,
+                    Description = field.Description ?? string.Empty,
                     FieldType = field.FieldType,
                     IsRequired = field.IsRequired,
                     DisplayOrder = index + 1,
-                    DefaultValue = field.DefaultValue,
-                    Placeholder = field.Placeholder,
-                    Options = field.Options ?? new List<FieldOption>(),
-                    ValidationRules = field.ValidationRules ?? new List<ValidationRule>(),
-                    Properties = field.Properties ?? new Dictionary<string, object>()
+                    DefaultValue = field.DefaultValue ?? string.Empty,
+                    Placeholder = field.Placeholder ?? string.Empty,
+                    Options = field.Options?.Count > 0 ? field.Options : new List<ServiceModels.FieldOption>(),
+                    ValidationRules = field.ValidationRules?.Count > 0 ? field.ValidationRules : new List<ServiceModels.ValidationRule>(),
+                    Properties = field.Properties?.Count > 0 ? field.Properties : new Dictionary<string, object>()
                 }).ToList()
             };
 
-            _context.Services.Add(Service);
+            _context.Services.Add(service);
             await _context.SaveChangesAsync();
-            return Service;
+            return service;
         }
 
-        public async Task<Service> GetServiceAsync(int ServiceId)
+        public async Task<ServiceModels.Service> GetServiceAsync(int serviceId)
         {
             return await _context.Services
                 .Include(f => f.Fields)
-                .FirstOrDefaultAsync(f => f.Id == ServiceId);
+                .FirstOrDefaultAsync(f => f.Id == serviceId);
         }
 
-        public async Task<List<Service>> GetActiveServicesAsync()
+        public async Task<List<ServiceModels.Service>> GetActiveServicesAsync()
         {
             return await _context.Services
                 .Where(f => f.IsActive)
@@ -74,69 +74,68 @@ namespace LocalGov360.Services
                 .ToListAsync();
         }
 
-        public async Task<Service> UpdateServiceAsync(int ServiceId, UpdateServiceRequest request)
+        public async Task<ServiceModels.Service> UpdateServiceAsync(int serviceId, UpdateServiceRequest request)
         {
-            var Service = await _context.Services
+            var service = await _context.Services
                 .Include(f => f.Fields)
-                .FirstOrDefaultAsync(f => f.Id == ServiceId);
+                .FirstOrDefaultAsync(f => f.Id == serviceId);
 
-            if (Service == null) return null;
+            if (service == null) return null;
 
-            Service.Name = request.Name;
-            Service.Description = request.Description;
-            Service.ModifiedBy = request.ModifiedBy;
-            Service.ModifiedDate = DateTime.UtcNow;
+            service.Name = request.Name;
+            service.Description = request.Description;
+            service.ModifiedBy = request.ModifiedBy;
+            service.ModifiedDate = DateTime.UtcNow;
 
-            // Update fields
-            _context.ServiceFields.RemoveRange(Service.Fields);
-            Service.Fields = request.Fields.Select((field, index) => new ServiceField
+            _context.ServiceFields.RemoveRange(service.Fields);
+            service.Fields = request.Fields.Select((field, index) => new ServiceModels.ServiceField
             {
-                ServiceId = ServiceId,
+                ServiceId = serviceId,
                 Name = field.Name,
                 Label = field.Label,
                 Description = field.Description,
                 FieldType = field.FieldType,
                 IsRequired = field.IsRequired,
                 DisplayOrder = index + 1,
-                DefaultValue = field.DefaultValue,
+                DefaultValue = field.DefaultValue ?? string.Empty,
                 Placeholder = field.Placeholder,
-                Options = field.Options ?? new List<FieldOption>(),
-                ValidationRules = field.ValidationRules ?? new List<ValidationRule>(),
+                Options = field.Options ?? new List<ServiceModels.FieldOption>(),
+                ValidationRules = field.ValidationRules ?? new List<ServiceModels.ValidationRule>(),
                 Properties = field.Properties ?? new Dictionary<string, object>()
             }).ToList();
 
             await _context.SaveChangesAsync();
-            return Service;
+            return service;
         }
 
-        public async Task<bool> DeleteServiceAsync(int ServiceId)
+        public async Task<bool> DeleteServiceAsync(int serviceId)
         {
-            var Service = await _context.Services.FindAsync(ServiceId);
-            if (Service == null) return false;
+            var service = await _context.Services.FindAsync(serviceId);
+            if (service == null) return false;
 
-            _context.Services.Remove(Service);
+            _context.Services.Remove(service);
             await _context.SaveChangesAsync();
             return true;
         }
 
-        public async Task<ServiceSubmission> SubmitServiceAsync(int ServiceId, SubmitServiceRequest request)
+        public async Task<ServiceModels.ServiceSubmission> SubmitServiceAsync(int serviceId, SubmitServiceRequest request)
         {
-            var Service = await GetServiceAsync(ServiceId);
-            if (Service == null) throw new ArgumentException("Service not found");
+            var service = await GetServiceAsync(serviceId);
+            if (service == null) throw new ArgumentException("Service not found");
 
-            var validationResult = await _validator.ValidateSubmissionAsync(Service, request.Values);
+            var validationResult = await _validator.ValidateSubmissionAsync(service, request.Values);
             if (!validationResult.IsValid)
             {
                 throw new ValidationException(string.Join(", ", validationResult.Errors));
             }
 
-            var submission = new ServiceSubmission
+            var submission = new ServiceModels.ServiceSubmission
             {
-                ServiceId = ServiceId,
+                ServiceId = serviceId,
                 SubmittedBy = request.SubmittedBy,
                 IpAddress = request.IpAddress,
                 UserAgent = request.UserAgent,
-                Values = request.Values.Select(v => new ServiceSubmissionValue
+                Values = request.Values.Select(v => new ServiceModels.ServiceSubmissionValue
                 {
                     FieldId = v.FieldId,
                     Value = v.Value
@@ -148,17 +147,17 @@ namespace LocalGov360.Services
             return submission;
         }
 
-        public async Task<List<ServiceSubmission>> GetServiceSubmissionsAsync(int ServiceId)
+        public async Task<List<ServiceModels.ServiceSubmission>> GetServiceSubmissionsAsync(int serviceId)
         {
             return await _context.ServiceSubmissions
-                .Where(s => s.ServiceId == ServiceId)
+                .Where(s => s.ServiceId == serviceId)
                 .Include(s => s.Values)
                 .ThenInclude(v => v.Field)
                 .OrderByDescending(s => s.SubmittedDate)
                 .ToListAsync();
         }
 
-        public async Task<ServiceSubmission> GetSubmissionAsync(int submissionId)
+        public async Task<ServiceModels.ServiceSubmission> GetSubmissionAsync(int submissionId)
         {
             return await _context.ServiceSubmissions
                 .Include(s => s.Service)
@@ -170,12 +169,12 @@ namespace LocalGov360.Services
 
     public interface IFormValidator
     {
-        Task<ValidationResult> ValidateSubmissionAsync(Service service, List<SubmissionValue> values);
+        Task<ValidationResult> ValidateSubmissionAsync(ServiceModels.Service service, List<SubmissionValue> values);
     }
 
     public class FormValidator : IFormValidator
     {
-        public async Task<ValidationResult> ValidateSubmissionAsync(Service service, List<SubmissionValue> values)
+        public async Task<ValidationResult> ValidateSubmissionAsync(ServiceModels.Service service, List<SubmissionValue> values)
         {
             var result = new ValidationResult();
             var submissionDict = values.ToDictionary(v => v.FieldId, v => v.Value);
@@ -185,7 +184,6 @@ namespace LocalGov360.Services
                 var hasValue = submissionDict.ContainsKey(field.Id) && !string.IsNullOrEmpty(submissionDict[field.Id]);
                 var value = hasValue ? submissionDict[field.Id] : null;
 
-                // Required field validation
                 if (field.IsRequired && !hasValue)
                 {
                     result.Errors.Add($"{field.Label} is required");
@@ -194,7 +192,6 @@ namespace LocalGov360.Services
 
                 if (hasValue)
                 {
-                    // Apply custom validation rules
                     foreach (var rule in field.ValidationRules)
                     {
                         var ruleResult = ValidateRule(rule, value);
@@ -210,29 +207,29 @@ namespace LocalGov360.Services
             return result;
         }
 
-        private ValidationResult ValidateRule(ValidationRule rule, string value)
+        private ValidationResult ValidateRule(ServiceModels.ValidationRule rule, string value)
         {
             switch (rule.Type)
             {
-                case ValidationType.MinLength:
+                case ServiceModels.ValidationType.MinLength:
                     return new ValidationResult
                     {
                         IsValid = value.Length >= int.Parse(rule.Value),
                         ErrorMessage = rule.ErrorMessage
                     };
-                case ValidationType.MaxLength:
+                case ServiceModels.ValidationType.MaxLength:
                     return new ValidationResult
                     {
                         IsValid = value.Length <= int.Parse(rule.Value),
                         ErrorMessage = rule.ErrorMessage
                     };
-                case ValidationType.Email:
+                case ServiceModels.ValidationType.Email:
                     return new ValidationResult
                     {
                         IsValid = System.Text.RegularExpressions.Regex.IsMatch(value, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"),
                         ErrorMessage = rule.ErrorMessage
                     };
-                case ValidationType.Regex:
+                case ServiceModels.ValidationType.Regex:
                     return new ValidationResult
                     {
                         IsValid = System.Text.RegularExpressions.Regex.IsMatch(value, rule.Value),
@@ -257,12 +254,12 @@ namespace LocalGov360.Services
         public string Name { get; set; }
         public string Label { get; set; }
         public string Description { get; set; }
-        public FieldType FieldType { get; set; }
+        public ServiceModels.FieldType FieldType { get; set; }
         public bool IsRequired { get; set; }
         public string DefaultValue { get; set; }
         public string Placeholder { get; set; }
-        public List<FieldOption> Options { get; set; }
-        public List<ValidationRule> ValidationRules { get; set; }
+        public List<ServiceModels.FieldOption> Options { get; set; }
+        public List<ServiceModels.ValidationRule> ValidationRules { get; set; }
         public Dictionary<string, object> Properties { get; set; }
     }
 
