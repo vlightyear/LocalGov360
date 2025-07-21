@@ -7,20 +7,19 @@
 @inject IServiceService ServiceService
 @inject IJSRuntime JS
 
-<PageTitle>Service Builder & Portal</PageTitle>
-
+<PageTitle>Service Builder</PageTitle>
 
 
 <div class="container-fluid py-4">
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded shadow-sm">
         <div class="container-fluid">
-            <span class="navbar-brand fw-bold">ServiceBuilder Pro</span>
+            <span class="navbar-brand fw-bold">Service Builder</span>
             <div>
-                <button class="btn btn-sm btn-outline-primary me-2" @onclick='() => ShowView("builder")'>
+                <button class="btn btn-sm btn-outline-dark me-2" @onclick='() => ShowView("builder")'>
                     <i class="fas fa-plus-circle"></i> Create Service
                 </button>
-                <button class="btn btn-sm btn-outline-primary" @onclick='() => ShowView("list")'>
+                <button class="btn btn-sm btn-outline-dark" @onclick='() => ShowView("list")'>
                     <i class="fas fa-list"></i> Browse Services
                 </button>
             </div>
@@ -150,7 +149,7 @@
                             }
 
                             <div class="d-flex gap-2 mt-3">
-                                <button type="button" class="btn btn-outline-primary" @onclick="AddFieldToBuilder">
+                                <button type="button" class="btn btn-outline-dark" @onclick="AddFieldToBuilder">
                                     <i class="fas fa-plus"></i> Add Field
                                 </button>
                                 <button type="submit" class="btn btn-success">
@@ -243,7 +242,7 @@
                                         }
                                     </div>
                                 }
-                                <button class="btn btn-primary">Submit Form</button>
+                                <button class="btn btn-dark">Submit Form</button>
                             </div>
                         }
                         else
@@ -265,7 +264,7 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5><i class="fas fa-list me-2"></i> Available Services</h5>
                 <div>
-                    <button class="btn btn-sm btn-outline-primary" @onclick='() => ShowView("builder")'>
+                    <button class="btn btn-sm btn-outline-dark" @onclick='() => ShowView("builder")'>
                         <i class="fas fa-plus"></i> New Service
                     </button>
                 </div>
@@ -274,7 +273,7 @@
                 @if (Services == null)
                 {
                     <div class="text-center py-5">
-                        <div class="spinner-border text-primary" role="status">
+                        <div class="spinner-border text-dark" role="status">
                             <span class="visually-hidden">Loading...</span>
                         </div>
                     </div>
@@ -284,7 +283,7 @@
                     <div class="text-center py-5 text-muted">
                         <i class="fas fa-inbox fa-3x mb-3"></i>
                         <h5>No services yet</h5>
-                        <button class="btn btn-primary" @onclick='() => ShowView("builder")'>
+                        <button class="btn btn-dark" @onclick='() => ShowView("builder")'>
                             <i class="fas fa-plus"></i> Create the first one
                         </button>
                     </div>
@@ -312,7 +311,7 @@
                                         <td>@svc.CreatedDate.ToLocalTime().ToString("g")</td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
-                                                <button class="btn btn-primary" @onclick="() => FillServiceAsync(svc.Id)">
+                                                <button class="btn btn-dark" @onclick="() => FillServiceAsync(svc.Id)">
                                                     <i class="fas fa-edit"></i> Fill
                                                 </button>
                                                 <button class="btn btn-secondary" @onclick="() => EditServiceAsync(svc.Id)">
@@ -413,7 +412,7 @@
                     }
 
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-success">
+                        <button type="submit" class="btn btn-dark">
                             <i class="fas fa-paper-plane"></i> Submit
                         </button>
                         <button type="button" class="btn btn-outline-secondary" @onclick='() => ShowView("list")'>
@@ -426,7 +425,8 @@
     }
 </div>
 
-@code {
+@code
+{
     private string CurrentView = "list";
     private string? Feedback;
     private List<ServiceModels.Service>? Services;
@@ -476,7 +476,6 @@
     {
         try
         {
-            // Validate required options for select/radio/checkbox fields
             foreach (var field in BuilderModel.Fields)
             {
                 if ((field.Type == ServiceModels.FieldType.Select ||
