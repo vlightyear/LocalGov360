@@ -34,6 +34,8 @@ namespace LocalGov360.Data.Models
         public string Name { get; set; } = "";
         public string Description { get; set; } = "";
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public Guid? OrganisationId { get; set; }
+        public virtual Organisation Organisation { get; set; }
 
         public ICollection<WorkflowTemplateStep> Steps { get; set; } = new List<WorkflowTemplateStep>();
     }
@@ -86,7 +88,7 @@ namespace LocalGov360.Data.Models
         public StepStatus Status { get; set; } = StepStatus.Pending;
         public DateTime? StartedAt { get; set; }
         public DateTime? CompletedAt { get; set; }
-        public string AssignedTo { get; set; } = "";
+        public Guid AssignedTo { get; set; }
         public string Comments { get; set; } = "";
         public Guid WorkflowInstanceId { get; set; }
         public WorkflowInstance WorkflowInstance { get; set; } = null!;

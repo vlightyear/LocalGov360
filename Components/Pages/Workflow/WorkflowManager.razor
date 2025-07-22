@@ -1,11 +1,16 @@
 ﻿@page "/Workflows"
 @using LocalGov360.Data
 @using LocalGov360.Data.Models
-@using System.Text.Json
+@using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Newtonsoft.Json
 @inject ApplicationDbContext Db
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
 @rendermode InteractiveServer
 
 <PageTitle>Workflows</PageTitle>
@@ -103,12 +108,34 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var step in EditingSteps)
+                            @for (int i = 0; i < EditingSteps.Count; i++)
                             {
+                                var step = EditingSteps[i];
+                                var index = i; // capture for lambdas
+
                                 <tr>
                                     <td>@step.Order</td>
-                                    <td>@step.Name</td>
+                                    <td>
+                                        <input class="form-control form-control-sm" @bind="step.Name" />
+                                    </td>
                                     <td>@(step is PaymentTemplateStep ? "Payment" : "Approval")</td>
+                                    <td>
+                                        @if (step is ApprovalTemplateStep approval)
+                                        {
+                                            // build a temporary array that the select can bind to
+                                            var selected = approval.RequiredApprovers.ToArray();
+
+                                            <select multiple class="form-select form-select-sm"
+                                                    @onchange="@(e => OnApproversChanged(approval, e))">
+                                                @foreach (var role in Roles)
+                                                {
+                                                    <option value="@role.Id" selected="@approval.RequiredApprovers.Contains(role.Id)">
+                                                        @role.Name
+                                                    </option>
+                                                }
+                                            </select>
+                                        }
+                                    </td>
                                     <td>
                                         <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveStep(step)">
                                             <i class="fas fa-minus"></i>
@@ -139,12 +166,26 @@
 
 @code
 {
+    private ClaimsPrincipal user;
     private List<WorkflowTemplate> Templates = new();
     private bool ShowModal;
     private WorkflowTemplate EditingTemplate = new();
     private List<WorkflowTemplateStep> EditingSteps = new();
+    private ApplicationUser appUser;
+    private List<IdentityRole> Roles = new();
 
-    protected override async Task OnInitializedAsync() => await Load();
+    protected override async Task OnInitializedAsync()
+    {
+        Roles = await Db.Roles.OrderBy(r => r.Name).ToListAsync();
+        await Load();
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        user = authState.User;
+
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            appUser = await UserManager.GetUserAsync(user);
+        }
+    }
 
     private async Task Load()
     {
@@ -152,22 +193,41 @@
                             .Include(t => t.Steps.OrderBy(s => s.Order))
                             .OrderByDescending(t => t.CreatedAt)
                             .ToListAsync();
+        StateHasChanged();
     }
 
     private void OpenModal(WorkflowTemplate? template = null)
     {
-        EditingTemplate = template is null
-            ? new WorkflowTemplate { Id = Guid.Empty }
-            : JsonSerializer.Deserialize<WorkflowTemplate>(JsonSerializer.Serialize(template))!;
+        if (template is null)
+        {
+            EditingTemplate = new WorkflowTemplate { Id = Guid.Empty };
+            EditingSteps = new List<WorkflowTemplateStep>();
+        }
+        else
+        {
+            var settings = new JsonSerializerSettings
+            {
+                TypeNameHandling = TypeNameHandling.Auto,
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            };
 
-        EditingSteps = template is null
-            ? new()
-            : JsonSerializer.Deserialize<List<WorkflowTemplateStep>>(JsonSerializer.Serialize(template.Steps))!;
+            var json = JsonConvert.SerializeObject(template, settings);
+            EditingTemplate = JsonConvert.DeserializeObject<WorkflowTemplate>(json, settings)!;
+
+            var stepsJson = JsonConvert.SerializeObject(template.Steps, settings);
+            EditingSteps = JsonConvert.DeserializeObject<List<WorkflowTemplateStep>>(stepsJson, settings)!;
+        }
+
         ShowModal = true;
         StateHasChanged();
     }
 
-    private void CloseModal() => ShowModal = false;
+
+    private void CloseModal()
+    {
+        ShowModal = false;
+        StateHasChanged();
+    }
 
     private void AddPaymentStep()
     {
@@ -196,21 +256,39 @@
         if (EditingTemplate.Id == Guid.Empty)
         {
             EditingTemplate.Id = Guid.NewGuid();
+            EditingTemplate.OrganisationId = appUser.OrganisationId;
             Db.WorkflowTemplates.Add(EditingTemplate);
         }
         else
         {
+            var tracked = Db.ChangeTracker.Entries<WorkflowTemplate>()
+                                            .FirstOrDefault(e => e.Entity.Id == EditingTemplate.Id);
+
+            if (tracked != null)
+            {
+                tracked.State = EntityState.Detached;
+            }
+
             Db.WorkflowTemplates.Update(EditingTemplate);
-            Db.Set<WorkflowTemplateStep>()
-              .Where(s => s.WorkflowTemplateId == EditingTemplate.Id)
-              .ExecuteDelete();
+            await Db.SaveChangesAsync();
+            await Db.Set<WorkflowTemplateStep>()
+                    .Where(s => s.WorkflowTemplateId == EditingTemplate.Id)
+                    .ExecuteDeleteAsync();
         }
 
         foreach (var s in EditingSteps)
         {
+            var tracked = Db.ChangeTracker.Entries<WorkflowTemplateStep>()
+                .FirstOrDefault(e => e.Entity.Id == s.Id);
+
+            if (tracked != null)
+                tracked.State = EntityState.Detached;
+
+            s.WorkflowTemplate = null;
             s.WorkflowTemplateId = EditingTemplate.Id;
-            Db.Set<WorkflowTemplateStep>().Add(s);
+            Db.WorkflowTemplateSteps.Add(s);
         }
+
 
         await Db.SaveChangesAsync();
         await Load();
@@ -224,5 +302,11 @@
         Db.WorkflowTemplates.Remove(t);
         await Db.SaveChangesAsync();
         await Load();
+    }
+
+    private void OnApproversChanged(ApprovalTemplateStep step, ChangeEventArgs e)
+    {
+        var values = e.Value as IEnumerable<string> ?? Array.Empty<string>();
+        step.RequiredApprovers = values.ToList();
     }
 }

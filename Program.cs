@@ -5,6 +5,7 @@ using LocalGov360.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +36,11 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 builder.Services.AddScoped<IWorkflowFactory, WorkflowFactory>();
+builder.Services.AddControllers()
+    .AddNewtonsoftJson(options =>
+    {
+        options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+    });
 
 var app = builder.Build();
 
@@ -105,6 +111,13 @@ using (var scope = app.Services.CreateScope())
         var user = new ApplicationUser { UserName = "admin@local.gov", Email = "admin@local.gov" };
         await userManager.CreateAsync(user, "Test@1234");
         await userManager.AddToRoleAsync(user, "developer");
+    }
+
+    if (await userManager.FindByEmailAsync("admin@council.gov") == null)
+    {
+        var user = new ApplicationUser { UserName = "admin@council.gov", Email = "admin@council.gov", OrganisationId = Guid.Parse("2D5D70CD-0E60-4731-A169-341F6C03B427") };
+        await userManager.CreateAsync(user, "Test@1234");
+        await userManager.AddToRoleAsync(user, "admin");
     }
 }
 

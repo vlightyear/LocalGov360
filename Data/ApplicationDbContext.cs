@@ -11,6 +11,7 @@ namespace LocalGov360.Data
 {
     public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<ApplicationUser, IdentityRole, string>(options)
     {
+        public DbSet<Organisation> Organisations { get; set; }
         public DbSet<Service> Services { get; set; }
         public DbSet<ServiceField> ServiceFields { get; set; }
         public DbSet<ServiceSubmission> ServiceSubmissions { get; set; }
