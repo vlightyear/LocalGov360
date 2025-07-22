@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("LocalGov360")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+82b5ed309df9754a1b42ad1d07aa19d1ac9bd1aa")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+604a2f966e28439b1fe8672115d1d9af39ba9659")]
 [assembly: System.Reflection.AssemblyProductAttribute("LocalGov360")]
 [assembly: System.Reflection.AssemblyTitleAttribute("LocalGov360")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

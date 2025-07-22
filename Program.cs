@@ -72,7 +72,7 @@ using (var scope = app.Services.CreateScope())
     try
     {
         context.Database.OpenConnection();
-        context.Users.FirstOrDefault();
+        _ = context.Users.FirstOrDefault();
         context.Database.CloseConnection();
     }
     catch (Exception ex)
