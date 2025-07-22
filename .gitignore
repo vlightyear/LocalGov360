@@ -22,3 +22,4 @@ packages/
 
 # Ignore logs
 *.log
+/obj/Debug/net8.0/LocalGov360.AssemblyInfo.cs
