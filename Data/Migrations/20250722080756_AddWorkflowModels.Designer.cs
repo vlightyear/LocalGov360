@@ -4,6 +4,7 @@ using LocalGov360.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LocalGov360.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250722080756_AddWorkflowModels")]
+    partial class AddWorkflowModels
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -40,9 +43,11 @@ namespace LocalGov360.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("Firstname")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Lastname")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("LockoutEnabled")
@@ -61,6 +66,7 @@ namespace LocalGov360.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Othernames")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PasswordHash")
@@ -100,7 +106,7 @@ namespace LocalGov360.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Organisations");
+                    b.ToTable("Organisation");
                 });
 
             modelBuilder.Entity("LocalGov360.Data.Models.ServiceModels+Service", b =>
@@ -141,15 +147,10 @@ namespace LocalGov360.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<Guid?>("WorkflowTemplateId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("Id");
 
                     b.HasIndex("Name")
                         .IsUnique();
-
-                    b.HasIndex("WorkflowTemplateId");
 
                     b.ToTable("Services");
                 });
@@ -288,64 +289,84 @@ namespace LocalGov360.Migrations
                     b.ToTable("ServiceSubmissionValues");
                 });
 
-            modelBuilder.Entity("LocalGov360.Data.Models.WorkflowInstance", b =>
+            modelBuilder.Entity("LocalGov360.Data.Models.WorkflowEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("ContextJson")
+                    b.Property<string>("ContextData")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("InitiatedBy")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("Name")
                         .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("WorkflowTemplateId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("WorkflowTemplateId");
+                    b.ToTable("Workflows");
 
-                    b.ToTable("WorkflowInstances");
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("b9c59159-1e89-4333-b705-823997c15500"),
+                            ContextData = "{\"InitialAmount\": 1500.00}",
+                            CreatedAt = new DateTime(2025, 7, 22, 8, 7, 55, 773, DateTimeKind.Utc).AddTicks(1696),
+                            Description = "Sample workflow for testing",
+                            InitiatedBy = "system@company.com",
+                            Name = "Sample Purchase Workflow",
+                            Status = "Pending"
+                        });
                 });
 
-            modelBuilder.Entity("LocalGov360.Data.Models.WorkflowInstanceStep", b =>
+            modelBuilder.Entity("LocalGov360.Data.Models.WorkflowStepEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("AssignedTo")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("AssignedTo")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("Comments")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Discriminator")
+                    b.Property<string>("Description")
                         .IsRequired()
-                        .HasMaxLength(21)
-                        .HasColumnType("nvarchar(21)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<int>("Order")
                         .HasColumnType("int");
@@ -353,87 +374,74 @@ namespace LocalGov360.Migrations
                     b.Property<DateTime?>("StartedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
 
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
+                    b.Property<string>("StepData")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid>("WorkflowInstanceId")
+                    b.Property<string>("StepTypeDiscriminator")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("WorkflowId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("WorkflowInstanceId");
+                    b.HasIndex("Status");
 
-                    b.ToTable("WorkflowInstanceSteps");
+                    b.HasIndex("WorkflowId", "Order");
 
-                    b.HasDiscriminator().HasValue("WorkflowInstanceStep");
+                    b.ToTable("WorkflowSteps");
 
-                    b.UseTphMappingStrategy();
-                });
-
-            modelBuilder.Entity("LocalGov360.Data.Models.WorkflowTemplate", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("OrganisationId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OrganisationId");
-
-                    b.ToTable("WorkflowTemplates");
-                });
-
-            modelBuilder.Entity("LocalGov360.Data.Models.WorkflowTemplateStep", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Discriminator")
-                        .IsRequired()
-                        .HasMaxLength(21)
-                        .HasColumnType("nvarchar(21)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("WorkflowTemplateId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("WorkflowTemplateId");
-
-                    b.ToTable("WorkflowTemplateSteps");
-
-                    b.HasDiscriminator().HasValue("WorkflowTemplateStep");
-
-                    b.UseTphMappingStrategy();
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("40df7175-3657-4314-aefb-98ce42a6821a"),
+                            AssignedTo = "manager@company.com",
+                            Description = "Manager approval required",
+                            Name = "Manager Approval",
+                            Order = 1,
+                            Status = "Pending",
+                            StepData = "{\"RequiredApprovers\":[\"manager@company.com\"],\"ActualApprovers\":[],\"RequiresAllApprovers\":true,\"MinimumApprovals\":1}",
+                            StepTypeDiscriminator = "ApprovalStep",
+                            Type = "Approval",
+                            WorkflowId = new Guid("b9c59159-1e89-4333-b705-823997c15500")
+                        },
+                        new
+                        {
+                            Id = new Guid("083844cf-327a-4144-af00-26dd8ff71e68"),
+                            AssignedTo = "finance@company.com",
+                            Description = "Finance team approval",
+                            Name = "Finance Approval",
+                            Order = 2,
+                            Status = "Pending",
+                            StepData = "{\"RequiredApprovers\":[\"finance@company.com\",\"cfo@company.com\"],\"ActualApprovers\":[],\"RequiresAllApprovers\":false,\"MinimumApprovals\":1}",
+                            StepTypeDiscriminator = "ApprovalStep",
+                            Type = "Approval",
+                            WorkflowId = new Guid("b9c59159-1e89-4333-b705-823997c15500")
+                        },
+                        new
+                        {
+                            Id = new Guid("258fa5db-c6f0-4c39-92f1-87db970db0eb"),
+                            AssignedTo = "accounts@company.com",
+                            Description = "Process vendor payment",
+                            Name = "Process Payment",
+                            Order = 3,
+                            Status = "Pending",
+                            StepData = "{\"Amount\":1500.00,\"Currency\":\"ZMW\",\"PaymentMethod\":null,\"TransactionId\":null}",
+                            StepTypeDiscriminator = "PaymentStep",
+                            Type = "Payment",
+                            WorkflowId = new Guid("b9c59159-1e89-4333-b705-823997c15500")
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -550,75 +558,6 @@ namespace LocalGov360.Migrations
                     b.ToTable("UserTokens");
                 });
 
-            modelBuilder.Entity("LocalGov360.Data.Models.ApprovalInstanceStep", b =>
-                {
-                    b.HasBaseType("LocalGov360.Data.Models.WorkflowInstanceStep");
-
-                    b.Property<string>("ActualApprovers")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("MinimumApprovals")
-                        .HasColumnType("int");
-
-                    b.Property<string>("RequiredApprovers")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("RequiresAll")
-                        .HasColumnType("bit");
-
-                    b.HasDiscriminator().HasValue("ApprovalInstanceStep");
-                });
-
-            modelBuilder.Entity("LocalGov360.Data.Models.PaymentInstanceStep", b =>
-                {
-                    b.HasBaseType("LocalGov360.Data.Models.WorkflowInstanceStep");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("Currency")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TransactionId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasDiscriminator().HasValue("PaymentInstanceStep");
-                });
-
-            modelBuilder.Entity("LocalGov360.Data.Models.ApprovalTemplateStep", b =>
-                {
-                    b.HasBaseType("LocalGov360.Data.Models.WorkflowTemplateStep");
-
-                    b.Property<int>("MinimumApprovals")
-                        .HasColumnType("int");
-
-                    b.Property<string>("RequiredApprovers")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("RequiresAll")
-                        .HasColumnType("bit");
-
-                    b.HasDiscriminator().HasValue("ApprovalTemplateStep");
-                });
-
-            modelBuilder.Entity("LocalGov360.Data.Models.PaymentTemplateStep", b =>
-                {
-                    b.HasBaseType("LocalGov360.Data.Models.WorkflowTemplateStep");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("Currency")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasDiscriminator().HasValue("PaymentTemplateStep");
-                });
-
             modelBuilder.Entity("LocalGov360.Data.ApplicationUser", b =>
                 {
                     b.HasOne("LocalGov360.Data.Models.Organisation", "Organisation")
@@ -626,15 +565,6 @@ namespace LocalGov360.Migrations
                         .HasForeignKey("OrganisationId");
 
                     b.Navigation("Organisation");
-                });
-
-            modelBuilder.Entity("LocalGov360.Data.Models.ServiceModels+Service", b =>
-                {
-                    b.HasOne("LocalGov360.Data.Models.WorkflowTemplate", "WorkflowTemplate")
-                        .WithMany()
-                        .HasForeignKey("WorkflowTemplateId");
-
-                    b.Navigation("WorkflowTemplate");
                 });
 
             modelBuilder.Entity("LocalGov360.Data.Models.ServiceModels+ServiceField", b =>
@@ -678,46 +608,15 @@ namespace LocalGov360.Migrations
                     b.Navigation("Submission");
                 });
 
-            modelBuilder.Entity("LocalGov360.Data.Models.WorkflowInstance", b =>
+            modelBuilder.Entity("LocalGov360.Data.Models.WorkflowStepEntity", b =>
                 {
-                    b.HasOne("LocalGov360.Data.Models.WorkflowTemplate", "Template")
-                        .WithMany()
-                        .HasForeignKey("WorkflowTemplateId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Template");
-                });
-
-            modelBuilder.Entity("LocalGov360.Data.Models.WorkflowInstanceStep", b =>
-                {
-                    b.HasOne("LocalGov360.Data.Models.WorkflowInstance", "WorkflowInstance")
+                    b.HasOne("LocalGov360.Data.Models.WorkflowEntity", "Workflow")
                         .WithMany("Steps")
-                        .HasForeignKey("WorkflowInstanceId")
+                        .HasForeignKey("WorkflowId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("WorkflowInstance");
-                });
-
-            modelBuilder.Entity("LocalGov360.Data.Models.WorkflowTemplate", b =>
-                {
-                    b.HasOne("LocalGov360.Data.Models.Organisation", "Organisation")
-                        .WithMany()
-                        .HasForeignKey("OrganisationId");
-
-                    b.Navigation("Organisation");
-                });
-
-            modelBuilder.Entity("LocalGov360.Data.Models.WorkflowTemplateStep", b =>
-                {
-                    b.HasOne("LocalGov360.Data.Models.WorkflowTemplate", "WorkflowTemplate")
-                        .WithMany("Steps")
-                        .HasForeignKey("WorkflowTemplateId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("WorkflowTemplate");
+                    b.Navigation("Workflow");
                 });
 
             modelBuilder.Entity("LocalGov360.Data.Models.ServiceModels+Service", b =>
@@ -737,12 +636,7 @@ namespace LocalGov360.Migrations
                     b.Navigation("Values");
                 });
 
-            modelBuilder.Entity("LocalGov360.Data.Models.WorkflowInstance", b =>
-                {
-                    b.Navigation("Steps");
-                });
-
-            modelBuilder.Entity("LocalGov360.Data.Models.WorkflowTemplate", b =>
+            modelBuilder.Entity("LocalGov360.Data.Models.WorkflowEntity", b =>
                 {
                     b.Navigation("Steps");
                 });

@@ -4,6 +4,7 @@ using LocalGov360.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LocalGov360.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250722122542_AddOrganisationIdToWorkflowTemplate")]
+    partial class AddOrganisationIdToWorkflowTemplate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -141,15 +144,10 @@ namespace LocalGov360.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<Guid?>("WorkflowTemplateId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("Id");
 
                     b.HasIndex("Name")
                         .IsUnique();
-
-                    b.HasIndex("WorkflowTemplateId");
 
                     b.ToTable("Services");
                 });
@@ -328,8 +326,9 @@ namespace LocalGov360.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("AssignedTo")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("AssignedTo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Comments")
                         .IsRequired()
@@ -626,15 +625,6 @@ namespace LocalGov360.Migrations
                         .HasForeignKey("OrganisationId");
 
                     b.Navigation("Organisation");
-                });
-
-            modelBuilder.Entity("LocalGov360.Data.Models.ServiceModels+Service", b =>
-                {
-                    b.HasOne("LocalGov360.Data.Models.WorkflowTemplate", "WorkflowTemplate")
-                        .WithMany()
-                        .HasForeignKey("WorkflowTemplateId");
-
-                    b.Navigation("WorkflowTemplate");
                 });
 
             modelBuilder.Entity("LocalGov360.Data.Models.ServiceModels+ServiceField", b =>

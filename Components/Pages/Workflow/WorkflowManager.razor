@@ -1,0 +1,312 @@
+﻿@page "/Workflows"
+@using LocalGov360.Data
+@using LocalGov360.Data.Models
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Newtonsoft.Json
+@inject ApplicationDbContext Db
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+@rendermode InteractiveServer
+
+<PageTitle>Workflows</PageTitle>
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card my-4">
+                <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                    <div class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3 d-flex justify-content-between">
+                        <h6 class="text-white text-capitalize ps-3 mb-0">Workflow Templates</h6>
+                        <button class="btn btn-sm bg-gradient-info mb-0 me-3" @onclick="() => OpenModal()">
+                            <i class="fas fa-plus me-1"></i>New Workflow
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card-body px-0 pb-2">
+                    <div class="table-responsive p-0">
+                        <table class="table align-items-center mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Name</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Steps</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Created</th>
+                                    <th class="text-secondary opacity-7"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var t in Templates)
+                                {
+                                    var stepCount = t.Steps?.Count ?? 0;
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex px-2 py-1">
+                                                <div class="d-flex flex-column justify-content-center">
+                                                    <h6 class="mb-0 text-sm">@t.Name</h6>
+                                                    <p class="text-xs text-secondary mb-0">@t.Description</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-gradient-secondary">@stepCount step(s)</span>
+                                        </td>
+                                        <td class="align-middle text-center">
+                                            <span class="text-secondary text-xs font-weight-bold">@t.CreatedAt.ToString("dd/MM/yyyy")</span>
+                                        </td>
+                                        <td class="align-middle">
+                                            <button class="btn btn-link text-secondary mb-0" @onclick="() => OpenModal(t)">
+                                                <i class="fas fa-edit text-xs"></i>
+                                            </button>
+                                            <button class="btn btn-link text-danger mb-0" @onclick="() => DeleteTemplate(t)">
+                                                <i class="fas fa-trash text-xs"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Template -->
+@if (ShowModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(EditingTemplate.Id == Guid.Empty ? "New" : "Edit") Workflow</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Name</label>
+                        <input class="form-control" @bind="EditingTemplate.Name" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" @bind="EditingTemplate.Description"></textarea>
+                    </div>
+
+                    <h6 class="mt-4">Workflow Steps</h6>
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Order</th>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < EditingSteps.Count; i++)
+                            {
+                                var step = EditingSteps[i];
+                                var index = i; // capture for lambdas
+
+                                <tr>
+                                    <td>@step.Order</td>
+                                    <td>
+                                        <input class="form-control form-control-sm" @bind="step.Name" />
+                                    </td>
+                                    <td>@(step is PaymentTemplateStep ? "Payment" : "Approval")</td>
+                                    <td>
+                                        @if (step is ApprovalTemplateStep approval)
+                                        {
+                                            // build a temporary array that the select can bind to
+                                            var selected = approval.RequiredApprovers.ToArray();
+
+                                            <select multiple class="form-select form-select-sm"
+                                                    @onchange="@(e => OnApproversChanged(approval, e))">
+                                                @foreach (var role in Roles)
+                                                {
+                                                    <option value="@role.Id" selected="@approval.RequiredApprovers.Contains(role.Id)">
+                                                        @role.Name
+                                                    </option>
+                                                }
+                                            </select>
+                                        }
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveStep(step)">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                    <div class="d-flex mt-2">
+                        <button class="btn btn-sm btn-outline-primary" @onclick="AddPaymentStep">
+                            <i class="fas fa-credit-card me-1"></i>Add Payment
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary ms-2" @onclick="AddApprovalStep">
+                            <i class="fas fa-user-check me-1"></i>Add Approval
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn bg-gradient-secondary" @onclick="CloseModal">Cancel</button>
+                    <button class="btn bg-gradient-success" @onclick="SaveTemplate">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code
+{
+    private ClaimsPrincipal user;
+    private List<WorkflowTemplate> Templates = new();
+    private bool ShowModal;
+    private WorkflowTemplate EditingTemplate = new();
+    private List<WorkflowTemplateStep> EditingSteps = new();
+    private ApplicationUser appUser;
+    private List<IdentityRole> Roles = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Roles = await Db.Roles.OrderBy(r => r.Name).ToListAsync();
+        await Load();
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        user = authState.User;
+
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            appUser = await UserManager.GetUserAsync(user);
+        }
+    }
+
+    private async Task Load()
+    {
+        Templates = await Db.WorkflowTemplates
+                            .Include(t => t.Steps.OrderBy(s => s.Order))
+                            .OrderByDescending(t => t.CreatedAt)
+                            .ToListAsync();
+        StateHasChanged();
+    }
+
+    private void OpenModal(WorkflowTemplate? template = null)
+    {
+        if (template is null)
+        {
+            EditingTemplate = new WorkflowTemplate { Id = Guid.Empty };
+            EditingSteps = new List<WorkflowTemplateStep>();
+        }
+        else
+        {
+            var settings = new JsonSerializerSettings
+            {
+                TypeNameHandling = TypeNameHandling.Auto,
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            };
+
+            var json = JsonConvert.SerializeObject(template, settings);
+            EditingTemplate = JsonConvert.DeserializeObject<WorkflowTemplate>(json, settings)!;
+
+            var stepsJson = JsonConvert.SerializeObject(template.Steps, settings);
+            EditingSteps = JsonConvert.DeserializeObject<List<WorkflowTemplateStep>>(stepsJson, settings)!;
+        }
+
+        ShowModal = true;
+        StateHasChanged();
+    }
+
+
+    private void CloseModal()
+    {
+        ShowModal = false;
+        StateHasChanged();
+    }
+
+    private void AddPaymentStep()
+    {
+        EditingSteps.Add(new PaymentTemplateStep
+        {
+            Order = EditingSteps.Count + 1,
+            Name = "Payment",
+            Amount = 0
+        });
+    }
+
+    private void AddApprovalStep()
+    {
+        EditingSteps.Add(new ApprovalTemplateStep
+        {
+            Order = EditingSteps.Count + 1,
+            Name = "Approval",
+            RequiredApprovers = new()
+        });
+    }
+
+    private void RemoveStep(WorkflowTemplateStep step) => EditingSteps.Remove(step);
+
+    private async Task SaveTemplate()
+    {
+        if (EditingTemplate.Id == Guid.Empty)
+        {
+            EditingTemplate.Id = Guid.NewGuid();
+            EditingTemplate.OrganisationId = appUser.OrganisationId;
+            Db.WorkflowTemplates.Add(EditingTemplate);
+        }
+        else
+        {
+            var tracked = Db.ChangeTracker.Entries<WorkflowTemplate>()
+                                            .FirstOrDefault(e => e.Entity.Id == EditingTemplate.Id);
+
+            if (tracked != null)
+            {
+                tracked.State = EntityState.Detached;
+            }
+
+            Db.WorkflowTemplates.Update(EditingTemplate);
+            await Db.SaveChangesAsync();
+            await Db.Set<WorkflowTemplateStep>()
+                    .Where(s => s.WorkflowTemplateId == EditingTemplate.Id)
+                    .ExecuteDeleteAsync();
+        }
+
+        foreach (var s in EditingSteps)
+        {
+            var tracked = Db.ChangeTracker.Entries<WorkflowTemplateStep>()
+                .FirstOrDefault(e => e.Entity.Id == s.Id);
+
+            if (tracked != null)
+                tracked.State = EntityState.Detached;
+
+            s.WorkflowTemplate = null;
+            s.WorkflowTemplateId = EditingTemplate.Id;
+            Db.WorkflowTemplateSteps.Add(s);
+        }
+
+
+        await Db.SaveChangesAsync();
+        await Load();
+        CloseModal();
+    }
+
+    private async Task DeleteTemplate(WorkflowTemplate t)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", $"Delete template {t.Name}?")) return;
+
+        Db.WorkflowTemplates.Remove(t);
+        await Db.SaveChangesAsync();
+        await Load();
+    }
+
+    private void OnApproversChanged(ApprovalTemplateStep step, ChangeEventArgs e)
+    {
+        var values = e.Value as IEnumerable<string> ?? Array.Empty<string>();
+        step.RequiredApprovers = values.ToList();
+    }
+}

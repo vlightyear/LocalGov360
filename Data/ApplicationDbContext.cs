@@ -1,17 +1,25 @@
+using LocalGov360.Data.Models;
+using LocalGov360.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using static LocalGov360.Data.Models.ServiceModels;
 
 namespace LocalGov360.Data
 {
     public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<ApplicationUser, IdentityRole, string>(options)
     {
+        public DbSet<Organisation> Organisations { get; set; }
         public DbSet<Service> Services { get; set; }
         public DbSet<ServiceField> ServiceFields { get; set; }
         public DbSet<ServiceSubmission> ServiceSubmissions { get; set; }
         public DbSet<ServiceSubmissionValue> ServiceSubmissionValues { get; set; }
+        public DbSet<WorkflowTemplate> WorkflowTemplates { get; set; }
+        public DbSet<WorkflowTemplateStep> WorkflowTemplateSteps { get; set; }
+        public DbSet<WorkflowInstance> WorkflowInstances { get; set; }
+        public DbSet<WorkflowInstanceStep> WorkflowInstanceSteps { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -86,6 +94,27 @@ namespace LocalGov360.Data
 
                 entity.HasIndex(e => new { e.SubmissionId, e.FieldId }).IsUnique();
             });
+
+            //Workflow
+            modelBuilder.Entity<WorkflowTemplate>()
+            .HasMany(w => w.Steps)
+            .WithOne(s => s.WorkflowTemplate)
+            .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<WorkflowTemplateStep>()
+                        .HasDiscriminator<string>("Discriminator")
+                        .HasValue<PaymentTemplateStep>(nameof(PaymentTemplateStep))
+                        .HasValue<ApprovalTemplateStep>(nameof(ApprovalTemplateStep));
+
+            modelBuilder.Entity<WorkflowInstance>()
+                        .HasMany(w => w.Steps)
+                        .WithOne(s => s.WorkflowInstance)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<WorkflowInstanceStep>()
+                        .HasDiscriminator<string>("Discriminator")
+                        .HasValue<PaymentInstanceStep>(nameof(PaymentInstanceStep))
+                        .HasValue<ApprovalInstanceStep>(nameof(ApprovalInstanceStep));
         }
     }
 }
