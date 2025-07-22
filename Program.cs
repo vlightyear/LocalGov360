@@ -22,6 +22,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
+// Add UserManager and RoleManager services
+builder.Services.AddScoped<UserManager<IdentityUser>>();
+builder.Services.AddScoped<RoleManager<IdentityRole>>();
+
+
 // Register your application services here
 builder.Services.AddScoped<IServiceService, ServiceService>();
 builder.Services.AddScoped<IFormValidator, FormValidator>();
