@@ -55,7 +55,8 @@ namespace LocalGov360.Data.Models
 
             [MaxLength(100)]
             public string? ModifiedBy { get; set; }
-
+            public Guid? WorkflowTemplateId { get; set; }
+            public virtual WorkflowTemplate WorkflowTemplate { get; set; }
             public virtual ICollection<ServiceField> Fields { get; set; } = new List<ServiceField>();
             public virtual ICollection<ServiceSubmission> Submissions { get; set; } = new List<ServiceSubmission>();
         }
