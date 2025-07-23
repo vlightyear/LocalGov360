@@ -13,10 +13,12 @@
 
 <style>
     .action-buttons {
+        display: flex;
         gap: 0.5rem;
     }
 
     .header-buttons {
+        display: flex;
         gap: 1rem;
     }
 
@@ -44,7 +46,7 @@
     }
 
     .modal-header {
-        padding: 1.5rem 1.5rem 0 1.5rem;
+        padding: 1.5rem;
         border-bottom: 1px solid #dee2e6;
         display: flex;
         justify-content: space-between;
@@ -55,6 +57,14 @@
         padding: 1.5rem;
     }
 
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+
     .btn-close {
         background: none;
         border: none;
@@ -63,6 +73,7 @@
         color: #000;
         opacity: 0.5;
         cursor: pointer;
+        line-height: 1;
     }
 
         .btn-close:hover {
@@ -73,6 +84,8 @@
         background-color: #343a40;
         border-color: #343a40;
         color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
     }
 
         .btn-dark:hover {
@@ -81,8 +94,41 @@
             color: white;
         }
 
+    .btn-secondary {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+    }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+            border-color: #545b62;
+            color: white;
+        }
+
     .roles-table-actions {
         white-space: nowrap;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .form-full-width {
+        grid-column: 1 / -1;
+    }
+
+    .form-check-group {
+        grid-column: 1 / -1;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        padding: 1rem;
+        max-height: 200px;
+        overflow-y: auto;
     }
 </style>
 
@@ -194,7 +240,7 @@
                                                 </span>
                                             </td>
                                             <td class="align-middle">
-                                                <div class="btn-group">
+                                                <div class="btn-group action-buttons">
                                                     <button class="btn btn-sm btn-outline-primary" @onclick="() => EditUser(userInfo.User.Id)">
                                                         <i class="fas fa-edit"></i>
                                                     </button>
@@ -248,36 +294,38 @@
             <div class="modal-body">
                 <EditForm Model="@editUser" OnValidSubmit="UpdateUser">
                     <DataAnnotationsValidator />
-                    <div class="mb-3">
-                        <label for="editEmail" class="form-label">Email</label>
-                        <InputText id="editEmail" @bind-Value="editUser.Email" class="form-control" />
-                        <ValidationMessage For="@(() => editUser.Email)" />
+                    <div class="form-grid">
+                        <div class="mb-3">
+                            <label for="editEmail" class="form-label">Email</label>
+                            <InputText id="editEmail" @bind-Value="editUser.Email" class="form-control" />
+                            <ValidationMessage For="@(() => editUser.Email)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="editUsername" class="form-label">Username</label>
+                            <InputText id="editUsername" @bind-Value="editUser.UserName" class="form-control" />
+                            <ValidationMessage For="@(() => editUser.UserName)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="editFirstname" class="form-label">First Name</label>
+                            <InputText id="editFirstname" @bind-Value="editUser.Firstname" class="form-control" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="editLastname" class="form-label">Last Name</label>
+                            <InputText id="editLastname" @bind-Value="editUser.Lastname" class="form-control" />
+                        </div>
+                        <div class="mb-3 form-full-width">
+                            <label for="editOrganisation" class="form-label">Organization</label>
+                            <InputSelect id="editOrganisation" @bind-Value="editUser.OrganisationId" class="form-control">
+                                <option value="">None</option>
+                                @foreach (var org in organisations)
+                                {
+                                    <option value="@org.Id">@org.Name</option>
+                                }
+                            </InputSelect>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="editUsername" class="form-label">Username</label>
-                        <InputText id="editUsername" @bind-Value="editUser.UserName" class="form-control" />
-                        <ValidationMessage For="@(() => editUser.UserName)" />
-                    </div>
-                    <div class="mb-3">
-                        <label for="editFirstname" class="form-label">First Name</label>
-                        <InputText id="editFirstname" @bind-Value="editUser.Firstname" class="form-control" />
-                    </div>
-                    <div class="mb-3">
-                        <label for="editLastname" class="form-label">Last Name</label>
-                        <InputText id="editLastname" @bind-Value="editUser.Lastname" class="form-control" />
-                    </div>
-                    <div class="mb-3">
-                        <label for="editOrganisation" class="form-label">Organization</label>
-                        <InputSelect id="editOrganisation" @bind-Value="editUser.OrganisationId" class="form-control">
-                            <option value="">None</option>
-                            @foreach (var org in organisations)
-                            {
-                                <option value="@org.Id">@org.Name</option>
-                            }
-                        </InputSelect>
-                    </div>
-                    <div class="d-flex justify-content-end">
-                        <button type="button" class="btn btn-secondary me-2" @onclick="CloseEditUserModal">Cancel</button>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseEditUserModal">Cancel</button>
                         <button type="submit" class="btn btn-dark">Update</button>
                     </div>
                 </EditForm>
@@ -298,73 +346,73 @@
             <div class="modal-body">
                 <EditForm Model="@newUser" OnValidSubmit="CreateUser">
                     <DataAnnotationsValidator />
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
-                        <InputText id="email" @bind-Value="newUser.Email" class="form-control" />
-                        <ValidationMessage For="@(() => newUser.Email)" />
-                    </div>
-                    <div class="mb-3">
-                        <label for="username" class="form-label">Username</label>
-                        <InputText id="username" @bind-Value="newUser.UserName" class="form-control" />
-                        <ValidationMessage For="@(() => newUser.UserName)" />
-                    </div>
-                    <div class="mb-3">
-                        <label for="firstname" class="form-label">First Name</label>
-                        <InputText id="firstname" @bind-Value="newUser.Firstname" class="form-control" />
-                    </div>
-                    <div class="mb-3">
-                        <label for="lastname" class="form-label">Last Name</label>
-                        <InputText id="lastname" @bind-Value="newUser.Lastname" class="form-control" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Organization</label>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="orgSelection" id="existingOrg"
-                                   checked="@(!newUser.UseNewOrganisation)" @onchange="() => { newUser.UseNewOrganisation = false; StateHasChanged(); }">
-                            <label class="form-check-label" for="existingOrg">Select Existing Organization</label>
+                    <div class="form-grid">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <InputText id="email" @bind-Value="newUser.Email" class="form-control" />
+                            <ValidationMessage For="@(() => newUser.Email)" />
                         </div>
-                        <div class="form-check mb-2">
-                            <input class="form-check-input" type="radio" name="orgSelection" id="newOrg"
-                                   checked="@newUser.UseNewOrganisation" @onchange="() => { newUser.UseNewOrganisation = true; StateHasChanged(); }">
-                            <label class="form-check-label" for="newOrg">Create New Organization</label>
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <InputText id="username" @bind-Value="newUser.UserName" class="form-control" />
+                            <ValidationMessage For="@(() => newUser.UserName)" />
                         </div>
-                        @if (newUser.UseNewOrganisation)
-                        {
-                            <div class="mb-3">
-                                <label for="newOrganisation" class="form-label">New Organization Name</label>
-                                <InputText id="newOrganisation" @bind-Value="newUser.NewOrganisationName" class="form-control" />
-                                <ValidationMessage For="@(() => newUser.NewOrganisationName)" />
+                        <div class="mb-3">
+                            <label for="firstname" class="form-label">First Name</label>
+                            <InputText id="firstname" @bind-Value="newUser.Firstname" class="form-control" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="lastname" class="form-label">Last Name</label>
+                            <InputText id="lastname" @bind-Value="newUser.Lastname" class="form-control" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <InputText id="password" type="password" @bind-Value="newUser.Password" class="form-control" />
+                            <ValidationMessage For="@(() => newUser.Password)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">Confirm Password</label>
+                            <InputText id="confirmPassword" type="password" @bind-Value="newUser.ConfirmPassword" class="form-control" />
+                            <ValidationMessage For="@(() => newUser.ConfirmPassword)" />
+                        </div>
+                        <div class="mb-3 form-full-width">
+                            <label class="form-label">Organization</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="orgSelection" id="existingOrg"
+                                       checked="@(!newUser.UseNewOrganisation)" @onchange="() => { newUser.UseNewOrganisation = false; StateHasChanged(); }">
+                                <label class="form-check-label" for="existingOrg">Select Existing Organization</label>
                             </div>
-                        }
-                        else
-                        {
-                            <div class="mb-3">
-                                <label for="organisation" class="form-label">Select Organization</label>
-                                <InputSelect id="organisation" @bind-Value="newUser.OrganisationId" class="form-control">
-                                    <option value="">None</option>
-                                    @foreach (var org in organisations)
-                                    {
-                                        <option value="@org.Id">@org.Name</option>
-                                    }
-                                </InputSelect>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="orgSelection" id="newOrg"
+                                       checked="@newUser.UseNewOrganisation" @onchange="() => { newUser.UseNewOrganisation = true; StateHasChanged(); }">
+                                <label class="form-check-label" for="newOrg">Create New Organization</label>
                             </div>
-                        }
-                    </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <InputText id="password" type="password" @bind-Value="newUser.Password" class="form-control" />
-                        <ValidationMessage For="@(() => newUser.Password)" />
-                    </div>
-                    <div class="mb-3">
-                        <label for="confirmPassword" class="form-label">Confirm Password</label>
-                        <InputText id="confirmPassword" type="password" @bind-Value="newUser.ConfirmPassword" class="form-control" />
-                        <ValidationMessage For="@(() => newUser.ConfirmPassword)" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Roles</label>
-                        @if (allRoles.Any())
-                        {
-                            <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                            @if (newUser.UseNewOrganisation)
+                            {
+                                <div class="mb-3">
+                                    <label for="newOrganisation" class="form-label">New Organization Name</label>
+                                    <InputText id="newOrganisation" @bind-Value="newUser.NewOrganisationName" class="form-control" />
+                                    <ValidationMessage For="@(() => newUser.NewOrganisationName)" />
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="mb-3">
+                                    <label for="organisation" class="form-label">Select Organization</label>
+                                    <InputSelect id="organisation" @bind-Value="newUser.OrganisationId" class="form-control">
+                                        <option value="">None</option>
+                                        @foreach (var org in organisations)
+                                        {
+                                            <option value="@org.Id">@org.Name</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                            }
+                        </div>
+                        <div class="form-check-group">
+                            <label class="form-label mb-2">Roles</label>
+                            @if (allRoles.Any())
+                            {
                                 @foreach (var role in allRoles)
                                 {
                                     <div class="form-check mb-2">
@@ -377,15 +425,15 @@
                                         </label>
                                     </div>
                                 }
-                            </div>
-                        }
-                        else
-                        {
-                            <p class="text-muted">No roles available</p>
-                        }
+                            }
+                            else
+                            {
+                                <p class="text-muted">No roles available</p>
+                            }
+                        </div>
                     </div>
-                    <div class="d-flex justify-content-end">
-                        <button type="button" class="btn btn-secondary me-2" @onclick="CloseCreateUserModal">Cancel</button>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseCreateUserModal">Cancel</button>
                         <button type="submit" class="btn btn-dark">Create</button>
                     </div>
                 </EditForm>
@@ -411,8 +459,8 @@
                         <InputText id="roleName" @bind-Value="newRole.Name" class="form-control" />
                         <ValidationMessage For="@(() => newRole.Name)" />
                     </div>
-                    <div class="d-flex justify-content-end">
-                        <button type="button" class="btn btn-secondary me-2" @onclick="CloseCreateRoleModal">Cancel</button>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseCreateRoleModal">Cancel</button>
                         <button type="submit" class="btn btn-dark">Create</button>
                     </div>
                 </EditForm>
@@ -438,8 +486,8 @@
                         <InputText id="editRoleName" @bind-Value="editRole.Name" class="form-control" />
                         <ValidationMessage For="@(() => editRole.Name)" />
                     </div>
-                    <div class="d-flex justify-content-end">
-                        <button type="button" class="btn btn-secondary me-2" @onclick="CloseEditRoleModal">Cancel</button>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseEditRoleModal">Cancel</button>
                         <button type="submit" class="btn btn-dark">Update</button>
                     </div>
                 </EditForm>
@@ -474,7 +522,7 @@
                                     <tr>
                                         <td>@role.Name</td>
                                         <td class="roles-table-actions">
-                                            <div class="btn-group">
+                                            <div class="btn-group action-buttons">
                                                 <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEditRole(role)">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
@@ -493,7 +541,7 @@
                 {
                     <p class="text-muted">No roles available</p>
                 }
-                <div class="d-flex justify-content-end mt-3">
+                <div class="modal-footer">
                     <button type="button" class="btn btn-dark" @onclick="CloseRolesListModal">Close</button>
                 </div>
             </div>
@@ -513,7 +561,8 @@
             <div class="modal-body">
                 @if (allRoles != null && selectedUser != null)
                 {
-                    <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                    <div class="form-check-group">
+                        <label class="form-label mb-2">Roles</label>
                         @foreach (var role in allRoles)
                         {
                             <div class="form-check form-switch mb-2">
@@ -526,7 +575,7 @@
                         }
                     </div>
                 }
-                <div class="d-flex justify-content-end mt-3">
+                <div class="modal-footer">
                     <button type="button" class="btn btn-dark" @onclick="CloseManageRolesModal">Done</button>
                 </div>
             </div>
@@ -944,7 +993,6 @@
         }
     }
 
-    // Lock / Unlock
     private async Task LockUser(string userId)
     {
         var user = await UserManager.FindByIdAsync(userId);
@@ -966,7 +1014,6 @@
         }
     }
 
-    // Manage User Roles
     private async Task ManageRoles(string userId)
     {
         selectedUser = await UserManager.FindByIdAsync(userId);

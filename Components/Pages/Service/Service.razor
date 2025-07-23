@@ -290,6 +290,15 @@
                 }
                 else
                 {
+                    <style>
+                        td.description-cell {
+                            max-width: 300px; /* limit width of the column */
+                            white-space: normal; /* allow wrapping to next line */
+                            word-wrap: break-word; /* break long words without spaces */
+                            overflow-wrap: break-word; /* fallback for long words */
+                        }
+                    </style>
+
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead>
@@ -306,7 +315,9 @@
                                 {
                                     <tr>
                                         <td>@svc.Name</td>
-                                        <td>@(string.IsNullOrEmpty(svc.Description) ? "-" : svc.Description)</td>
+                                        <td class="description-cell">
+                                            @(string.IsNullOrEmpty(svc.Description) ? "-" : svc.Description)
+                                        </td>
                                         <td>@svc.Fields.Count</td>
                                         <td>@svc.CreatedDate.ToLocalTime().ToString("g")</td>
                                         <td>
@@ -324,6 +335,7 @@
                             </tbody>
                         </table>
                     </div>
+
                 }
             </div>
         </div>
