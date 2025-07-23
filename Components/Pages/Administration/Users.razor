@@ -1,13 +1,90 @@
-﻿@page "/Administration/Users"
+﻿@page "/users"
 @using LocalGov360.Data
+@using LocalGov360.Data.Models
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @inject UserManager<ApplicationUser> UserManager
 @inject RoleManager<IdentityRole> RoleManager
-@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @rendermode InteractiveServer
 @attribute [Authorize(Roles = "developer")]
+
+<style>
+    .action-buttons {
+        gap: 0.5rem;
+    }
+
+    .header-buttons {
+        gap: 1rem;
+    }
+
+    .blazor-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .blazor-modal-content {
+        background: white;
+        border-radius: 0.5rem;
+        width: 90%;
+        max-width: 600px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .modal-header {
+        padding: 1.5rem 1.5rem 0 1.5rem;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .btn-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #000;
+        opacity: 0.5;
+        cursor: pointer;
+    }
+
+        .btn-close:hover {
+            opacity: 0.75;
+        }
+
+    .btn-dark {
+        background-color: #343a40;
+        border-color: #343a40;
+        color: white;
+    }
+
+        .btn-dark:hover {
+            background-color: #23272b;
+            border-color: #1d2124;
+            color: white;
+        }
+
+    .roles-table-actions {
+        white-space: nowrap;
+    }
+</style>
 
 <div class="container-fluid py-2">
     <div class="row">
@@ -16,9 +93,18 @@
                 <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3">
                         <h6 class="text-white text-capitalize ps-3">Users Management</h6>
-                        <div class="ps-3 pb-2">
+                        <div class="ps-3 pb-2 d-flex align-items-center header-buttons">
                             <button class="btn btn-sm btn-outline-light" @onclick="LoadUsers">
                                 <i class="fas fa-sync-alt me-1"></i> Refresh
+                            </button>
+                            <button class="btn btn-sm btn-outline-light" @onclick="ShowCreateUserModal">
+                                <i class="fas fa-user-plus me-1"></i> Add User
+                            </button>
+                            <button class="btn btn-sm btn-outline-light" @onclick="ShowCreateRoleModal">
+                                <i class="fas fa-plus-circle me-1"></i> Add Role
+                            </button>
+                            <button class="btn btn-sm btn-outline-light" @onclick="ShowRolesListModal">
+                                <i class="fas fa-list me-1"></i> Manage Roles
                             </button>
                         </div>
                     </div>
@@ -40,10 +126,10 @@
                                     <tr>
                                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">User</th>
                                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Roles</th>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Organization</th>
                                         <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
-                                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Registered</th>
                                         <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Last Lockout</th>
-                                        <th class="text-secondary opacity-7"></th>
+                                        <th class="text-secondary opacity-7">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -62,6 +148,12 @@
                                                     <div class="d-flex flex-column justify-content-center">
                                                         <h6 class="mb-0 text-sm">@(userInfo.User.UserName ?? "Unknown")</h6>
                                                         <p class="text-xs text-secondary mb-0">@userInfo.User.Email</p>
+                                                        @if (!string.IsNullOrEmpty(userInfo.User.Firstname) || !string.IsNullOrEmpty(userInfo.User.Lastname))
+                                                        {
+                                                            <p class="text-xs text-secondary mb-0">
+                                                                @userInfo.User.Firstname @userInfo.User.Lastname
+                                                            </p>
+                                                        }
                                                     </div>
                                                 </div>
                                             </td>
@@ -79,6 +171,9 @@
                                                     <p class="text-xs text-secondary mb-0">No roles assigned</p>
                                                 }
                                             </td>
+                                            <td>
+                                                <p class="text-xs text-secondary mb-0">@(userInfo.User.Organisation?.Name ?? "None")</p>
+                                            </td>
                                             <td class="align-middle text-center text-sm">
                                                 @if (userInfo.User.EmailConfirmed)
                                                 {
@@ -95,33 +190,32 @@
                                             </td>
                                             <td class="align-middle text-center">
                                                 <span class="text-secondary text-xs font-weight-bold">
-                                                    @(userInfo.User.SecurityStamp != null ? "Registered" : "N/A")
-                                                </span>
-                                            </td>
-                                            <td class="align-middle text-center">
-                                                <span class="text-secondary text-xs font-weight-bold">
                                                     @(userInfo.User.LockoutEnd.HasValue? userInfo.User.LockoutEnd.Value.ToString("dd/MM/yy") : "Never")
                                                 </span>
                                             </td>
                                             <td class="align-middle">
-                                                <div class="dropdown">
-                                                    <a href="#" class="text-secondary font-weight-bold text-xs" data-bs-toggle="dropdown" aria-expanded="false">
-                                                        Actions
-                                                    </a>
-                                                    <ul class="dropdown-menu">
-                                                        <li><a class="dropdown-item" href="" @onclick="() => EditUser(userInfo.User.Id)">Edit User</a></li>
-                                                        <li><a class="dropdown-item" href="" @onclick="() => ManageRoles(userInfo.User.Id)">Manage Roles</a></li>
-                                                        @if (userInfo.User.LockoutEnd.HasValue && userInfo.User.LockoutEnd > DateTimeOffset.UtcNow)
-                                                        {
-                                                            <li><a class="dropdown-item text-success" href="" @onclick="() => UnlockUser(userInfo.User.Id)">Unlock User</a></li>
-                                                        }
-                                                        else
-                                                        {
-                                                            <li><a class="dropdown-item text-warning" href="" @onclick="() => LockUser(userInfo.User.Id)">Lock User</a></li>
-                                                        }
-                                                        <li><hr class="dropdown-divider"></li>
-                                                        <li><a class="dropdown-item text-danger" href="" @onclick="() => DeleteUser(userInfo.User.Id)">Delete User</a></li>
-                                                    </ul>
+                                                <div class="btn-group">
+                                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => EditUser(userInfo.User.Id)">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-info" @onclick="() => ManageRoles(userInfo.User.Id)">
+                                                        <i class="fas fa-user-tag"></i>
+                                                    </button>
+                                                    @if (userInfo.User.LockoutEnd.HasValue && userInfo.User.LockoutEnd > DateTimeOffset.UtcNow)
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-success" @onclick="() => UnlockUser(userInfo.User.Id)">
+                                                            <i class="fas fa-unlock"></i>
+                                                        </button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-warning" @onclick="() => LockUser(userInfo.User.Id)">
+                                                            <i class="fas fa-lock"></i>
+                                                        </button>
+                                                    }
+                                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteUser(userInfo.User.Id)">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -142,48 +236,432 @@
     </div>
 </div>
 
+<!-- Edit User Modal -->
+@if (showEditUserModal)
+{
+    <div class="blazor-modal" @onclick="CloseEditUserModal">
+        <div class="blazor-modal-content" @onclick:stopPropagation>
+            <div class="modal-header">
+                <h5 class="modal-title">Edit User</h5>
+                <button type="button" class="btn-close" @onclick="CloseEditUserModal">×</button>
+            </div>
+            <div class="modal-body">
+                <EditForm Model="@editUser" OnValidSubmit="UpdateUser">
+                    <DataAnnotationsValidator />
+                    <div class="mb-3">
+                        <label for="editEmail" class="form-label">Email</label>
+                        <InputText id="editEmail" @bind-Value="editUser.Email" class="form-control" />
+                        <ValidationMessage For="@(() => editUser.Email)" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="editUsername" class="form-label">Username</label>
+                        <InputText id="editUsername" @bind-Value="editUser.UserName" class="form-control" />
+                        <ValidationMessage For="@(() => editUser.UserName)" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="editFirstname" class="form-label">First Name</label>
+                        <InputText id="editFirstname" @bind-Value="editUser.Firstname" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="editLastname" class="form-label">Last Name</label>
+                        <InputText id="editLastname" @bind-Value="editUser.Lastname" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="editOrganisation" class="form-label">Organization</label>
+                        <InputSelect id="editOrganisation" @bind-Value="editUser.OrganisationId" class="form-control">
+                            <option value="">None</option>
+                            @foreach (var org in organisations)
+                            {
+                                <option value="@org.Id">@org.Name</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="button" class="btn btn-secondary me-2" @onclick="CloseEditUserModal">Cancel</button>
+                        <button type="submit" class="btn btn-dark">Update</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Create User Modal -->
+@if (showCreateUserModal)
+{
+    <div class="blazor-modal" @onclick="CloseCreateUserModal">
+        <div class="blazor-modal-content" @onclick:stopPropagation>
+            <div class="modal-header">
+                <h5 class="modal-title">Create New User</h5>
+                <button type="button" class="btn-close" @onclick="CloseCreateUserModal">×</button>
+            </div>
+            <div class="modal-body">
+                <EditForm Model="@newUser" OnValidSubmit="CreateUser">
+                    <DataAnnotationsValidator />
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <InputText id="email" @bind-Value="newUser.Email" class="form-control" />
+                        <ValidationMessage For="@(() => newUser.Email)" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <InputText id="username" @bind-Value="newUser.UserName" class="form-control" />
+                        <ValidationMessage For="@(() => newUser.UserName)" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="firstname" class="form-label">First Name</label>
+                        <InputText id="firstname" @bind-Value="newUser.Firstname" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="lastname" class="form-label">Last Name</label>
+                        <InputText id="lastname" @bind-Value="newUser.Lastname" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Organization</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="orgSelection" id="existingOrg"
+                                   checked="@(!newUser.UseNewOrganisation)" @onchange="() => { newUser.UseNewOrganisation = false; StateHasChanged(); }">
+                            <label class="form-check-label" for="existingOrg">Select Existing Organization</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="orgSelection" id="newOrg"
+                                   checked="@newUser.UseNewOrganisation" @onchange="() => { newUser.UseNewOrganisation = true; StateHasChanged(); }">
+                            <label class="form-check-label" for="newOrg">Create New Organization</label>
+                        </div>
+                        @if (newUser.UseNewOrganisation)
+                        {
+                            <div class="mb-3">
+                                <label for="newOrganisation" class="form-label">New Organization Name</label>
+                                <InputText id="newOrganisation" @bind-Value="newUser.NewOrganisationName" class="form-control" />
+                                <ValidationMessage For="@(() => newUser.NewOrganisationName)" />
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="mb-3">
+                                <label for="organisation" class="form-label">Select Organization</label>
+                                <InputSelect id="organisation" @bind-Value="newUser.OrganisationId" class="form-control">
+                                    <option value="">None</option>
+                                    @foreach (var org in organisations)
+                                    {
+                                        <option value="@org.Id">@org.Name</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                        }
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <InputText id="password" type="password" @bind-Value="newUser.Password" class="form-control" />
+                        <ValidationMessage For="@(() => newUser.Password)" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label">Confirm Password</label>
+                        <InputText id="confirmPassword" type="password" @bind-Value="newUser.ConfirmPassword" class="form-control" />
+                        <ValidationMessage For="@(() => newUser.ConfirmPassword)" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Roles</label>
+                        @if (allRoles.Any())
+                        {
+                            <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                                @foreach (var role in allRoles)
+                                {
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox"
+                                               id="@($"userRole-{role.Name}")"
+                                               checked="@(newUser.SelectedRoles.Contains(role.Name))"
+                                               @onchange="@((e) => ToggleUserRoleSelection(role.Name, (bool)e.Value))">
+                                        <label class="form-check-label" for="@($"userRole-{role.Name}")">
+                                            @role.Name
+                                        </label>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No roles available</p>
+                        }
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="button" class="btn btn-secondary me-2" @onclick="CloseCreateUserModal">Cancel</button>
+                        <button type="submit" class="btn btn-dark">Create</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Create Role Modal -->
+@if (showCreateRoleModal)
+{
+    <div class="blazor-modal" @onclick="CloseCreateRoleModal">
+        <div class="blazor-modal-content" @onclick:stopPropagation>
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Role</h5>
+                <button type="button" class="btn-close" @onclick="CloseCreateRoleModal">×</button>
+            </div>
+            <div class="modal-body">
+                <EditForm Model="@newRole" OnValidSubmit="CreateRole">
+                    <DataAnnotationsValidator />
+                    <div class="mb-3">
+                        <label for="roleName" class="form-label">Role Name</label>
+                        <InputText id="roleName" @bind-Value="newRole.Name" class="form-control" />
+                        <ValidationMessage For="@(() => newRole.Name)" />
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="button" class="btn btn-secondary me-2" @onclick="CloseCreateRoleModal">Cancel</button>
+                        <button type="submit" class="btn btn-dark">Create</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Edit Role Modal -->
+@if (showEditRoleModal)
+{
+    <div class="blazor-modal" @onclick="CloseEditRoleModal">
+        <div class="blazor-modal-content" @onclick:stopPropagation>
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Role</h5>
+                <button type="button" class="btn-close" @onclick="CloseEditRoleModal">×</button>
+            </div>
+            <div class="modal-body">
+                <EditForm Model="@editRole" OnValidSubmit="UpdateRole">
+                    <DataAnnotationsValidator />
+                    <div class="mb-3">
+                        <label for="editRoleName" class="form-label">Role Name</label>
+                        <InputText id="editRoleName" @bind-Value="editRole.Name" class="form-control" />
+                        <ValidationMessage For="@(() => editRole.Name)" />
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="button" class="btn btn-secondary me-2" @onclick="CloseEditRoleModal">Cancel</button>
+                        <button type="submit" class="btn btn-dark">Update</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Roles List Modal -->
+@if (showRolesListModal)
+{
+    <div class="blazor-modal" @onclick="CloseRolesListModal">
+        <div class="blazor-modal-content" @onclick:stopPropagation>
+            <div class="modal-header">
+                <h5 class="modal-title">Manage Roles</h5>
+                <button type="button" class="btn-close" @onclick="CloseRolesListModal">×</button>
+            </div>
+            <div class="modal-body">
+                @if (allRoles.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Role Name</th>
+                                    <th class="roles-table-actions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var role in allRoles)
+                                {
+                                    <tr>
+                                        <td>@role.Name</td>
+                                        <td class="roles-table-actions">
+                                            <div class="btn-group">
+                                                <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEditRole(role)">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteRole(role.Id)">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">No roles available</p>
+                }
+                <div class="d-flex justify-content-end mt-3">
+                    <button type="button" class="btn btn-dark" @onclick="CloseRolesListModal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Manage User Roles Modal -->
+@if (showManageRolesModal)
+{
+    <div class="blazor-modal" @onclick="CloseManageRolesModal">
+        <div class="blazor-modal-content" @onclick:stopPropagation>
+            <div class="modal-header">
+                <h5 class="modal-title">Manage Roles for @(selectedUser?.Email ?? "User")</h5>
+                <button type="button" class="btn-close" @onclick="CloseManageRolesModal">×</button>
+            </div>
+            <div class="modal-body">
+                @if (allRoles != null && selectedUser != null)
+                {
+                    <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                        @foreach (var role in allRoles)
+                        {
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox"
+                                       id="@($"role-{role.Name}")"
+                                       checked="@(userRoles?.Contains(role.Name) ?? false)"
+                                       @onchange="@((e) => ToggleUserRole(role.Name, (bool)e.Value))">
+                                <label class="form-check-label" for="@($"role-{role.Name}")">@role.Name</label>
+                            </div>
+                        }
+                    </div>
+                }
+                <div class="d-flex justify-content-end mt-3">
+                    <button type="button" class="btn btn-dark" @onclick="CloseManageRolesModal">Done</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<UserInfo> users = new();
+    private List<Organisation> organisations = new();
     private bool isLoading = true;
+    private bool showCreateUserModal = false;
+    private bool showCreateRoleModal = false;
+    private bool showManageRolesModal = false;
+    private bool showEditUserModal = false;
+    private bool showEditRoleModal = false;
+    private bool showRolesListModal = false;
+
+    private List<IdentityRole> allRoles = new();
+    private List<string> userRoles = new();
+    private ApplicationUser? selectedUser = null;
+
+    private NewUserModel newUser = new();
+    private NewRoleModel newRole = new();
+    private EditUserModel editUser = new();
+    private EditRoleModel editRole = new();
 
     public class UserInfo
     {
-        public IdentityUser User { get; set; } = null!;
+        public ApplicationUser User { get; set; } = null!;
         public List<string> Roles { get; set; } = new();
+    }
+
+    public class NewUserModel
+    {
+        public string Email { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string? Firstname { get; set; }
+        public string? Lastname { get; set; }
+        public string? Othernames { get; set; }
+        public Guid? OrganisationId { get; set; }
+        public string NewOrganisationName { get; set; } = string.Empty;
+        public bool UseNewOrganisation { get; set; } = false;
+        public string Password { get; set; } = string.Empty;
+        public string ConfirmPassword { get; set; } = string.Empty;
+        public List<string> SelectedRoles { get; set; } = new();
+    }
+
+    public class NewRoleModel
+    {
+        public string Name { get; set; } = string.Empty;
+    }
+
+    public class EditUserModel
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string? Firstname { get; set; }
+        public string? Lastname { get; set; }
+        public string? Othernames { get; set; }
+        public Guid? OrganisationId { get; set; }
+    }
+
+    public class EditRoleModel
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
     }
 
     protected override async Task OnInitializedAsync()
     {
         await LoadUsers();
+        await LoadAllRoles();
+        await LoadAllOrganisations();
     }
 
     private async Task LoadUsers()
     {
         isLoading = true;
         users.Clear();
+        StateHasChanged();
 
         try
         {
-            var allUsers = await UserManager.Users.ToListAsync();
+            using var context = DbContextFactory.CreateDbContext();
+            var allUsers = await UserManager.Users
+                .Include(u => u.Organisation)
+                .ToListAsync();
 
             foreach (var user in allUsers)
             {
-                var userRoles = await UserManager.GetRolesAsync(user);
+                var roles = await UserManager.GetRolesAsync(user);
                 users.Add(new UserInfo
                 {
                     User = user,
-                    Roles = userRoles.ToList()
+                    Roles = roles.ToList()
                 });
             }
         }
         catch (Exception ex)
         {
-            await JSRuntime.InvokeVoidAsync("console.error", "Error loading users:", ex.Message);
+            Console.WriteLine($"Error loading users: {ex.Message}");
         }
         finally
         {
             isLoading = false;
             StateHasChanged();
+        }
+    }
+
+    private async Task LoadAllRoles()
+    {
+        try
+        {
+            allRoles = await RoleManager.Roles.ToListAsync();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading roles: {ex.Message}");
+        }
+    }
+
+    private async Task LoadAllOrganisations()
+    {
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
+            organisations = await context.Organisations.ToListAsync();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading organisations: {ex.Message}");
         }
     }
 
@@ -213,86 +691,339 @@
         return colors[index];
     }
 
+    // User Modal Methods
+    private void ShowCreateUserModal()
+    {
+        newUser = new NewUserModel();
+        showCreateUserModal = true;
+    }
+
+    private void CloseCreateUserModal()
+    {
+        showCreateUserModal = false;
+    }
+
     private async Task EditUser(string userId)
     {
-        // Navigate to edit user page or open modal
-        await JSRuntime.InvokeVoidAsync("alert", $"Edit user: {userId}");
+        var user = await UserManager.FindByIdAsync(userId);
+        if (user != null)
+        {
+            editUser = new EditUserModel
+            {
+                Id = user.Id,
+                Email = user.Email ?? "",
+                UserName = user.UserName ?? "",
+                Firstname = user.Firstname,
+                Lastname = user.Lastname,
+                Othernames = user.Othernames,
+                OrganisationId = user.OrganisationId
+            };
+            showEditUserModal = true;
+            StateHasChanged();
+        }
     }
 
-    private async Task ManageRoles(string userId)
+    private void CloseEditUserModal()
     {
-        // Navigate to role management page or open modal
-        await JSRuntime.InvokeVoidAsync("alert", $"Manage roles for user: {userId}");
+        showEditUserModal = false;
     }
 
-    private async Task LockUser(string userId)
+    private async Task UpdateUser()
     {
         try
         {
-            var user = await UserManager.FindByIdAsync(userId);
+            var user = await UserManager.FindByIdAsync(editUser.Id);
             if (user != null)
             {
-                var lockoutEnd = DateTimeOffset.UtcNow.AddYears(100); // Permanent lockout
-                await UserManager.SetLockoutEndDateAsync(user, lockoutEnd);
-                await UserManager.SetLockoutEnabledAsync(user, true);
+                user.Email = editUser.Email;
+                user.UserName = editUser.UserName;
+                user.Firstname = editUser.Firstname;
+                user.Lastname = editUser.Lastname;
+                user.Othernames = editUser.Othernames;
+                user.OrganisationId = editUser.OrganisationId;
 
-                await JSRuntime.InvokeVoidAsync("alert", "User has been locked successfully.");
-                await LoadUsers();
+                var result = await UserManager.UpdateAsync(user);
+                if (result.Succeeded)
+                {
+                    await LoadUsers();
+                    showEditUserModal = false;
+                }
+                else
+                {
+                    Console.WriteLine($"Error updating user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                }
             }
         }
         catch (Exception ex)
         {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error locking user: {ex.Message}");
+            Console.WriteLine($"Error updating user: {ex.Message}");
+        }
+    }
+
+    // Role Modal Methods
+    private void ShowCreateRoleModal()
+    {
+        newRole = new NewRoleModel();
+        showCreateRoleModal = true;
+    }
+
+    private void CloseCreateRoleModal()
+    {
+        showCreateRoleModal = false;
+    }
+
+    private void ShowRolesListModal()
+    {
+        showRolesListModal = true;
+    }
+
+    private void CloseRolesListModal()
+    {
+        showRolesListModal = false;
+    }
+
+    private void StartEditRole(IdentityRole role)
+    {
+        editRole = new EditRoleModel
+        {
+            Id = role.Id,
+            Name = role.Name ?? ""
+        };
+        showRolesListModal = false;
+        showEditRoleModal = true;
+        StateHasChanged();
+    }
+
+    private void CloseEditRoleModal()
+    {
+        showEditRoleModal = false;
+    }
+
+    private async Task UpdateRole()
+    {
+        try
+        {
+            var role = await RoleManager.FindByIdAsync(editRole.Id);
+            if (role != null)
+            {
+                role.Name = editRole.Name;
+                var result = await RoleManager.UpdateAsync(role);
+                if (result.Succeeded)
+                {
+                    await LoadAllRoles();
+                    showEditRoleModal = false;
+                }
+                else
+                {
+                    Console.WriteLine($"Error updating role: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating role: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteRole(string roleId)
+    {
+        try
+        {
+            var role = await RoleManager.FindByIdAsync(roleId);
+            if (role != null)
+            {
+                var result = await RoleManager.DeleteAsync(role);
+                if (result.Succeeded)
+                {
+                    await LoadAllRoles();
+                    if (showRolesListModal)   // keep list open
+                        StateHasChanged();
+                }
+                else
+                {
+                    Console.WriteLine($"Error deleting role: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting role: {ex.Message}");
+        }
+    }
+
+    private async Task CreateUser()
+    {
+        try
+        {
+            if (newUser.Password != newUser.ConfirmPassword)
+            {
+                Console.WriteLine("Passwords do not match.");
+                return;
+            }
+
+            Guid? organisationId = newUser.OrganisationId;
+            if (newUser.UseNewOrganisation && !string.IsNullOrWhiteSpace(newUser.NewOrganisationName))
+            {
+                using var context = DbContextFactory.CreateDbContext();
+                var newOrg = new Organisation
+                {
+                    Id = Guid.NewGuid(),
+                    Name = newUser.NewOrganisationName.Trim()
+                };
+                context.Organisations.Add(newOrg);
+                await context.SaveChangesAsync();
+                organisationId = newOrg.Id;
+                await LoadAllOrganisations(); // Refresh the organisations list
+            }
+
+            var user = new ApplicationUser
+            {
+                UserName = newUser.UserName,
+                Email = newUser.Email,
+                Firstname = newUser.Firstname,
+                Lastname = newUser.Lastname,
+                Othernames = newUser.Othernames,
+                OrganisationId = organisationId,
+                EmailConfirmed = true
+            };
+
+            var result = await UserManager.CreateAsync(user, newUser.Password);
+            if (result.Succeeded)
+            {
+                foreach (var role in newUser.SelectedRoles)
+                {
+                    await UserManager.AddToRoleAsync(user, role);
+                }
+
+                await LoadUsers();
+                showCreateUserModal = false;
+            }
+            else
+            {
+                Console.WriteLine($"Error creating user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating user: {ex.Message}");
+        }
+    }
+
+    private async Task CreateRole()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(newRole.Name))
+            {
+                Console.WriteLine("Role name is required.");
+                return;
+            }
+
+            var roleExists = await RoleManager.RoleExistsAsync(newRole.Name);
+            if (roleExists)
+            {
+                Console.WriteLine("Role already exists.");
+                return;
+            }
+
+            var role = new IdentityRole(newRole.Name.Trim());
+            var result = await RoleManager.CreateAsync(role);
+            if (result.Succeeded)
+            {
+                await LoadAllRoles();
+                showCreateRoleModal = false;
+            }
+            else
+            {
+                Console.WriteLine($"Error creating role: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating role: {ex.Message}");
+        }
+    }
+
+    // Lock / Unlock
+    private async Task LockUser(string userId)
+    {
+        var user = await UserManager.FindByIdAsync(userId);
+        if (user != null)
+        {
+            await UserManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddYears(100));
+            await UserManager.SetLockoutEnabledAsync(user, true);
+            await LoadUsers();
         }
     }
 
     private async Task UnlockUser(string userId)
     {
-        try
+        var user = await UserManager.FindByIdAsync(userId);
+        if (user != null)
         {
-            var user = await UserManager.FindByIdAsync(userId);
-            if (user != null)
-            {
-                await UserManager.SetLockoutEndDateAsync(user, null);
+            await UserManager.SetLockoutEndDateAsync(user, null);
+            await LoadUsers();
+        }
+    }
 
-                await JSRuntime.InvokeVoidAsync("alert", "User has been unlocked successfully.");
-                await LoadUsers();
-            }
-        }
-        catch (Exception ex)
+    // Manage User Roles
+    private async Task ManageRoles(string userId)
+    {
+        selectedUser = await UserManager.FindByIdAsync(userId);
+        if (selectedUser != null)
         {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error unlocking user: {ex.Message}");
+            var roles = await UserManager.GetRolesAsync(selectedUser);
+            userRoles = roles.ToList();
+            showManageRolesModal = true;
+            StateHasChanged();
         }
+    }
+
+    private void CloseManageRolesModal()
+    {
+        showManageRolesModal = false;
+        selectedUser = null;
+        userRoles.Clear();
+    }
+
+    private async Task ToggleUserRole(string roleName, bool add)
+    {
+        if (selectedUser == null) return;
+
+        if (add)
+        {
+            await UserManager.AddToRoleAsync(selectedUser, roleName);
+            if (!userRoles.Contains(roleName))
+                userRoles.Add(roleName);
+        }
+        else
+        {
+            await UserManager.RemoveFromRoleAsync(selectedUser, roleName);
+            userRoles.Remove(roleName);
+        }
+
+        await LoadUsers();
+        StateHasChanged();
+    }
+
+    private void ToggleUserRoleSelection(string roleName, bool isChecked)
+    {
+        if (isChecked && !newUser.SelectedRoles.Contains(roleName))
+            newUser.SelectedRoles.Add(roleName);
+        else if (!isChecked)
+            newUser.SelectedRoles.Remove(roleName);
     }
 
     private async Task DeleteUser(string userId)
     {
-        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this user? This action cannot be undone.");
-
-        if (confirmed)
+        var user = await UserManager.FindByIdAsync(userId);
+        if (user != null)
         {
-            try
-            {
-                var user = await UserManager.FindByIdAsync(userId);
-                if (user != null)
-                {
-                    var result = await UserManager.DeleteAsync(user);
-                    if (result.Succeeded)
-                    {
-                        await JSRuntime.InvokeVoidAsync("alert", "User has been deleted successfully.");
-                        await LoadUsers();
-                    }
-                    else
-                    {
-                        var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                        await JSRuntime.InvokeVoidAsync("alert", $"Error deleting user: {errors}");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                await JSRuntime.InvokeVoidAsync("alert", $"Error deleting user: {ex.Message}");
-            }
+            var result = await UserManager.DeleteAsync(user);
+            if (result.Succeeded)
+                await LoadUsers();
+            else
+                Console.WriteLine($"Error deleting user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
         }
     }
 }

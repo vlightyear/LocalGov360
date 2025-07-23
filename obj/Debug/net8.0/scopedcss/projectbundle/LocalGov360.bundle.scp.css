@@ -221,3 +221,77 @@ main[b-d4xqkhwqh7] {
         overflow-y: auto;
     }
 }
+/* _content/LocalGov360/Components/Pages/Service/Service.razor.rz.scp.css */
+
+   .action-buttons[b-2x3pk7nzic] {
+        gap: 0.5rem;
+    }
+
+    .header-buttons[b-2x3pk7nzic] {
+        gap: 1rem;
+    }
+
+    .blazor-modal[b-2x3pk7nzic] {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .blazor-modal-content[b-2x3pk7nzic] {
+        background: white;
+        border-radius: 0.5rem;
+        width: 90%;
+        max-width: 600px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .modal-header[b-2x3pk7nzic] {
+        padding: 1.5rem 1.5rem 0 1.5rem;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: between;
+        align-items: center;
+    }
+
+    .modal-body[b-2x3pk7nzic] {
+        padding: 1.5rem;
+    }
+
+    .btn-close[b-2x3pk7nzic] {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #000;
+        opacity: 0.5;
+        cursor: pointer;
+    }
+
+    .btn-close:hover[b-2x3pk7nzic] {
+        opacity: 0.75;
+    }
+
+    .btn-dark[b-2x3pk7nzic] {
+        background-color: #343a40;
+        border-color: #343a40;
+        color: white;
+    }
+
+    .btn-dark:hover[b-2x3pk7nzic] {
+        background-color: #23272b;
+        border-color: #1d2124;
+        color: white;
+    }
+
+    .roles-table-actions[b-2x3pk7nzic] {
+        white-space: nowrap;
+    }
