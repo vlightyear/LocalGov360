@@ -41,3 +41,4 @@ packages/
 /obj/Debug/net8.0/staticwebassets.build.json
 /obj/Debug/net8.0/staticwebassets.build.json.cache
 /obj/Debug/net8.0/staticwebassets.development.json
+/bin/Debug/net8.0/LocalGov360.exe
