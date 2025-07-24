@@ -69,7 +69,7 @@ namespace LocalGov360.Data.Models
     {
         public Guid Id { get; set; } = Guid.NewGuid();
         public string Name { get; set; } = "";
-        public string InitiatedBy { get; set; } = "";
+        public string? InitiatedById { get; set; } = "";
         public WorkflowStatus Status { get; set; } = WorkflowStatus.Pending;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public int ServiceId { get; set; }
@@ -77,6 +77,7 @@ namespace LocalGov360.Data.Models
         public WorkflowTemplate Template { get; set; } = null!;
         public virtual Service Service { get; set; }
         public ICollection<WorkflowInstanceStep> Steps { get; set; } = new List<WorkflowInstanceStep>();
+        public virtual ApplicationUser InitiatedBy { get; set; }
         public string ContextJson { get; set; } = "{}";   // IWorkflowContext serialized
     }
 

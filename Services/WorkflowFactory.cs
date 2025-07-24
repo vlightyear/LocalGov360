@@ -33,6 +33,13 @@ namespace LocalGov360.Services
                     ApprovalTemplateStep a => new ApprovalInstanceStepAdapter(a, context.WorkflowId),
                     _ => throw new InvalidOperationException("Unknown step type")
                 };
+
+                if(step.Order == 1)
+                {
+                    step.Status = StepStatus.InProgress;
+                    step.StartedAt = DateTime.UtcNow;
+
+                }
                 workflow.AddStep(step);
             }
 
@@ -41,7 +48,7 @@ namespace LocalGov360.Services
             {
                 Id = context.WorkflowId,
                 Name = template.Name,
-                InitiatedBy = initiatedBy,
+                InitiatedById = initiatedBy,
                 ServiceId = ServiceId,
                 WorkflowTemplateId = templateId,
                 ContextJson = JsonSerializer.Serialize(context.Data)
