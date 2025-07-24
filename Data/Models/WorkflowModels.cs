@@ -1,4 +1,5 @@
 ﻿using LocalGov360.Services;
+using static LocalGov360.Data.Models.ServiceModels;
 
 namespace LocalGov360.Data.Models
 {
@@ -71,10 +72,10 @@ namespace LocalGov360.Data.Models
         public string InitiatedBy { get; set; } = "";
         public WorkflowStatus Status { get; set; } = WorkflowStatus.Pending;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
+        public int ServiceId { get; set; }
         public Guid WorkflowTemplateId { get; set; }
         public WorkflowTemplate Template { get; set; } = null!;
-
+        public virtual Service Service { get; set; }
         public ICollection<WorkflowInstanceStep> Steps { get; set; } = new List<WorkflowInstanceStep>();
         public string ContextJson { get; set; } = "{}";   // IWorkflowContext serialized
     }
@@ -181,6 +182,14 @@ namespace LocalGov360.Data.Models
         public Workflow(string name, string description, string initiatedBy)
         {
             Name = name;
+            Description = description;
+            Context = new WorkflowContext(Id, initiatedBy);
+        }
+
+        public Workflow(string name, string description, string initiatedBy, int ServiceId)
+        {
+            Name = name;
+            ServiceId = ServiceId;
             Description = description;
             Context = new WorkflowContext(Id, initiatedBy);
         }

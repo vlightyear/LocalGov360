@@ -1,11 +1,17 @@
 ﻿@page "/service"
 @rendermode InteractiveServer
 @using System.ComponentModel.DataAnnotations
+@using LocalGov360.Data
 @using LocalGov360.Services
 @using LocalGov360.Data.Models
 @using Microsoft.AspNetCore.Html
+@using Microsoft.AspNetCore.Identity
+@using System.Security.Claims
 @inject IServiceService ServiceService
+@inject IWorkflowFactory WorkflowFactory
 @inject IJSRuntime JS
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Service Builder</PageTitle>
 
@@ -446,9 +452,18 @@
     private int? EditServiceId;
     private ServiceBuilderModel BuilderModel = new();
     private FillServiceModel? FillModel;
+    private ClaimsPrincipal user;
+    private ApplicationUser appUser;
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        user = authState.User;
+
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            appUser = await UserManager.GetUserAsync(user);
+        }
         await LoadServicesAsync();
     }
 
@@ -629,6 +644,7 @@
                 ServiceId = svc.Id,
                 ServiceName = svc.Name,
                 ServiceDescription = svc.Description,
+                WorkflowTemplateId = svc.WorkflowTemplateId,
                 Fields = svc.Fields.Select(f => new FieldFillModel
                 {
                     Id = f.Id,
@@ -696,6 +712,8 @@
                 Values = values
             });
 
+            await WorkflowFactory.CreateInstanceAsync(FillModel.WorkflowTemplateId.Value, appUser.Id, FillModel.ServiceId);
+
             Feedback = "Form submitted successfully!";
             FillModel = null;
             ShowView("list");
@@ -755,6 +773,7 @@
         public int ServiceId { get; set; }
         public string ServiceName { get; set; } = string.Empty;
         public string ServiceDescription { get; set; } = string.Empty;
+        public Guid? WorkflowTemplateId { get; set; }
         public List<FieldFillModel> Fields { get; set; } = new();
     }
 

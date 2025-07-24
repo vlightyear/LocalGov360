@@ -310,3 +310,4 @@ C:\Users\Administrator\Source\Repos\LocalGov360\bin\Debug\net8.0\Microsoft.AspNe
 C:\Users\Administrator\Source\Repos\LocalGov360\bin\Debug\net8.0\Newtonsoft.Json.dll
 C:\Users\Administrator\Source\Repos\LocalGov360\bin\Debug\net8.0\Newtonsoft.Json.Bson.dll
 C:\Users\Administrator\Source\Repos\LocalGov360\obj\Debug\net8.0\scopedcss\Components\Pages\Service\Service.razor.rz.scp.css
+C:\Users\prime\source\repos\LocalGov360\obj\Debug\net8.0\scopedcss\Components\Pages\Service\Service.razor.rz.scp.css
