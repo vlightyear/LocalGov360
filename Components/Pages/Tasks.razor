@@ -174,6 +174,10 @@
                                                         && ats.RequiredApprovers.Any(r => roleIds.Contains(r)))
                                                         .OrderBy(s => s.Order)
                                                         .FirstOrDefault();
+                                        if (tl.Steps.Any(s => s.Status == StepStatus.InProgress && s.Name == "Payment"))
+                                        {
+                                            step = tl.Steps.FirstOrDefault(s => s.Status == StepStatus.InProgress && s.Name == "Payment");
+                                        }
                                         <tr>
                                             <td>
                                                 <div class="d-flex px-2 py-1">
@@ -237,9 +241,18 @@
                                             <td class="">
                                                 <div class="">
                                                     <br />
-                                                    <button class="btn btn-sm btn-outline-primary w-auto" @onclick="() => OpenTask(tl.Id)">
-                                                        <i class="fas fa-folder-open"></i> Open Task
-                                                    </button>
+                                                    @if(step.Name == "Payment")
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-primary w-auto" @onclick="() => OpenPaymentTask(tl.Id)">
+                                                            <i class="fas fa-money-check-alt"></i> Make Payment
+                                                        </button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-primary w-auto" @onclick="() => OpenTask(tl.Id)">
+                                                            <i class="fas fa-folder-open"></i> Open Task
+                                                        </button>
+                                                    }
                                                 </div>
                                             </td>
                                         </tr>
@@ -304,19 +317,22 @@
         try
         {
             using var context = DbContextFactory.CreateDbContext();
-            TaskList = await context.WorkflowInstances
+            var TmpTaskList = await context.WorkflowInstances
                                         .Include(wi => wi.Service)
                                         .Include(wi => wi.Steps)
                                         .Include(wi => wi.InitiatedBy)
                                         .OrderBy(wi => wi.CreatedAt)
                                         .ToListAsync();
-            TaskList = TaskList
+            TaskList = TmpTaskList
                             .Where(wi => wi.Steps
                                 .OfType<ApprovalInstanceStep>()
                                 .Any(s =>
                                     s.Status == StepStatus.InProgress &&
                                     s.RequiredApprovers.Any(ra => roleIds.Contains(ra))))
                             .ToList();
+
+            var PaymentList = TmpTaskList.Where(tl => tl.InitiatedById == appUser.Id && tl.Steps.Any(s => s.Status == StepStatus.InProgress));
+            TaskList = TaskList.Concat(PaymentList).ToList();
 
         }
         catch (Exception ex)
@@ -359,5 +375,10 @@
     private void OpenTask(Guid WorkflowInstanceId)
     {
         NavigationManager.NavigateTo($"/tasks/{WorkflowInstanceId}");
+    }
+
+    private void OpenPaymentTask(Guid WorkflowInstanceId)
+    {
+        //NavigationManager.NavigateTo($"/tasks/{WorkflowInstanceId}");
     }
 }
