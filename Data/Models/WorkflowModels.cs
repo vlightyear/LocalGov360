@@ -9,7 +9,8 @@ namespace LocalGov360.Data.Models
         InProgress,
         Completed,
         Failed,
-        Cancelled
+        Cancelled,
+        Rejected
     }
     public enum StepStatus
     {

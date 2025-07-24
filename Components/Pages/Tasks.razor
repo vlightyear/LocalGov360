@@ -4,10 +4,12 @@
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
 @inject UserManager<ApplicationUser> UserManager
 @inject RoleManager<IdentityRole> RoleManager
 @inject NavigationManager NavigationManager
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @rendermode InteractiveServer
 
 <style>
@@ -166,7 +168,12 @@
                                 <tbody>
                                     @foreach (var tl in TaskList)
                                     {
-                                        var step = tl.Steps.Where(s => s.Status == StepStatus.Pending || s.Status == StepStatus.InProgress).OrderBy(s => s.Order).FirstOrDefault();
+                                        var step = tl.Steps
+                                                        .Where(s => s.Status == StepStatus.InProgress
+                                                        && s is ApprovalInstanceStep ats
+                                                        && ats.RequiredApprovers.Any(r => roleIds.Contains(r)))
+                                                        .OrderBy(s => s.Order)
+                                                        .FirstOrDefault();
                                         <tr>
                                             <td>
                                                 <div class="d-flex px-2 py-1">
@@ -229,6 +236,7 @@
                                             </td>
                                             <td class="">
                                                 <div class="">
+                                                    <br />
                                                     <button class="btn btn-sm btn-outline-primary w-auto" @onclick="() => OpenTask(tl.Id)">
                                                         <i class="fas fa-folder-open"></i> Open Task
                                                     </button>
@@ -243,7 +251,7 @@
                     else
                     {
                         <div class="text-center p-4">
-                            <p class="text-muted">No users found.</p>
+                            <p class="text-muted">No tasks found.</p>
                         </div>
                     }
                 </div>
@@ -254,11 +262,36 @@
 
 @code {
     private bool isLoading = true;
+    private ApplicationUser appUser;
+    private List<string> roleIds;
 
     private List<WorkflowInstance> TaskList = new();
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        ClaimsPrincipal user = authState.User;
+
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            appUser = await UserManager.GetUserAsync(user);
+
+            var roleNames = await UserManager.GetRolesAsync(appUser);
+
+            var roles = new List<IdentityRole>();
+
+            foreach (var roleName in roleNames)
+            {
+                var role = await RoleManager.FindByNameAsync(roleName);
+                if (role != null)
+                {
+                    roles.Add(role);
+                }
+            }
+
+            roleIds = roles.Select(r => r.Id).ToList();
+        }
+
         await LoadTasks();
     }
 
@@ -277,6 +310,14 @@
                                         .Include(wi => wi.InitiatedBy)
                                         .OrderBy(wi => wi.CreatedAt)
                                         .ToListAsync();
+            TaskList = TaskList
+                            .Where(wi => wi.Steps
+                                .OfType<ApprovalInstanceStep>()
+                                .Any(s =>
+                                    s.Status == StepStatus.InProgress &&
+                                    s.RequiredApprovers.Any(ra => roleIds.Contains(ra))))
+                            .ToList();
+
         }
         catch (Exception ex)
         {
@@ -315,8 +356,8 @@
         return colors[index];
     }
 
-    private void OpenTask(Guid WorkflowTemplateId)
+    private void OpenTask(Guid WorkflowInstanceId)
     {
-        
+        NavigationManager.NavigateTo($"/tasks/{WorkflowInstanceId}");
     }
 }

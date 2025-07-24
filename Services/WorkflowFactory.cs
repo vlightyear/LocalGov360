@@ -8,7 +8,7 @@ namespace LocalGov360.Services
 {
     public interface IWorkflowFactory
     {
-        Task<IWorkflow> CreateInstanceAsync(Guid workflowTemplateId, string initiatedBy, int ServiceId);
+        Task<WorkflowInstance> CreateInstanceAsync(Guid workflowTemplateId, string initiatedBy, int ServiceId);
     }
 
     public class WorkflowFactory : IWorkflowFactory
@@ -16,7 +16,7 @@ namespace LocalGov360.Services
         private readonly ApplicationDbContext _db;
         public WorkflowFactory(ApplicationDbContext db) => _db = db;
 
-        public async Task<IWorkflow> CreateInstanceAsync(Guid templateId, string initiatedBy, int ServiceId)
+        public async Task<WorkflowInstance> CreateInstanceAsync(Guid templateId, string initiatedBy, int ServiceId)
         {
             var template = await _db.WorkflowTemplates
                                     .Include(t => t.Steps.OrderBy(s => s.Order))
@@ -82,10 +82,16 @@ namespace LocalGov360.Services
                 });
 
                 persistStep.WorkflowInstanceId = instance.Id;
+
+                if(persistStep.Order == 1)
+                {
+                    persistStep.Status = StepStatus.InProgress;
+                    persistStep.StartedAt = DateTime.UtcNow;
+                }
                 _db.WorkflowInstanceSteps.Add(persistStep);
             }
             await _db.SaveChangesAsync();
-            return workflow;
+            return instance;
         }
     }
 

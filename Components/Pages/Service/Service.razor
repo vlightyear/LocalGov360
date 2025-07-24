@@ -7,11 +7,13 @@
 @using Microsoft.AspNetCore.Html
 @using Microsoft.AspNetCore.Identity
 @using System.Security.Claims
+@using static LocalGov360.Data.Models.ServiceModels
 @inject IServiceService ServiceService
 @inject IWorkflowFactory WorkflowFactory
 @inject IJSRuntime JS
 @inject UserManager<ApplicationUser> UserManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ApplicationDbContext _db
 
 <PageTitle>Service Builder</PageTitle>
 
@@ -704,7 +706,7 @@
                 }
             }
 
-            await ServiceService.SubmitServiceAsync(FillModel.ServiceId, new SubmitServiceRequest
+            ServiceSubmission submission = await ServiceService.SubmitServiceAsync(FillModel.ServiceId, new SubmitServiceRequest
             {
                 SubmittedBy = "Anonymous",
                 IpAddress = "0.0.0.0",
@@ -712,7 +714,11 @@
                 Values = values
             });
 
-            await WorkflowFactory.CreateInstanceAsync(FillModel.WorkflowTemplateId.Value, appUser.Id, FillModel.ServiceId);
+            WorkflowInstance workflow = await WorkflowFactory.CreateInstanceAsync(FillModel.WorkflowTemplateId.Value, appUser.Id, FillModel.ServiceId);
+
+            submission.WorkflowInstanceId = workflow.Id;
+            _db.Update(submission);
+            await _db.SaveChangesAsync();
 
             Feedback = "Form submitted successfully!";
             FillModel = null;
