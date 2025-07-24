@@ -1,6 +1,7 @@
 ﻿using LocalGov360.Components;
 using LocalGov360.Components.Account;
 using LocalGov360.Data;
+using LocalGov360.Data.Models;
 using LocalGov360.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -19,13 +20,9 @@ builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
+builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-
-// Register your application services here
-builder.Services.AddScoped<IServiceService, ServiceService>();
-builder.Services.AddScoped<IFormValidator, FormValidator>();
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
@@ -36,6 +33,9 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 builder.Services.AddScoped<IWorkflowFactory, WorkflowFactory>();
+builder.Services.AddScoped<IServiceService, ServiceService>();
+builder.Services.AddScoped<IFormValidator, FormValidator>();
+
 builder.Services.AddControllers()
     .AddNewtonsoftJson(options =>
     {
@@ -56,7 +56,6 @@ else
 }
 
 app.UseHttpsRedirection();
-
 app.UseStaticFiles();
 app.UseAntiforgery();
 
@@ -106,6 +105,20 @@ using (var scope = app.Services.CreateScope())
 using (var scope = app.Services.CreateScope())
 {
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+    var org = context.Organisations.FirstOrDefault();
+    if (org == null)
+    {
+        org = new Organisation
+        {
+            Id = Guid.NewGuid(),
+            Name = "Default Organisation"
+        };
+        context.Organisations.Add(org);
+        await context.SaveChangesAsync();
+    }
+
     if (await userManager.FindByEmailAsync("admin@local.gov") == null)
     {
         var user = new ApplicationUser { UserName = "admin@local.gov", Email = "admin@local.gov" };
@@ -115,7 +128,12 @@ using (var scope = app.Services.CreateScope())
 
     if (await userManager.FindByEmailAsync("admin@council.gov") == null)
     {
-        var user = new ApplicationUser { UserName = "admin@council.gov", Email = "admin@council.gov", OrganisationId = Guid.Parse("2D5D70CD-0E60-4731-A169-341F6C03B427") };
+        var user = new ApplicationUser
+        {
+            UserName = "admin@council.gov",
+            Email = "admin@council.gov",
+            OrganisationId = org.Id
+        };
         await userManager.CreateAsync(user, "Test@1234");
         await userManager.AddToRoleAsync(user, "admin");
     }

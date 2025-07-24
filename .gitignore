@@ -23,3 +23,22 @@ packages/
 # Ignore logs
 *.log
 /obj/Debug/net8.0/LocalGov360.AssemblyInfo.cs
+/obj/Debug/net8.0/apphost.exe
+/bin/Debug/net8.0/LocalGov360.dll
+/bin/Debug/net8.0/LocalGov360.exe
+/bin/Debug/net8.0/LocalGov360.pdb
+/bin/Debug/net8.0/LocalGov360.staticwebassets.runtime.json
+/obj/Debug/net8.0/refint/LocalGov360.dll
+/obj/Debug/net8.0/LocalGov360.AssemblyInfoInputs.cache
+/obj/Debug/net8.0/LocalGov360.csproj.FileListAbsolute.txt
+/obj/Debug/net8.0/LocalGov360.dll
+/obj/Debug/net8.0/LocalGov360.pdb
+/obj/Debug/net8.0/ref/LocalGov360.dll
+/obj/Debug/net8.0/rjsmcshtml.dswa.cache.json
+/obj/Debug/net8.0/LocalGov360.sourcelink.json
+/obj/Debug/net8.0/rjsmrazor.dswa.cache.json
+/obj/Debug/net8.0/rpswa.dswa.cache.json
+/obj/Debug/net8.0/staticwebassets.build.json
+/obj/Debug/net8.0/staticwebassets.build.json.cache
+/obj/Debug/net8.0/staticwebassets.development.json
+/bin/Debug/net8.0/LocalGov360.exe
