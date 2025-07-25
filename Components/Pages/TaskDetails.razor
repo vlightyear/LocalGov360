@@ -1,0 +1,603 @@
+﻿@page "/tasks/{WorkflowInstanceId:guid}"
+@using LocalGov360.Data
+@using LocalGov360.Data.Models
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
+@inject UserManager<ApplicationUser> UserManager
+@inject RoleManager<IdentityRole> RoleManager
+@inject NavigationManager NavigationManager
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@rendermode InteractiveServer
+
+<style>
+    .task-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 0.5rem;
+        color: white;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    .step-card {
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+
+        .step-card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+    .step-header {
+        padding: 1rem;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .step-body {
+        padding: 1.5rem;
+    }
+
+    .step-completed {
+        border-left: 5px solid #28a745;
+        background-color: #f8fff9;
+    }
+
+    .step-inprogress {
+        border-left: 5px solid #007bff;
+        background-color: #f8fafe;
+    }
+
+    .step-pending {
+        border-left: 5px solid #6c757d;
+        background-color: #f8f9fa;
+    }
+
+    .step-rejected {
+        border-left: 5px solid #dc3545;
+        background-color: #fff8f8;
+    }
+
+    .timeline-dot {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .dot-completed {
+        background-color: #28a745;
+    }
+
+    .dot-inprogress {
+        background-color: #007bff;
+    }
+
+    .dot-pending {
+        background-color: #6c757d;
+    }
+
+    .dot-rejected {
+        background-color: #dc3545;
+    }
+
+    .approval-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .info-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .info-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+
+    .info-value {
+        font-size: 1.1rem;
+        color: #343a40;
+        font-weight: 500;
+    }
+
+    .back-button {
+        background: rgba(255,255,255,0.2);
+        border: 1px solid rgba(255,255,255,0.3);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+        .back-button:hover {
+            background: rgba(255,255,255,0.3);
+            color: white;
+            text-decoration: none;
+        }
+
+    .blazor-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .blazor-modal-content {
+        background: white;
+        border-radius: 0.5rem;
+        width: 90%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .modal-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+</style>
+
+<div class="container-fluid py-2">
+    @if (isLoading)
+    {
+        <div class="text-center p-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading task details...</span>
+            </div>
+        </div>
+    }
+    else if (workflowInstance == null)
+    {
+        <div class="text-center p-4">
+            <h3>Task Not Found</h3>
+            <p class="text-muted">The requested task could not be found or you don't have permission to view it.</p>
+            <a href="/tasks" class="btn btn-primary">
+                <i class="fas fa-arrow-left"></i> Back to Tasks
+            </a>
+        </div>
+    }
+    else
+    {
+        <!-- Task Header -->
+        <div class="task-header">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h2 class="mb-2">@workflowInstance.Service?.Name</h2>
+                    <p class="mb-0 opacity-75">Initiated by @workflowInstance.InitiatedBy?.UserName</p>
+                </div>
+                <a href="/tasks" class="back-button">
+                    <i class="fas fa-arrow-left"></i> Back to Tasks
+                </a>
+            </div>
+        </div>
+
+        <!-- Task Information Grid -->
+        <div class="info-grid">
+            <div class="info-card">
+                <div class="info-label">Service</div>
+                <div class="info-value">@(workflowInstance.Service?.Name ?? "Unknown")</div>
+            </div>
+            <div class="info-card">
+                <div class="info-label">Status</div>
+                <div class="info-value">
+                    @if (workflowInstance.Status == WorkflowStatus.InProgress)
+                    {
+                        <span class="badge bg-primary">In Progress</span>
+                    }
+                    else if (workflowInstance.Status == WorkflowStatus.Completed)
+                    {
+                        <span class="badge bg-success">Completed</span>
+                    }
+                    else if (workflowInstance.Status == WorkflowStatus.Rejected)
+                    {
+                        <span class="badge bg-danger">Rejected</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">@workflowInstance.Status</span>
+                    }
+                </div>
+            </div>
+            <div class="info-card">
+                <div class="info-label">Created Date</div>
+                <div class="info-value">@workflowInstance.CreatedAt.ToString("MMMM dd, yyyy 'at' HH:mm")</div>
+            </div>
+            <div class="info-card">
+                <div class="info-label">Initiated By</div>
+                <div class="info-value">
+                    <div>@workflowInstance.InitiatedBy?.UserName</div>
+                    <small class="text-muted">@workflowInstance.InitiatedBy?.Email</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Details-->
+        <div class="info-grid">
+            @foreach (var submission in workflowInstance.Service.Submissions)
+            {
+                foreach (var value in submission.Values)
+                {
+                    <div class="info-card">
+                        <div class="info-label">@value.Field.Label</div>
+                        <div class="info-value">@value.Value</div>
+                    </div>
+                }
+            }
+        </div>
+
+        <!-- Workflow Steps -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Workflow Steps</h5>
+            </div>
+            <div class="card-body">
+                @if (workflowInstance.Steps?.Any() == true)
+                {
+                    @foreach (var step in workflowInstance.Steps.OrderBy(s => s.Order))
+                    {
+                        <div class="step-card @GetStepCssClass(step.Status)">
+                            <div class="step-header">
+                                <div class="d-flex align-items-center">
+                                    <div class="timeline-dot @GetDotCssClass(step.Status)"></div>
+                                    <div>
+                                        <h6 class="mb-0">@step.Name</h6>
+                                        <small class="text-muted">Step @step.Order</small>
+                                    </div>
+                                </div>
+                                <div>
+                                    @if (step.Status == StepStatus.Completed)
+                                    {
+                                        <span class="badge bg-success">Completed</span>
+                                    }
+                                    else if (step.Status == StepStatus.InProgress)
+                                    {
+                                        <span class="badge bg-primary">In Progress</span>
+                                    }
+                                    else if (step.Status == StepStatus.Rejected)
+                                    {
+                                        <span class="badge bg-danger">Rejected</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Pending</span>
+                                    }
+                                </div>
+                            </div>
+
+                            @if (step is ApprovalInstanceStep approvalStep)
+                            {
+                                <div class="step-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <strong>Required Approvers:</strong>
+                                            <ul class="list-unstyled mt-2">
+                                                @foreach (var approverId in approvalStep.RequiredApprovers)
+                                                {
+                                                    var role = allRoles.FirstOrDefault(r => r.Id == approverId);
+                                                    <li class="mb-1">
+                                                        <i class="fas fa-user-tag text-muted me-2"></i>
+                                                        @(role?.Name ?? "Unknown Role")
+                                                    </li>
+                                                }
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-6">
+                                            @if (approvalStep.ActualApprovers?.Any() == true)
+                                            {
+                                                <strong>Approved By:</strong>
+                                                <ul class="list-unstyled mt-2">
+                                                    @foreach (var approverId in approvalStep.ActualApprovers)
+                                                    {
+                                                        var approver = allUsers.FirstOrDefault(u => u.Id == approverId);
+                                                        <li class="mb-1">
+                                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                                            @(approver?.Email ?? "Unknown User")
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    @if (!string.IsNullOrEmpty(approvalStep.Comments))
+                                    {
+                                        <div class="mt-3">
+                                            <strong>Comments:</strong>
+                                            <div class="bg-light p-3 rounded mt-2">
+                                                @approvalStep.Comments
+                                            </div>
+                                        </div>
+                                    }
+
+                                    @if (step.Status == StepStatus.InProgress && CanApproveStep(approvalStep))
+                                    {
+                                        <div class="approval-actions">
+                                            <button class="btn btn-success" @onclick="() => ShowApprovalModal(approvalStep, true)">
+                                                <i class="fas fa-check"></i> Approve
+                                            </button>
+                                            <button class="btn btn-danger" @onclick="() => ShowApprovalModal(approvalStep, false)">
+                                                <i class="fas fa-times"></i> Reject
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-muted">No workflow steps found.</p>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Approval Modal -->
+@if (showApprovalModal && selectedStep != null)
+{
+    <div class="blazor-modal" @onclick="CloseApprovalModal">
+        <div class="blazor-modal-content" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    @(isApproving ? "Approve" : "Reject") Step: @selectedStep.Name
+                </h5>
+                <button type="button" class="btn-close" @onclick="CloseApprovalModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Comments @(isApproving ? "(Optional)" : "(Required)")</label>
+                    <textarea class="form-control" rows="4" @bind="approvalComments"
+                              placeholder="@(isApproving ? "Add any comments about your approval..." : "Please provide a reason for rejection...")"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="CloseApprovalModal">Cancel</button>
+                <button type="button" class="btn @(isApproving ? "btn-success" : "btn-danger")"
+                        @onclick="SubmitApproval" disabled="@isSubmitting">
+                    @if (isSubmitting)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                    }
+                    @(isApproving ? "Approve" : "Reject")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid WorkflowInstanceId { get; set; }
+
+    private bool isLoading = true;
+    private WorkflowInstance? workflowInstance;
+    private ApplicationUser? appUser;
+    private List<string> roleIds = new();
+    private List<IdentityRole> allRoles = new();
+    private List<ApplicationUser> allUsers = new();
+
+    // Modal state
+    private bool showApprovalModal = false;
+    private ApprovalInstanceStep? selectedStep;
+    private bool isApproving = false;
+    private string approvalComments = string.Empty;
+    private bool isSubmitting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUserInfo();
+        await LoadTask();
+    }
+
+    private async Task LoadUserInfo()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        ClaimsPrincipal user = authState.User;
+
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            appUser = await UserManager.GetUserAsync(user);
+            var roleNames = await UserManager.GetRolesAsync(appUser);
+
+            var roles = new List<IdentityRole>();
+            foreach (var roleName in roleNames)
+            {
+                var role = await RoleManager.FindByNameAsync(roleName);
+                if (role != null)
+                {
+                    roles.Add(role);
+                }
+            }
+
+            roleIds = roles.Select(r => r.Id).ToList();
+            allRoles = RoleManager.Roles.ToList();
+            allUsers = UserManager.Users.ToList();
+        }
+    }
+
+    private async Task LoadTask()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
+            workflowInstance = await context.WorkflowInstances
+                .Include(wi => wi.Service)
+                    .ThenInclude(s => s.Submissions
+                        .Where(sub => sub.WorkflowInstanceId == WorkflowInstanceId))
+                            .ThenInclude(sub => sub.Values)
+                                .ThenInclude(val => val.Field)
+                .Include(wi => wi.Steps)
+                .Include(wi => wi.InitiatedBy)
+                .FirstOrDefaultAsync(wi => wi.Id == WorkflowInstanceId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading task: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetStepCssClass(StepStatus status) => status switch
+    {
+        StepStatus.Completed => "step-completed",
+        StepStatus.InProgress => "step-inprogress",
+        StepStatus.Rejected => "step-rejected",
+        _ => "step-pending"
+    };
+
+    private string GetDotCssClass(StepStatus status) => status switch
+    {
+        StepStatus.Completed => "dot-completed",
+        StepStatus.InProgress => "dot-inprogress",
+        StepStatus.Rejected => "dot-rejected",
+        _ => "dot-pending"
+    };
+
+    private bool CanApproveStep(ApprovalInstanceStep step)
+    {
+        if (appUser == null || step.Status != StepStatus.InProgress)
+            return false;
+
+        return step.RequiredApprovers.Any(ra => roleIds.Contains(ra)) &&
+               !step.ActualApprovers.Contains(appUser.Id);
+    }
+
+    private void ShowApprovalModal(ApprovalInstanceStep step, bool approve)
+    {
+        selectedStep = step;
+        isApproving = approve;
+        approvalComments = string.Empty;
+        showApprovalModal = true;
+    }
+
+    private void CloseApprovalModal()
+    {
+        showApprovalModal = false;
+        selectedStep = null;
+        approvalComments = string.Empty;
+        isSubmitting = false;
+    }
+
+    private async Task SubmitApproval()
+    {
+        if (selectedStep == null || appUser == null) return;
+
+        if (!isApproving && string.IsNullOrWhiteSpace(approvalComments))
+        {
+            // Show error - rejection requires comments
+            return;
+        }
+
+        isSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
+            var step = await context.Set<ApprovalInstanceStep>()
+                .FirstOrDefaultAsync(s => s.Id == selectedStep.Id);
+
+            if (step != null)
+            {
+                if (isApproving)
+                {
+                    step.ActualApprovers.Add(appUser.Id);
+
+                    // Check if all required approvers have approved
+                    if (step.RequiredApprovers.All(ra => step.ActualApprovers.Contains(ra) ||
+                        step.RequiredApprovers.Count == step.ActualApprovers.Count))
+                    {
+                        step.Status = StepStatus.Approved;
+                        step.CompletedAt = DateTime.UtcNow;
+                    }
+
+                    var nextStep = context.WorkflowInstanceSteps.FirstOrDefault(wis => wis.Order == (step.Order + 1));
+
+                    if(nextStep != null)
+                    {
+                        nextStep.Status = StepStatus.InProgress;
+                    }
+                    context.Update(nextStep);
+                }
+                else
+                {
+                    step.Status = StepStatus.Rejected;
+                    step.CompletedAt = DateTime.UtcNow;
+                }
+
+                if (!string.IsNullOrWhiteSpace(approvalComments))
+                {
+                    step.Comments = approvalComments;
+                }
+
+                await context.SaveChangesAsync();
+                await LoadTask();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error submitting approval: {ex.Message}");
+        }
+        finally
+        {
+            CloseApprovalModal();
+        }
+    }
+}

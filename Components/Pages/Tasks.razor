@@ -1,0 +1,384 @@
+﻿@page "/tasks"
+@using LocalGov360.Data
+@using LocalGov360.Data.Models
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
+@inject UserManager<ApplicationUser> UserManager
+@inject RoleManager<IdentityRole> RoleManager
+@inject NavigationManager NavigationManager
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@rendermode InteractiveServer
+
+<style>
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .header-buttons {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .blazor-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .blazor-modal-content {
+        background: white;
+        border-radius: 0.5rem;
+        width: 90%;
+        max-width: 600px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .modal-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+
+    .btn-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #000;
+        opacity: 0.5;
+        cursor: pointer;
+        line-height: 1;
+    }
+
+        .btn-close:hover {
+            opacity: 0.75;
+        }
+
+    .btn-dark {
+        background-color: #343a40;
+        border-color: #343a40;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+    }
+
+        .btn-dark:hover {
+            background-color: #23272b;
+            border-color: #1d2124;
+            color: white;
+        }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+    }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+            border-color: #545b62;
+            color: white;
+        }
+
+    .roles-table-actions {
+        white-space: nowrap;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .form-full-width {
+        grid-column: 1 / -1;
+    }
+
+    .form-check-group {
+        grid-column: 1 / -1;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        padding: 1rem;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+</style>
+
+<div class="container-fluid py-2">
+    <div class="row">
+        <div class="col-12">
+            <div class="card my-4">
+                <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                    <div class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3">
+                        <h6 class="text-white text-capitalize ps-3">Pending Tasks</h6>
+                    </div>
+                </div>
+                <div class="card-body px-0 pb-2">
+                    @if (isLoading)
+                    {
+                        <div class="text-center p-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    }
+                    else if (TaskList.Any())
+                    {
+                        <div class="table-responsive p-0">
+                            <table class="table align-items-center mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Service</th>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Task</th>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Name</th>
+                                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
+                                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Date</th>
+                                        <th class="text-secondary opacity-7">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var tl in TaskList)
+                                    {
+                                        var step = tl.Steps
+                                                        .Where(s => s.Status == StepStatus.InProgress
+                                                        && s is ApprovalInstanceStep ats
+                                                        && ats.RequiredApprovers.Any(r => roleIds.Contains(r)))
+                                                        .OrderBy(s => s.Order)
+                                                        .FirstOrDefault();
+                                        if (tl.Steps.Any(s => s.Status == StepStatus.InProgress && s.Name == "Payment"))
+                                        {
+                                            step = tl.Steps.FirstOrDefault(s => s.Status == StepStatus.InProgress && s.Name == "Payment");
+                                        }
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex px-2 py-1">
+                                                    <div>
+                                                        <div class="avatar avatar-sm me-3 border-radius-lg bg-gradient-@(GetAvatarColor(tl?.Service?.Name)) d-flex align-items-center justify-content-center">
+                                                            <span class="text-white text-xs font-weight-bold">
+                                                                @GetUserInitials(tl?.Service?.Name, tl?.Service?.Name)
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex flex-column justify-content-center">
+                                                        <h6 class="mb-0 text-sm">@(tl?.Service?.Name ?? "Unknown")</h6>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex flex-column justify-content-center">
+                                                    <h6 class="mb-0 text-sm">@(step?.Name ?? "Unknown")</h6>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex px-2 py-1">
+                                                    <div>
+                                                        <div class="avatar avatar-sm me-3 border-radius-lg bg-gradient-@(GetAvatarColor(tl.InitiatedBy.Email)) d-flex align-items-center justify-content-center">
+                                                            <span class="text-white text-xs font-weight-bold">
+                                                                @GetUserInitials(tl.InitiatedBy.Email, tl.InitiatedBy.UserName)
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex flex-column justify-content-center">
+                                                        <h6 class="mb-0 text-sm">@(tl.InitiatedBy.UserName ?? "Unknown")</h6>
+                                                        <p class="text-xs text-secondary mb-0">@tl.InitiatedBy.Email</p>
+                                                        @if (!string.IsNullOrEmpty(tl.InitiatedBy.Firstname) || !string.IsNullOrEmpty(tl.InitiatedBy.Lastname))
+                                                        {
+                                                            <p class="text-xs text-secondary mb-0">
+                                                                @tl.InitiatedBy.Firstname @tl.InitiatedBy.Lastname
+                                                            </p>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="align-middle text-center">
+                                                @if (step?.Status == StepStatus.InProgress)
+                                                {
+                                                    <span class="badge badge-sm bg-gradient-success">In Progress</span>
+                                                }
+                                                else if (step?.Status == StepStatus.Completed)
+                                                {
+                                                    <span class="badge badge-sm bg-gradient-primary">Completed</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge badge-sm bg-gradient-warning">@step?.Status</span>
+                                                }
+                                            </td>
+                                            <td class="align-middle text-center">
+                                                <span class="text-secondary text-xs font-weight-bold">
+                                                    @(tl.CreatedAt.ToString("dd/MM/yy"))
+                                                </span>
+                                            </td>
+                                            <td class="">
+                                                <div class="">
+                                                    <br />
+                                                    @if(step.Name == "Payment")
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-primary w-auto" @onclick="() => OpenPaymentTask(tl.Id)">
+                                                            <i class="fas fa-money-check-alt"></i> Make Payment
+                                                        </button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-primary w-auto" @onclick="() => OpenTask(tl.Id)">
+                                                            <i class="fas fa-folder-open"></i> Open Task
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center p-4">
+                            <p class="text-muted">No tasks found.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool isLoading = true;
+    private ApplicationUser appUser;
+    private List<string> roleIds;
+
+    private List<WorkflowInstance> TaskList = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        ClaimsPrincipal user = authState.User;
+
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            appUser = await UserManager.GetUserAsync(user);
+
+            var roleNames = await UserManager.GetRolesAsync(appUser);
+
+            var roles = new List<IdentityRole>();
+
+            foreach (var roleName in roleNames)
+            {
+                var role = await RoleManager.FindByNameAsync(roleName);
+                if (role != null)
+                {
+                    roles.Add(role);
+                }
+            }
+
+            roleIds = roles.Select(r => r.Id).ToList();
+        }
+
+        await LoadTasks();
+    }
+
+    private async Task LoadTasks()
+    {
+        isLoading = true;
+        TaskList.Clear();
+        StateHasChanged();
+
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
+            var TmpTaskList = await context.WorkflowInstances
+                                        .Include(wi => wi.Service)
+                                        .Include(wi => wi.Steps)
+                                        .Include(wi => wi.InitiatedBy)
+                                        .OrderBy(wi => wi.CreatedAt)
+                                        .ToListAsync();
+            TaskList = TmpTaskList
+                            .Where(wi => wi.Steps
+                                .OfType<ApprovalInstanceStep>()
+                                .Any(s =>
+                                    s.Status == StepStatus.InProgress &&
+                                    s.RequiredApprovers.Any(ra => roleIds.Contains(ra))))
+                            .ToList();
+
+            var PaymentList = TmpTaskList.Where(tl => tl.InitiatedById == appUser.Id && tl.Steps.Any(s => s.Status == StepStatus.InProgress));
+            TaskList = TaskList.Concat(PaymentList).ToList();
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading tasks: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetUserInitials(string? email, string? userName)
+    {
+        var name = !string.IsNullOrEmpty(userName) ? userName : email ?? "U";
+        if (name.Contains('@'))
+        {
+            name = name.Split('@')[0];
+        }
+
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+        {
+            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+        }
+        return name.Length >= 2 ? name.Substring(0, 2).ToUpper() : name.ToUpper();
+    }
+
+    private string GetAvatarColor(string? email)
+    {
+        if (string.IsNullOrEmpty(email)) return "primary";
+
+        var colors = new[] { "primary", "secondary", "success", "info", "warning", "danger" };
+        var hash = email.GetHashCode();
+        var index = Math.Abs(hash) % colors.Length;
+        return colors[index];
+    }
+
+    private void OpenTask(Guid WorkflowInstanceId)
+    {
+        NavigationManager.NavigateTo($"/tasks/{WorkflowInstanceId}");
+    }
+
+    private void OpenPaymentTask(Guid WorkflowInstanceId)
+    {
+        //NavigationManager.NavigateTo($"/tasks/{WorkflowInstanceId}");
+    }
+}
