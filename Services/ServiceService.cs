@@ -244,6 +244,7 @@ namespace LocalGov360.Services
     public class CreateServiceRequest
     {
         public string Name { get; set; }
+        public Guid? OrganisationId { get; set; }
         public string Description { get; set; }
         public string CreatedBy { get; set; }
         public List<CreateServiceFieldRequest> Fields { get; set; } = new List<CreateServiceFieldRequest>();
@@ -258,6 +259,7 @@ namespace LocalGov360.Services
         public bool IsRequired { get; set; }
         public string DefaultValue { get; set; }
         public string Placeholder { get; set; }
+      
         public List<ServiceModels.FieldOption> Options { get; set; }
         public List<ServiceModels.ValidationRule> ValidationRules { get; set; }
         public Dictionary<string, object> Properties { get; set; }
@@ -266,6 +268,7 @@ namespace LocalGov360.Services
     public class UpdateServiceRequest
     {
         public string Name { get; set; }
+        public Guid? OrganisationId { get; set; }
         public string Description { get; set; }
         public string ModifiedBy { get; set; }
         public List<CreateServiceFieldRequest> Fields { get; set; } = new List<CreateServiceFieldRequest>();

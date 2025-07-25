@@ -6,6 +6,7 @@
 @using LocalGov360.Data.Models
 @using Microsoft.AspNetCore.Html
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
 @using static LocalGov360.Data.Models.ServiceModels
 @inject IServiceService ServiceService
@@ -496,7 +497,7 @@
     {
         try
         {
-            WorkflowTemplates = await DbContext.WorkflowTemplates
+            WorkflowTemplates = await _db.WorkflowTemplates
                 .Select(t => new WorkflowTemplate { Id = t.Id, Name = t.Name })
                 .ToListAsync();
         }
@@ -573,7 +574,7 @@
                 {
                     var savedService = await ServiceService.GetServiceAsync(service.Id);
                     savedService.WorkflowTemplateId = BuilderModel.WorkflowTemplateId;
-                    await DbContext.SaveChangesAsync();
+                    await _db.SaveChangesAsync();
                 }
                 Feedback = "Service created successfully!";
             }
@@ -589,7 +590,7 @@
                 if (service != null)
                 {
                     service.WorkflowTemplateId = BuilderModel.WorkflowTemplateId;
-                    await DbContext.SaveChangesAsync();
+                    await _db.SaveChangesAsync();
                 }
                 Feedback = "Service updated successfully!";
             }

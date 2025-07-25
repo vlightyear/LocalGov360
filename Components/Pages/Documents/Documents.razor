@@ -1,9 +1,15 @@
 @page "/documenttemplates"
+@using LocalGov360.Data
+@using LocalGov360.Data.Models
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Authorization
 @using System.ComponentModel.DataAnnotations
+@using Microsoft.EntityFrameworkCore
 @attribute [Authorize(Roles = "developer,CouncilAdmin")]
 @rendermode InteractiveServer
+@inject ApplicationDbContext _db
+@inject NavigationManager NavigationManager
+
 
 <style>
     .action-buttons {
@@ -147,8 +153,7 @@
         color: #dc2626;
     }
 </style>
-
-<div class="container-fluid py-2">
+iv class="container-fluid py-2">
     <div class="row">
         <div class="col-12">
             @if (!string.IsNullOrEmpty(errorMessage))
@@ -187,8 +192,8 @@
                                 <thead>
                                     <tr>
                                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Template Name</th>
-                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Service</th>
                                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Document Type</th>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Organisation</th>
                                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Status</th>
                                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Created</th>
                                         <th class="text-secondary opacity-7">Actions</th>
@@ -207,10 +212,10 @@
                                                 </div>
                                             </td>
                                             <td>
-                                                <p class="text-xs text-secondary mb-0">@template.ServiceName</p>
+                                                <p class="text-xs text-secondary mb-0">@template.DocumentType</p>
                                             </td>
                                             <td>
-                                                <p class="text-xs text-secondary mb-0">@template.DocumentType</p>
+                                                <p class="text-xs text-secondary mb-0">@(template.Organisation?.Name ?? "None")</p>
                                             </td>
                                             <td>
                                                 <span class="status-badge @(template.IsActive ? "status-active" : "status-inactive")">
@@ -249,7 +254,6 @@
             </div>
         </div>
     </div>
-</div>
 
 <!-- Create/Edit Template Modal -->
 @if (showTemplateModal)
@@ -276,17 +280,6 @@
                             <ValidationMessage For="@(() => templateModel.Name)" />
                         </div>
                         <div class="mb-3">
-                            <label for="serviceName" class="form-label">Service</label>
-                            <InputSelect id="serviceName" @bind-Value="templateModel.ServiceName" class="form-control">
-                                <option value="">Select a service</option>
-                                @foreach (var service in availableServices)
-                                {
-                                    <option value="@service">@service</option>
-                                }
-                            </InputSelect>
-                            <ValidationMessage For="@(() => templateModel.ServiceName)" />
-                        </div>
-                        <div class="mb-3">
                             <label for="documentType" class="form-label">Document Type</label>
                             <InputSelect id="documentType" @bind-Value="templateModel.DocumentType" class="form-control">
                                 <option value="">Select document type</option>
@@ -296,6 +289,16 @@
                                 }
                             </InputSelect>
                             <ValidationMessage For="@(() => templateModel.DocumentType)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="organisationId" class="form-label">Organisation</label>
+                            <InputSelect id="organisationId" @bind-Value="templateModel.OrganisationId" class="form-control">
+                                <option value="">None</option>
+                                @foreach (var org in availableOrganisations)
+                                {
+                                    <option value="@org.Id">@org.Name</option>
+                                }
+                            </InputSelect>
                         </div>
                         <div class="mb-3">
                             <div class="form-check">
@@ -340,8 +343,8 @@
                 @if (previewTemplate != null)
                 {
                     <div class="mb-3">
-                        <strong>Service:</strong> @previewTemplate.ServiceName<br />
                         <strong>Document Type:</strong> @previewTemplate.DocumentType<br />
+                        <strong>Organisation:</strong> @(previewTemplate.Organisation?.Name ?? "None")<br />
                         <strong>Status:</strong> <span class="status-badge @(previewTemplate.IsActive ? "status-active" : "status-inactive")">@(previewTemplate.IsActive ? "Active" : "Inactive")</span>
                     </div>
                     <div class="mb-3">
@@ -373,106 +376,66 @@
     private DocumentTemplateModel templateModel = new();
     private DocumentTemplate? previewTemplate;
 
-    // Sample data for dropdowns
-    private List<string> availableServices = new()
-    {
-        "Payment Service",
-        "License Service",
-        "Permit Service",
-        "Tax Service",
-        "Water Service",
-        "Waste Management",
-        "Building Permits"
-    };
-
     private List<string> documentTypes = new()
     {
-        "Receipt",
-        "Invoice",
-        "Certificate",
-        "License",
-        "Permit",
-        "Notice",
-        "Report",
-        "Statement"
+        "Receipt", "Invoice", "Certificate", "License", 
+        "Permit", "Notice", "Report", "Statement"
     };
 
-    public class DocumentTemplate
-    {
-        public Guid Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public string ServiceName { get; set; } = string.Empty;
-        public string DocumentType { get; set; } = string.Empty;
-        public string Content { get; set; } = string.Empty;
-        public bool IsActive { get; set; }
-        public DateTime CreatedDate { get; set; }
-    }
+    private List<Organisation> availableOrganisations = new();
 
     public class DocumentTemplateModel
     {
         public Guid Id { get; set; }
+        
         [Required(ErrorMessage = "Template name is required")]
         public string Name { get; set; } = string.Empty;
+        
         public string Description { get; set; } = string.Empty;
-        [Required(ErrorMessage = "Service selection is required")]
-        public string ServiceName { get; set; } = string.Empty;
+        
         [Required(ErrorMessage = "Document type is required")]
         public string DocumentType { get; set; } = string.Empty;
+        
         [Required(ErrorMessage = "Template content is required")]
         public string Content { get; set; } = string.Empty;
+        
         public bool IsActive { get; set; } = true;
+        
+        public Guid? OrganisationId { get; set; }
     }
 
     protected override async Task OnInitializedAsync()
     {
-        LoadSampleData();
-        isLoading = false;
+        await LoadData();
     }
 
-    private void LoadSampleData()
+    private async Task LoadData()
     {
-        templates = new List<DocumentTemplate>
+        isLoading = true;
+        try
         {
-            new DocumentTemplate
-            {
-                Id = Guid.NewGuid(),
-                Name = "Payment Receipt",
-                Description = "Standard payment receipt template",
-                ServiceName = "Payment Service",
-                DocumentType = "Receipt",
-                Content = "<h2>Payment Receipt</h2><p>Dear {{CustomerName}},</p><p>We have received your payment of {{Amount}} {{Currency}} for {{ServiceDescription}}.</p><p>Date: {{Date}}</p><p>Reference: {{Reference}}</p><p>Thank you for your payment.</p>",
-                IsActive = true,
-                CreatedDate = DateTime.Now.AddDays(-10)
-            },
-            new DocumentTemplate
-            {
-                Id = Guid.NewGuid(),
-                Name = "License Certificate",
-                Description = "Business license certificate template",
-                ServiceName = "License Service",
-                DocumentType = "Certificate",
-                Content = "<div style='text-align: center;'><h1>BUSINESS LICENSE CERTIFICATE</h1><p>This certifies that</p><h3>{{BusinessName}}</h3><p>is hereby licensed to operate as {{BusinessType}}</p><p>Valid from: {{StartDate}} to {{EndDate}}</p><p>License Number: {{LicenseNumber}}</p></div>",
-                IsActive = true,
-                CreatedDate = DateTime.Now.AddDays(-5)
-            },
-            new DocumentTemplate
-            {
-                Id = Guid.NewGuid(),
-                Name = "Tax Invoice",
-                Description = "Municipal tax invoice template",
-                ServiceName = "Tax Service",
-                DocumentType = "Invoice",
-                Content = "<h2>TAX INVOICE</h2><p>Invoice No: {{InvoiceNumber}}</p><p>Date: {{Date}}</p><hr><p>{{CustomerName}}<br>{{CustomerAddress}}</p><hr><table><tr><th>Description</th><th>Amount</th></tr><tr><td>{{TaxDescription}}</td><td>{{Amount}}</td></tr></table><hr><p><strong>Total Due: {{TotalAmount}}</strong></p><p>Due Date: {{DueDate}}</p>",
-                IsActive = false,
-                CreatedDate = DateTime.Now.AddDays(-15)
-            }
-        };
+            templates = await _db.DocumentTemplates
+                .Include(t => t.Organisation)
+                .OrderByDescending(t => t.CreatedDate)
+                .ToListAsync();
+
+            availableOrganisations = await _db.Organisations
+                .OrderBy(o => o.Name)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading data: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
 
-    private void RefreshTemplates()
+    private async Task RefreshTemplates()
     {
-        LoadSampleData();
+        await LoadData();
         StateHasChanged();
     }
 
@@ -492,43 +455,64 @@
         errorMessage = string.Empty;
     }
 
-    private void EditTemplate(Guid templateId)
+    private async Task EditTemplate(Guid templateId)
     {
-        var template = templates.FirstOrDefault(t => t.Id == templateId);
-        if (template != null)
+        try
         {
-            templateModel = new DocumentTemplateModel
+            var template = await _db.DocumentTemplates.FindAsync(templateId);
+            if (template != null)
             {
-                Id = template.Id,
-                Name = template.Name,
-                Description = template.Description,
-                ServiceName = template.ServiceName,
-                DocumentType = template.DocumentType,
-                Content = template.Content,
-                IsActive = template.IsActive
-            };
-            isEditing = true;
-            showTemplateModal = true;
-            errorMessage = string.Empty;
+                templateModel = new DocumentTemplateModel
+                {
+                    Id = template.Id,
+                    Name = template.Name,
+                    Description = template.Description,
+                    DocumentType = template.DocumentType,
+                    Content = template.Content,
+                    IsActive = template.IsActive,
+                    OrganisationId = template.OrganisationId
+                };
+                isEditing = true;
+                showTemplateModal = true;
+                errorMessage = string.Empty;
+            }
+            else
+            {
+                errorMessage = "Template not found.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading template: {ex.Message}";
         }
     }
 
-    private void SaveTemplate()
+    private async Task SaveTemplate()
     {
         errorMessage = string.Empty;
         try
         {
             if (isEditing)
             {
-                var template = templates.FirstOrDefault(t => t.Id == templateModel.Id);
+                var template = await _db.DocumentTemplates.FindAsync(templateModel.Id);
                 if (template != null)
                 {
                     template.Name = templateModel.Name;
                     template.Description = templateModel.Description;
-                    template.ServiceName = templateModel.ServiceName;
                     template.DocumentType = templateModel.DocumentType;
                     template.Content = templateModel.Content;
                     template.IsActive = templateModel.IsActive;
+                    template.OrganisationId = templateModel.OrganisationId;
+                    
+                    _db.DocumentTemplates.Update(template);
+                    await _db.SaveChangesAsync();
+                    
+                    await RefreshTemplates();
+                    showTemplateModal = false;
+                }
+                else
+                {
+                    errorMessage = "Template not found.";
                 }
             }
             else
@@ -538,17 +522,19 @@
                     Id = Guid.NewGuid(),
                     Name = templateModel.Name,
                     Description = templateModel.Description,
-                    ServiceName = templateModel.ServiceName,
                     DocumentType = templateModel.DocumentType,
                     Content = templateModel.Content,
                     IsActive = templateModel.IsActive,
-                    CreatedDate = DateTime.Now
+                    CreatedDate = DateTime.UtcNow,
+                    OrganisationId = templateModel.OrganisationId
                 };
-                templates.Add(newTemplate);
+                
+                _db.DocumentTemplates.Add(newTemplate);
+                await _db.SaveChangesAsync();
+                
+                await RefreshTemplates();
+                showTemplateModal = false;
             }
-
-            showTemplateModal = false;
-            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -556,16 +542,49 @@
         }
     }
 
-    private void DeleteTemplate(Guid templateId)
+    private async Task DeleteTemplate(Guid templateId)
     {
-        templates.RemoveAll(t => t.Id == templateId);
-        StateHasChanged();
+        try
+        {
+            var template = await _db.DocumentTemplates.FindAsync(templateId);
+            if (template != null)
+            {
+                _db.DocumentTemplates.Remove(template);
+                await _db.SaveChangesAsync();
+                await RefreshTemplates();
+            }
+            else
+            {
+                errorMessage = "Template not found.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error deleting template: {ex.Message}";
+        }
     }
 
-    private void PreviewTemplate(Guid templateId)
+    private async Task PreviewTemplate(Guid templateId)
     {
-        previewTemplate = templates.FirstOrDefault(t => t.Id == templateId);
-        showPreviewModal = true;
+        try
+        {
+            previewTemplate = await _db.DocumentTemplates
+                .Include(t => t.Organisation)
+                .FirstOrDefaultAsync(t => t.Id == templateId);
+                
+            if (previewTemplate != null)
+            {
+                showPreviewModal = true;
+            }
+            else
+            {
+                errorMessage = "Template not found.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading preview: {ex.Message}";
+        }
     }
 
     private void ClosePreviewModal()
