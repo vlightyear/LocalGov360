@@ -41,6 +41,32 @@
                         </li>
                     }
 
+                    @if (isCouncilAdmin || isAdmin || isDeveloper)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link @GetActiveClass("/paymentservice")" href="/paymentservice">
+                                <i class="material-symbols-rounded opacity-5">credit_card</i>
+                                <span class="nav-link-text ms-1">Payment</span>
+                            </a>
+                        </li>
+                    }
+
+
+
+                    @if (isCouncilAdmin || isAdmin || isDeveloper)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link @GetActiveClass("/documenttemplates")" href="/documenttemplates">
+                                <i class="material-symbols-rounded opacity-5">description</i>
+                                <span class="nav-link-text ms-1">Documents</span>
+                            </a>
+                        </li>
+                    }
+
+                 
+
+
+
                     <!-- Service List (Available to everyone EXCEPT CouncilAdmin) -->
                     @if (hasNoRole || isAdmin || isDeveloper)
                     {

@@ -2,13 +2,15 @@
 @rendermode InteractiveServer
 @using System.ComponentModel.DataAnnotations
 @using LocalGov360.Services
+@using LocalGov360.Data
 @using LocalGov360.Data.Models
 @using Microsoft.AspNetCore.Html
+@using Microsoft.EntityFrameworkCore
 @inject IServiceService ServiceService
+@inject ApplicationDbContext DbContext
 @inject IJSRuntime JS
 
 <PageTitle>Service Builder</PageTitle>
-
 
 <div class="container-fluid py-4">
     <!-- Navigation -->
@@ -61,6 +63,17 @@
                             <div class="mb-3">
                                 <label class="form-label">Description</label>
                                 <InputTextArea class="form-control" rows="3" @bind-Value="BuilderModel.Description" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Workflow Template</label>
+                                <InputSelect class="form-select" @bind-Value="BuilderModel.WorkflowTemplateId">
+                                    <option value="">-- Select Workflow Template (Optional) --</option>
+                                    @foreach (var template in WorkflowTemplates)
+                                    {
+                                        <option value="@template.Id">@template.Name</option>
+                                    }
+                                </InputSelect>
                             </div>
 
                             <h6>Fields</h6>
@@ -442,7 +455,7 @@
     private string CurrentView = "list";
     private string? Feedback;
     private List<ServiceModels.Service>? Services;
-
+    private List<WorkflowTemplate> WorkflowTemplates = new();
     private int? EditServiceId;
     private ServiceBuilderModel BuilderModel = new();
     private FillServiceModel? FillModel;
@@ -450,6 +463,7 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadServicesAsync();
+        await LoadWorkflowTemplatesAsync();
     }
 
     private async Task LoadServicesAsync()
@@ -461,6 +475,20 @@
         catch (Exception ex)
         {
             Feedback = $"Error loading services: {ex.Message}";
+        }
+    }
+
+    private async Task LoadWorkflowTemplatesAsync()
+    {
+        try
+        {
+            WorkflowTemplates = await DbContext.WorkflowTemplates
+                .Select(t => new WorkflowTemplate { Id = t.Id, Name = t.Name })
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            Feedback = $"Error loading workflow templates: {ex.Message}";
         }
     }
 
@@ -520,24 +548,35 @@
 
             if (EditServiceId is null)
             {
-                await ServiceService.CreateServiceAsync(new CreateServiceRequest
+                var service = await ServiceService.CreateServiceAsync(new CreateServiceRequest
                 {
                     Name = BuilderModel.Name,
                     Description = BuilderModel.Description,
                     CreatedBy = "CurrentUser",
                     Fields = payloadFields
                 });
+                if (BuilderModel.WorkflowTemplateId != null)
+                {
+                    var savedService = await ServiceService.GetServiceAsync(service.Id);
+                    savedService.WorkflowTemplateId = BuilderModel.WorkflowTemplateId;
+                    await DbContext.SaveChangesAsync();
+                }
                 Feedback = "Service created successfully!";
             }
             else
             {
-                await ServiceService.UpdateServiceAsync(EditServiceId.Value, new UpdateServiceRequest
+                var service = await ServiceService.UpdateServiceAsync(EditServiceId.Value, new UpdateServiceRequest
                 {
                     Name = BuilderModel.Name,
                     Description = BuilderModel.Description,
                     ModifiedBy = "CurrentUser",
                     Fields = payloadFields
                 });
+                if (service != null)
+                {
+                    service.WorkflowTemplateId = BuilderModel.WorkflowTemplateId;
+                    await DbContext.SaveChangesAsync();
+                }
                 Feedback = "Service updated successfully!";
             }
 
@@ -593,6 +632,7 @@
             {
                 Name = svc.Name,
                 Description = svc.Description,
+                WorkflowTemplateId = svc.WorkflowTemplateId,
                 Fields = svc.Fields.Select(f => new FieldBuilderModel
                 {
                     Name = f.Name,
@@ -714,6 +754,8 @@
 
         [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
         public string Description { get; set; } = string.Empty;
+
+        public Guid? WorkflowTemplateId { get; set; }
 
         public List<FieldBuilderModel> Fields { get; set; } = new();
     }
