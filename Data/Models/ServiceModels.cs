@@ -122,6 +122,7 @@ namespace LocalGov360.Data.Models
         {
             public int Id { get; set; }
             public int ServiceId { get; set; }
+            public Guid? WorkflowInstanceId { get; set; }
             public DateTime SubmittedDate { get; set; } = DateTime.UtcNow;
 
             [MaxLength(100)]

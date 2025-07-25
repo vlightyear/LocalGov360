@@ -256,6 +256,9 @@ namespace LocalGov360.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<Guid?>("WorkflowInstanceId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ServiceId");
@@ -372,13 +375,15 @@ namespace LocalGov360.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("InitiatedBy")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<string>("InitiatedById")
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ServiceId")
+                        .HasColumnType("int");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -387,6 +392,10 @@ namespace LocalGov360.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("InitiatedById");
+
+                    b.HasIndex("ServiceId");
 
                     b.HasIndex("WorkflowTemplateId");
 
@@ -760,11 +769,25 @@ namespace LocalGov360.Migrations
 
             modelBuilder.Entity("LocalGov360.Data.Models.WorkflowInstance", b =>
                 {
+                    b.HasOne("LocalGov360.Data.ApplicationUser", "InitiatedBy")
+                        .WithMany()
+                        .HasForeignKey("InitiatedById");
+
+                    b.HasOne("LocalGov360.Data.Models.ServiceModels+Service", "Service")
+                        .WithMany()
+                        .HasForeignKey("ServiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("LocalGov360.Data.Models.WorkflowTemplate", "Template")
                         .WithMany()
                         .HasForeignKey("WorkflowTemplateId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("InitiatedBy");
+
+                    b.Navigation("Service");
 
                     b.Navigation("Template");
                 });

@@ -8,7 +8,7 @@ namespace LocalGov360.Services
 {
     public interface IWorkflowFactory
     {
-        Task<IWorkflow> CreateInstanceAsync(Guid workflowTemplateId, string initiatedBy);
+        Task<WorkflowInstance> CreateInstanceAsync(Guid workflowTemplateId, string initiatedBy, int ServiceId);
     }
 
     public class WorkflowFactory : IWorkflowFactory
@@ -16,14 +16,14 @@ namespace LocalGov360.Services
         private readonly ApplicationDbContext _db;
         public WorkflowFactory(ApplicationDbContext db) => _db = db;
 
-        public async Task<IWorkflow> CreateInstanceAsync(Guid templateId, string initiatedBy)
+        public async Task<WorkflowInstance> CreateInstanceAsync(Guid templateId, string initiatedBy, int ServiceId)
         {
             var template = await _db.WorkflowTemplates
                                     .Include(t => t.Steps.OrderBy(s => s.Order))
                                     .SingleAsync(t => t.Id == templateId);
 
             var context = new WorkflowContext(Guid.NewGuid(), initiatedBy);
-            var workflow = new Workflow(template.Name, template.Description, initiatedBy);
+            var workflow = new Workflow(template.Name, template.Description, initiatedBy, ServiceId);
 
             foreach (var ts in template.Steps)
             {
@@ -33,6 +33,13 @@ namespace LocalGov360.Services
                     ApprovalTemplateStep a => new ApprovalInstanceStepAdapter(a, context.WorkflowId),
                     _ => throw new InvalidOperationException("Unknown step type")
                 };
+
+                if(step.Order == 1)
+                {
+                    step.Status = StepStatus.InProgress;
+                    step.StartedAt = DateTime.UtcNow;
+
+                }
                 workflow.AddStep(step);
             }
 
@@ -41,7 +48,8 @@ namespace LocalGov360.Services
             {
                 Id = context.WorkflowId,
                 Name = template.Name,
-                InitiatedBy = initiatedBy,
+                InitiatedById = initiatedBy,
+                ServiceId = ServiceId,
                 WorkflowTemplateId = templateId,
                 ContextJson = JsonSerializer.Serialize(context.Data)
             };
@@ -74,10 +82,16 @@ namespace LocalGov360.Services
                 });
 
                 persistStep.WorkflowInstanceId = instance.Id;
+
+                if(persistStep.Order == 1)
+                {
+                    persistStep.Status = StepStatus.InProgress;
+                    persistStep.StartedAt = DateTime.UtcNow;
+                }
                 _db.WorkflowInstanceSteps.Add(persistStep);
             }
             await _db.SaveChangesAsync();
-            return workflow;
+            return instance;
         }
     }
 
