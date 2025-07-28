@@ -3,6 +3,7 @@ using LocalGov360.Data.Models;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace LocalGov360.Services
 {
@@ -37,6 +38,7 @@ namespace LocalGov360.Services
                 Description = request.Description,
                 CreatedBy = request.CreatedBy,
                 CreatedDate = DateTime.UtcNow,
+                OrganisationId = request.OrganisationId,
                 Fields = request.Fields.Select((field, index) => new ServiceModels.ServiceField
                 {
                     Name = !string.IsNullOrWhiteSpace(field.Name) ? field.Name : field.Label,
@@ -259,7 +261,6 @@ namespace LocalGov360.Services
         public bool IsRequired { get; set; }
         public string DefaultValue { get; set; }
         public string Placeholder { get; set; }
-      
         public List<ServiceModels.FieldOption> Options { get; set; }
         public List<ServiceModels.ValidationRule> ValidationRules { get; set; }
         public Dictionary<string, object> Properties { get; set; }

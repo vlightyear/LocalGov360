@@ -87,7 +87,7 @@ namespace LocalGov360.Data.Models
             public int DisplayOrder { get; set; }
 
             [MaxLength(200)]
-            public string? DefaultValue { get; set; } 
+            public string? DefaultValue { get; set; }
 
             [MaxLength(500)]
             public string Placeholder { get; set; } = string.Empty;

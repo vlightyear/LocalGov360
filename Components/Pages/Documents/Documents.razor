@@ -9,6 +9,8 @@
 @rendermode InteractiveServer
 @inject ApplicationDbContext _db
 @inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
 
 
 <style>
@@ -153,7 +155,8 @@
         color: #dc2626;
     }
 </style>
-iv class="container-fluid py-2">
+
+<div class="container-fluid py-2">
     <div class="row">
         <div class="col-12">
             @if (!string.IsNullOrEmpty(errorMessage))
@@ -254,6 +257,7 @@ iv class="container-fluid py-2">
             </div>
         </div>
     </div>
+</div>
 
 <!-- Create/Edit Template Modal -->
 @if (showTemplateModal)
@@ -289,16 +293,6 @@ iv class="container-fluid py-2">
                                 }
                             </InputSelect>
                             <ValidationMessage For="@(() => templateModel.DocumentType)" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="organisationId" class="form-label">Organisation</label>
-                            <InputSelect id="organisationId" @bind-Value="templateModel.OrganisationId" class="form-control">
-                                <option value="">None</option>
-                                @foreach (var org in availableOrganisations)
-                                {
-                                    <option value="@org.Id">@org.Name</option>
-                                }
-                            </InputSelect>
                         </div>
                         <div class="mb-3">
                             <div class="form-check">
@@ -375,37 +369,24 @@ iv class="container-fluid py-2">
     private string errorMessage = string.Empty;
     private DocumentTemplateModel templateModel = new();
     private DocumentTemplate? previewTemplate;
+    private Guid? currentUserOrgId;
 
     private List<string> documentTypes = new()
     {
-        "Receipt", "Invoice", "Certificate", "License", 
+        "Receipt", "Invoice", "Certificate", "License",
         "Permit", "Notice", "Report", "Statement"
     };
 
-    private List<Organisation> availableOrganisations = new();
-
-    public class DocumentTemplateModel
-    {
-        public Guid Id { get; set; }
-        
-        [Required(ErrorMessage = "Template name is required")]
-        public string Name { get; set; } = string.Empty;
-        
-        public string Description { get; set; } = string.Empty;
-        
-        [Required(ErrorMessage = "Document type is required")]
-        public string DocumentType { get; set; } = string.Empty;
-        
-        [Required(ErrorMessage = "Template content is required")]
-        public string Content { get; set; } = string.Empty;
-        
-        public bool IsActive { get; set; } = true;
-        
-        public Guid? OrganisationId { get; set; }
-    }
-
     protected override async Task OnInitializedAsync()
     {
+        // Get the current ClaimsPrincipal from AuthenticationState
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var principal = authState.User;
+
+        // Use UserManager to get the full ApplicationUser
+        var user = await UserManager.GetUserAsync(principal);
+        currentUserOrgId = user?.OrganisationId;
+
         await LoadData();
     }
 
@@ -416,11 +397,8 @@ iv class="container-fluid py-2">
         {
             templates = await _db.DocumentTemplates
                 .Include(t => t.Organisation)
+                .Where(t => t.OrganisationId == currentUserOrgId)
                 .OrderByDescending(t => t.CreatedDate)
-                .ToListAsync();
-
-            availableOrganisations = await _db.Organisations
-                .OrderBy(o => o.Name)
                 .ToListAsync();
         }
         catch (Exception ex)
@@ -441,7 +419,11 @@ iv class="container-fluid py-2">
 
     private void ShowCreateTemplateModal()
     {
-        templateModel = new DocumentTemplateModel();
+        templateModel = new DocumentTemplateModel
+        {
+            Id = Guid.Empty,
+            OrganisationId = currentUserOrgId // Automatically set from current user
+        };
         isEditing = false;
         showTemplateModal = true;
         errorMessage = string.Empty;
@@ -470,7 +452,7 @@ iv class="container-fluid py-2">
                     DocumentType = template.DocumentType,
                     Content = template.Content,
                     IsActive = template.IsActive,
-                    OrganisationId = template.OrganisationId
+                    OrganisationId = template.OrganisationId // Preserve existing org ID
                 };
                 isEditing = true;
                 showTemplateModal = true;
@@ -502,11 +484,11 @@ iv class="container-fluid py-2">
                     template.DocumentType = templateModel.DocumentType;
                     template.Content = templateModel.Content;
                     template.IsActive = templateModel.IsActive;
-                    template.OrganisationId = templateModel.OrganisationId;
-                    
+                    // OrganisationId remains unchanged for edits
+
                     _db.DocumentTemplates.Update(template);
                     await _db.SaveChangesAsync();
-                    
+
                     await RefreshTemplates();
                     showTemplateModal = false;
                 }
@@ -526,12 +508,12 @@ iv class="container-fluid py-2">
                     Content = templateModel.Content,
                     IsActive = templateModel.IsActive,
                     CreatedDate = DateTime.UtcNow,
-                    OrganisationId = templateModel.OrganisationId
+                    OrganisationId = currentUserOrgId // Set from current user
                 };
-                
+
                 _db.DocumentTemplates.Add(newTemplate);
                 await _db.SaveChangesAsync();
-                
+
                 await RefreshTemplates();
                 showTemplateModal = false;
             }
@@ -571,7 +553,7 @@ iv class="container-fluid py-2">
             previewTemplate = await _db.DocumentTemplates
                 .Include(t => t.Organisation)
                 .FirstOrDefaultAsync(t => t.Id == templateId);
-                
+
             if (previewTemplate != null)
             {
                 showPreviewModal = true;
@@ -591,5 +573,25 @@ iv class="container-fluid py-2">
     {
         showPreviewModal = false;
         previewTemplate = null;
+    }
+
+    public class DocumentTemplateModel
+    {
+        public Guid Id { get; set; }
+
+        [Required(ErrorMessage = "Template name is required")]
+        public string Name { get; set; } = string.Empty;
+
+        public string Description { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Document type is required")]
+        public string DocumentType { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Template content is required")]
+        public string Content { get; set; } = string.Empty;
+
+        public bool IsActive { get; set; } = true;
+
+        public Guid? OrganisationId { get; set; }
     }
 }

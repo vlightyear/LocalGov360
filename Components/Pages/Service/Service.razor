@@ -311,10 +311,10 @@
                 {
                     <style>
                         td.description-cell {
-                            max-width: 300px; /* limit width of the column */
-                            white-space: normal; /* allow wrapping to next line */
-                            word-wrap: break-word; /* break long words without spaces */
-                            overflow-wrap: break-word; /* fallback for long words */
+                            max-width: 300px;
+                            white-space: normal;
+                            word-wrap: break-word;
+                            overflow-wrap: break-word;
                         }
                     </style>
 
@@ -342,7 +342,7 @@
                                         <td>
                                             <div class="btn-group btn-group-sm">
                                                 <button class="btn btn-dark" @onclick="() => FillServiceAsync(svc.Id)">
-                                                    <i class="fas fa-edit"></i>View Form
+                                                    <i class="fas fa-edit"></i> View Form
                                                 </button>
                                                 <button class="btn btn-secondary" @onclick="() => EditServiceAsync(svc.Id)">
                                                     <i class="fas fa-cog"></i> Edit
@@ -354,7 +354,6 @@
                             </tbody>
                         </table>
                     </div>
-
                 }
             </div>
         </div>
@@ -467,6 +466,7 @@
     private FillServiceModel? FillModel;
     private ClaimsPrincipal user;
     private ApplicationUser appUser;
+    private Guid? currentUserOrgId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -476,6 +476,7 @@
         if (user.Identity != null && user.Identity.IsAuthenticated)
         {
             appUser = await UserManager.GetUserAsync(user);
+            currentUserOrgId = appUser.OrganisationId;
         }
         await LoadServicesAsync();
         await LoadWorkflowTemplatesAsync();
@@ -568,6 +569,7 @@
                     Name = BuilderModel.Name,
                     Description = BuilderModel.Description,
                     CreatedBy = "CurrentUser",
+                    OrganisationId = currentUserOrgId,
                     Fields = payloadFields
                 });
                 if (BuilderModel.WorkflowTemplateId != null)
