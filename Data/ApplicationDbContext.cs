@@ -13,6 +13,10 @@ namespace LocalGov360.Data
     {
         public DbSet<Organisation> Organisations { get; set; }
         public DbSet<DocumentTemplate> DocumentTemplates { get; set; }
+        public DbSet<ServicePaymentsModels> ServicePayments { get; set; }
+       
+
+
         public DbSet<TinggConfiguration> TinggConfigurations { get; set; }
         public DbSet<Service> Services { get; set; }
         public DbSet<ServiceField> ServiceFields { get; set; }
