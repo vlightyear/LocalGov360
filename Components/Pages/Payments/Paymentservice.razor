@@ -142,9 +142,12 @@
                             <button class="btn btn-sm btn-outline-light" @onclick="LoadConfigurations">
                                 <i class="fas fa-sync-alt me-1"></i> Refresh
                             </button>
-                            <button class="btn btn-sm btn-outline-light" @onclick="ShowCreateModal">
-                                <i class="fas fa-plus-circle me-1"></i> Add Configuration
-                            </button>
+                            @if (currentUserOrgId.HasValue)
+                            {
+                                <button class="btn btn-sm btn-outline-light" @onclick="ShowCreateModal">
+                                    <i class="fas fa-plus-circle me-1"></i> Add Configuration
+                                </button>
+                            }
                         </div>
                     </div>
                 </div>
@@ -188,14 +191,21 @@
                                                 <p class="text-xs text-secondary mb-0">@config.CurrencyCode</p>
                                             </td>
                                             <td class="align-middle">
-                                                <div class="btn-group action-buttons">
-                                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => EditConfiguration(config)">
-                                                        <i class="fas fa-edit"></i>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(config)">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </div>
+                                                @if (config.OrganisationId == currentUserOrgId)
+                                                {
+                                                    <div class="btn-group action-buttons">
+                                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => EditConfiguration(config)">
+                                                            <i class="fas fa-edit"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(config)">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-xs text-secondary">No actions available</span>
+                                                }
                                             </td>
                                         </tr>
                                     }
@@ -320,18 +330,19 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Get the current ClaimsPrincipal from AuthenticationState
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var principal = authState.User;
-
-        // Use UserManager to get the full ApplicationUser
         var user = await UserManager.GetUserAsync(principal);
         currentUserOrgId = user?.OrganisationId;
 
+        if (!currentUserOrgId.HasValue)
+        {
+            errorMessage = "User organization not found.";
+            return;
+        }
+
         await LoadConfigurations();
     }
-
-
 
     private async Task LoadConfigurations()
     {
@@ -360,6 +371,12 @@
 
     private void ShowCreateModal()
     {
+        if (!currentUserOrgId.HasValue)
+        {
+            errorMessage = "User organization not found.";
+            return;
+        }
+
         currentConfig = new TinggConfiguration
         {
             Id = Guid.Empty,
@@ -371,10 +388,22 @@
 
     private void EditConfiguration(TinggConfiguration config)
     {
+        if (!currentUserOrgId.HasValue)
+        {
+            errorMessage = "User organization not found.";
+            return;
+        }
+
+        if (config.OrganisationId != currentUserOrgId)
+        {
+            errorMessage = "You are not authorized to edit this configuration.";
+            return;
+        }
+
         currentConfig = new TinggConfiguration
         {
             Id = config.Id,
-            OrganisationId = config.OrganisationId, // Preserve existing org ID
+            OrganisationId = config.OrganisationId,
             ApiBaseUrl = config.ApiBaseUrl,
             ApiKey = config.ApiKey,
             AuthTokenRequestUrl = config.AuthTokenRequestUrl,
@@ -395,6 +424,12 @@
 
     private async Task SaveConfiguration()
     {
+        if (!currentUserOrgId.HasValue)
+        {
+            errorMessage = "User organization not found.";
+            return;
+        }
+
         errorMessage = string.Empty;
         try
         {
@@ -408,11 +443,16 @@
             }
             else
             {
-                // Update existing - preserve the existing OrganizationId
+                // Update existing - verify OrganizationId
                 var existingConfig = await context.TinggConfigurations.FindAsync(currentConfig.Id);
                 if (existingConfig == null)
                 {
                     errorMessage = "Configuration not found.";
+                    return;
+                }
+                if (existingConfig.OrganisationId != currentUserOrgId)
+                {
+                    errorMessage = "You are not authorized to update this configuration.";
                     return;
                 }
 
@@ -451,6 +491,18 @@
 
     private async Task ConfirmDelete(TinggConfiguration config)
     {
+        if (!currentUserOrgId.HasValue)
+        {
+            errorMessage = "User organization not found.";
+            return;
+        }
+
+        if (config.OrganisationId != currentUserOrgId)
+        {
+            errorMessage = "You are not authorized to delete this configuration.";
+            return;
+        }
+
         var confirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete the configuration for {config.ServiceCode}?");
         if (confirmed)
         {
@@ -460,6 +512,18 @@
 
     private async Task DeleteConfiguration(TinggConfiguration config)
     {
+        if (!currentUserOrgId.HasValue)
+        {
+            errorMessage = "User organization not found.";
+            return;
+        }
+
+        if (config.OrganisationId != currentUserOrgId)
+        {
+            errorMessage = "You are not authorized to delete this configuration.";
+            return;
+        }
+
         errorMessage = string.Empty;
         try
         {

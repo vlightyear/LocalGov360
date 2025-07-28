@@ -39,6 +39,8 @@ namespace LocalGov360.Services
                 CreatedBy = request.CreatedBy,
                 CreatedDate = DateTime.UtcNow,
                 OrganisationId = request.OrganisationId,
+                WorkflowTemplateId = request.WorkflowTemplateId,
+                DocumentTemplateId = request.DocumentTemplateId,
                 Fields = request.Fields.Select((field, index) => new ServiceModels.ServiceField
                 {
                     Name = !string.IsNullOrWhiteSpace(field.Name) ? field.Name : field.Label,
@@ -64,6 +66,8 @@ namespace LocalGov360.Services
         {
             return await _context.Services
                 .Include(f => f.Fields)
+                .Include(f => f.WorkflowTemplate)
+                .Include(f => f.DocumentTemplate)
                 .FirstOrDefaultAsync(f => f.Id == serviceId);
         }
 
@@ -72,6 +76,8 @@ namespace LocalGov360.Services
             return await _context.Services
                 .Where(f => f.IsActive)
                 .Include(f => f.Fields)
+                .Include(f => f.WorkflowTemplate)
+                .Include(f => f.DocumentTemplate)
                 .OrderBy(f => f.Name)
                 .ToListAsync();
         }
@@ -88,6 +94,8 @@ namespace LocalGov360.Services
             service.Description = request.Description;
             service.ModifiedBy = request.ModifiedBy;
             service.ModifiedDate = DateTime.UtcNow;
+            service.WorkflowTemplateId = request.WorkflowTemplateId;
+            service.DocumentTemplateId = request.DocumentTemplateId;
 
             _context.ServiceFields.RemoveRange(service.Fields);
             service.Fields = request.Fields.Select((field, index) => new ServiceModels.ServiceField
@@ -249,6 +257,8 @@ namespace LocalGov360.Services
         public Guid? OrganisationId { get; set; }
         public string Description { get; set; }
         public string CreatedBy { get; set; }
+        public Guid? WorkflowTemplateId { get; set; }
+        public Guid? DocumentTemplateId { get; set; }
         public List<CreateServiceFieldRequest> Fields { get; set; } = new List<CreateServiceFieldRequest>();
     }
 
@@ -272,6 +282,8 @@ namespace LocalGov360.Services
         public Guid? OrganisationId { get; set; }
         public string Description { get; set; }
         public string ModifiedBy { get; set; }
+        public Guid? WorkflowTemplateId { get; set; }
+        public Guid? DocumentTemplateId { get; set; }
         public List<CreateServiceFieldRequest> Fields { get; set; } = new List<CreateServiceFieldRequest>();
     }
 

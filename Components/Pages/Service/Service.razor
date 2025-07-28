@@ -82,6 +82,17 @@
                                 </InputSelect>
                             </div>
 
+                            <div class="mb-3">
+                                <label class="form-label">Document Template</label>
+                                <InputSelect class="form-select" @bind-Value="BuilderModel.DocumentTemplateId">
+                                    <option value="">-- Select Document Template (Optional) --</option>
+                                    @foreach (var template in DocumentTemplates)
+                                    {
+                                        <option value="@template.Id">@template.Name</option>
+                                    }
+                                </InputSelect>
+                            </div>
+
                             <h6>Fields</h6>
                             @if (!BuilderModel.Fields.Any())
                             {
@@ -461,6 +472,7 @@
     private string? Feedback;
     private List<ServiceModels.Service>? Services;
     private List<WorkflowTemplate> WorkflowTemplates = new();
+    private List<DocumentTemplate> DocumentTemplates = new();
     private int? EditServiceId;
     private ServiceBuilderModel BuilderModel = new();
     private FillServiceModel? FillModel;
@@ -480,6 +492,7 @@
         }
         await LoadServicesAsync();
         await LoadWorkflowTemplatesAsync();
+        await LoadDocumentTemplatesAsync();
     }
 
     private async Task LoadServicesAsync()
@@ -499,12 +512,28 @@
         try
         {
             WorkflowTemplates = await _db.WorkflowTemplates
+                .Where(t => t.OrganisationId == currentUserOrgId)
                 .Select(t => new WorkflowTemplate { Id = t.Id, Name = t.Name })
                 .ToListAsync();
         }
         catch (Exception ex)
         {
             Feedback = $"Error loading workflow templates: {ex.Message}";
+        }
+    }
+
+    private async Task LoadDocumentTemplatesAsync()
+    {
+        try
+        {
+            DocumentTemplates = await _db.DocumentTemplates
+                .Where(t => t.OrganisationId == currentUserOrgId && t.IsActive)
+                .Select(t => new DocumentTemplate { Id = t.Id, Name = t.Name })
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            Feedback = $"Error loading document templates: {ex.Message}";
         }
     }
 
@@ -536,7 +565,8 @@
             {
                 if ((field.Type == ServiceModels.FieldType.Select ||
                      field.Type == ServiceModels.FieldType.Radio ||
-                     field.Type == ServiceModels.FieldType.Checkbox) &&
+                     field.Type == ServiceModels.FieldType.Checkbox ||
+                     field.Type == ServiceModels.FieldType.MultiSelect) &&
                     string.IsNullOrWhiteSpace(field.OptionsRaw))
                 {
                     Feedback = $"Error: Field '{field.Label}' requires options";
@@ -572,10 +602,11 @@
                     OrganisationId = currentUserOrgId,
                     Fields = payloadFields
                 });
-                if (BuilderModel.WorkflowTemplateId != null)
+                if (BuilderModel.WorkflowTemplateId != null || BuilderModel.DocumentTemplateId != null)
                 {
                     var savedService = await ServiceService.GetServiceAsync(service.Id);
                     savedService.WorkflowTemplateId = BuilderModel.WorkflowTemplateId;
+                    savedService.DocumentTemplateId = BuilderModel.DocumentTemplateId;
                     await _db.SaveChangesAsync();
                 }
                 Feedback = "Service created successfully!";
@@ -592,6 +623,7 @@
                 if (service != null)
                 {
                     service.WorkflowTemplateId = BuilderModel.WorkflowTemplateId;
+                    service.DocumentTemplateId = BuilderModel.DocumentTemplateId;
                     await _db.SaveChangesAsync();
                 }
                 Feedback = "Service updated successfully!";
@@ -650,6 +682,7 @@
                 Name = svc.Name,
                 Description = svc.Description,
                 WorkflowTemplateId = svc.WorkflowTemplateId,
+                DocumentTemplateId = svc.DocumentTemplateId,
                 Fields = svc.Fields.Select(f => new FieldBuilderModel
                 {
                     Name = f.Name,
@@ -687,6 +720,7 @@
                 ServiceName = svc.Name,
                 ServiceDescription = svc.Description,
                 WorkflowTemplateId = svc.WorkflowTemplateId,
+                DocumentTemplateId = svc.DocumentTemplateId,
                 Fields = svc.Fields.Select(f => new FieldFillModel
                 {
                     Id = f.Id,
@@ -780,6 +814,7 @@
         public string Description { get; set; } = string.Empty;
 
         public Guid? WorkflowTemplateId { get; set; }
+        public Guid? DocumentTemplateId { get; set; }
 
         public List<FieldBuilderModel> Fields { get; set; } = new();
     }
@@ -822,6 +857,7 @@
         public string ServiceName { get; set; } = string.Empty;
         public string ServiceDescription { get; set; } = string.Empty;
         public Guid? WorkflowTemplateId { get; set; }
+        public Guid? DocumentTemplateId { get; set; }
         public List<FieldFillModel> Fields { get; set; } = new();
     }
 

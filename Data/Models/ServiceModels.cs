@@ -56,12 +56,13 @@ namespace LocalGov360.Data.Models
             [MaxLength(100)]
             public string? ModifiedBy { get; set; }
             public Guid? WorkflowTemplateId { get; set; }
-
+            public Guid? DocumentTemplateId { get; set; }
             public Guid? OrganisationId { get; set; }
 
             [ForeignKey(nameof(OrganisationId))]
             public Organisation Organisation { get; set; } = default!;
-            public virtual WorkflowTemplate WorkflowTemplate { get; set; }
+            public virtual WorkflowTemplate? WorkflowTemplate { get; set; }
+            public virtual DocumentTemplate? DocumentTemplate { get; set; }
             public virtual ICollection<ServiceField> Fields { get; set; } = new List<ServiceField>();
             public virtual ICollection<ServiceSubmission> Submissions { get; set; } = new List<ServiceSubmission>();
         }
@@ -96,7 +97,7 @@ namespace LocalGov360.Data.Models
             public string ValidationRulesJson { get; set; } = "[]";
             public string PropertiesJson { get; set; } = "{}";
 
-            public virtual Service Service { get; set; }
+            public virtual Service Service { get; set; } = default!;
             public virtual ICollection<ServiceSubmissionValue> SubmissionValues { get; set; } = new List<ServiceSubmissionValue>();
 
             [NotMapped]
@@ -138,7 +139,7 @@ namespace LocalGov360.Data.Models
             public string UserAgent { get; set; } = string.Empty;
             public bool IsCompleted { get; set; } = true;
 
-            public virtual Service Service { get; set; }
+            public virtual Service Service { get; set; } = default!;
             public virtual ICollection<ServiceSubmissionValue> Values { get; set; } = new List<ServiceSubmissionValue>();
         }
 
@@ -149,8 +150,8 @@ namespace LocalGov360.Data.Models
             public int FieldId { get; set; }
             public string Value { get; set; } = string.Empty;
 
-            public virtual ServiceSubmission Submission { get; set; }
-            public virtual ServiceField Field { get; set; }
+            public virtual ServiceSubmission Submission { get; set; } = default!;
+            public virtual ServiceField Field { get; set; } = default!;
         }
 
         public class FieldOption
