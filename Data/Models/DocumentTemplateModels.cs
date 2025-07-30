@@ -28,6 +28,7 @@
         public DateTime CreatedDate { get; set; }
 
         public Guid? OrganisationId { get; set; }
+        public string? LogoBase64 { get; set; }
 
         [ForeignKey(nameof(OrganisationId))]
         public Organisation Organisation { get; set; } = default!;

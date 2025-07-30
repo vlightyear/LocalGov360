@@ -1,8 +1,11 @@
-﻿using LocalGov360.Data;
+﻿
+using LocalGov360.Data;
 using LocalGov360.Data.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace LocalGov360.Services
 {
@@ -14,7 +17,13 @@ namespace LocalGov360.Services
     public class WorkflowFactory : IWorkflowFactory
     {
         private readonly ApplicationDbContext _db;
-        public WorkflowFactory(ApplicationDbContext db) => _db = db;
+        private readonly TinggPaymentService _paymentService;
+
+        public WorkflowFactory(ApplicationDbContext db, TinggPaymentService paymentService)
+        {
+            _db = db;
+            _paymentService = paymentService;
+        }
 
         public async Task<WorkflowInstance> CreateInstanceAsync(Guid templateId, string initiatedBy, int ServiceId)
         {
@@ -29,21 +38,19 @@ namespace LocalGov360.Services
             {
                 IWorkflowStep step = ts switch
                 {
-                    PaymentTemplateStep p => new PaymentInstanceStepAdapter(p, context.WorkflowId),
+                    PaymentTemplateStep p => new PaymentInstanceStepAdapter(p, context.WorkflowId, _paymentService),
                     ApprovalTemplateStep a => new ApprovalInstanceStepAdapter(a, context.WorkflowId),
                     _ => throw new InvalidOperationException("Unknown step type")
                 };
 
-                if(step.Order == 1)
+                if (step.Order == 1)
                 {
                     step.Status = StepStatus.InProgress;
                     step.StartedAt = DateTime.UtcNow;
-
                 }
                 workflow.AddStep(step);
             }
 
-            // Persist instance
             var instance = new WorkflowInstance
             {
                 Id = context.WorkflowId,
@@ -83,7 +90,7 @@ namespace LocalGov360.Services
 
                 persistStep.WorkflowInstanceId = instance.Id;
 
-                if(persistStep.Order == 1)
+                if (persistStep.Order == 1)
                 {
                     persistStep.Status = StepStatus.InProgress;
                     persistStep.StartedAt = DateTime.UtcNow;
@@ -97,25 +104,61 @@ namespace LocalGov360.Services
 
     internal class PaymentInstanceStepAdapter : WorkflowStepBase
     {
-        public PaymentInstanceStepAdapter(PaymentTemplateStep cfg, Guid instanceId)
+        private readonly TinggPaymentService _paymentService;
+        public Guid WorkflowInstanceId { get; }
+
+        public PaymentInstanceStepAdapter(PaymentTemplateStep cfg, Guid instanceId, TinggPaymentService paymentService)
             : base(cfg.Name, cfg.Order, cfg.Description)
         {
             Type = StepType.Payment;
             Amount = cfg.Amount;
             Currency = cfg.Currency;
+            _paymentService = paymentService;
+            WorkflowInstanceId = instanceId;
         }
 
         public decimal Amount { get; }
         public string Currency { get; }
 
-        public override Task<bool> ExecuteAsync(IWorkflowContext ctx)
+        public override async Task<bool> ExecuteAsync(IWorkflowContext ctx)
         {
-            // same logic as before
             StartedAt = DateTime.UtcNow;
-            Status = StepStatus.Completed;
-            CompletedAt = DateTime.UtcNow;
-            ctx.Data[$"Payment_{Id}"] = new { Amount, Currency, TransactionId = Guid.NewGuid().ToString() };
-            return Task.FromResult(true);
+            Status = StepStatus.InProgress;
+
+            try
+            {
+                // Extract needed info from context
+                var organisationId = Guid.Parse(ctx.Data["OrganisationId"].ToString());
+                var serviceId = Guid.Parse(ctx.Data["ServiceId"].ToString());
+                var userId = ctx.InitiatedBy;
+
+                var payment = await _paymentService.InitiateTinggPaymentAsync(
+                    organisationId,
+                    WorkflowInstanceId,
+                    Id,
+                    serviceId,
+                    Amount,
+                    userId);
+
+                ctx.Data[$"Payment_{Id}"] = new
+                {
+                    payment.Id,
+                    payment.TransactionReference,
+                    payment.PaymentUrl,
+                    payment.Status
+                };
+
+                Status = StepStatus.Completed;
+                CompletedAt = DateTime.UtcNow;
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Status = StepStatus.Failed;
+                ctx.Data[$"Payment_{Id}_Error"] = ex.Message;
+                throw;
+            }
         }
     }
 

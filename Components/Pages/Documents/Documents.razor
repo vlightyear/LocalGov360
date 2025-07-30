@@ -1,6 +1,7 @@
 @page "/documenttemplates"
 @using LocalGov360.Data
 @using LocalGov360.Data.Models
+@using LocalGov360.Services
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Authorization
 @using System.ComponentModel.DataAnnotations
@@ -154,6 +155,37 @@
         background-color: #fecaca;
         color: #dc2626;
     }
+
+    .logo-upload-area {
+        border: 2px dashed #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        text-align: center;
+        background-color: #f8f9fa;
+    }
+
+    .logo-preview {
+        max-width: 150px;
+        max-height: 100px;
+        margin-bottom: 0.5rem;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .file-input {
+        display: block;
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        background-color: #fff;
+    }
+
+        .file-input:focus {
+            border-color: #343a40;
+            outline: none;
+        }
 </style>
 
 <div class="container-fluid py-2">
@@ -300,6 +332,21 @@
                                 <label for="isActive" class="form-check-label">Active</label>
                             </div>
                         </div>
+                        <div class="mb-3">
+                            <label for="logoUpload" class="form-label">Logo (Optional)</label>
+                            <div class="logo-upload-area">
+                                @if (!string.IsNullOrEmpty(templateModel.LogoBase64))
+                                {
+                                    <img src="data:image/*;base64,@templateModel.LogoBase64" class="logo-preview" alt="Logo preview" />
+                                    <button type="button" class="btn btn-sm btn-outline-danger mt-2" @onclick="RemoveLogo">
+                                        <i class="fas fa-trash me-1"></i> Remove Logo
+                                    </button>
+                                }
+                                <InputFile id="logoUpload" @bind-Value="templateModel.LogoFile" OnChange="HandleLogoUpload" accept="image/png,image/jpeg" class="file-input" />
+                                <small class="form-text text-muted">Upload PNG or JPG, max 1MB</small>
+                            </div>
+                            <ValidationMessage For="@(() => templateModel.LogoBase64)" />
+                        </div>
                         <div class="mb-3 form-full-width">
                             <label for="description" class="form-label">Description</label>
                             <InputTextArea id="description" @bind-Value="templateModel.Description" class="form-control" rows="2" />
@@ -310,7 +357,7 @@
                             <InputTextArea id="templateContent" @bind-Value="templateModel.Content" class="form-control template-content" />
                             <ValidationMessage For="@(() => templateModel.Content)" />
                             <small class="form-text text-muted">
-                                Use placeholders like {{CustomerName}}, {{Amount}}, {{Date}} for dynamic content.
+                                Use placeholders like {{CustomerName}}, {{Amount}}, {{Date}}, {{OrganisationLogo}} for dynamic content.
                             </small>
                         </div>
                     </div>
@@ -336,6 +383,12 @@
             <div class="modal-body">
                 @if (previewTemplate != null)
                 {
+                    <div class="text-center mb-3">
+                        @if (!string.IsNullOrEmpty(previewTemplate.LogoBase64))
+                        {
+                            <img src="data:image/*;base64,@previewTemplate.LogoBase64" class="logo-preview" alt="Organisation Logo" />
+                        }
+                    </div>
                     <div class="mb-3">
                         <strong>Document Type:</strong> @previewTemplate.DocumentType<br />
                         <strong>Organisation:</strong> @(previewTemplate.Organisation?.Name ?? "None")<br />
@@ -348,12 +401,13 @@
                     <div class="mb-3">
                         <strong>Template Content:</strong>
                         <div class="template-preview">
-                            @((MarkupString)previewTemplate.Content)
+                            @((MarkupString)ProcessPreviewContent(previewTemplate.Content, previewTemplate.LogoBase64))
                         </div>
                     </div>
                 }
             </div>
             <div class="modal-footer">
+               
                 <button type="button" class="btn btn-secondary" @onclick="ClosePreviewModal">Close</button>
             </div>
         </div>
@@ -377,13 +431,22 @@
         "Permit", "Notice", "Report", "Statement"
     };
 
+    private Dictionary<string, string> availablePlaceholders = new()
+    {
+        { "OrganisationName", "Name of the organisation" },
+        { "OrganisationAddress", "Organisation address" },
+        { "CustomerName", "Customer/Client name" },
+        { "CustomerAddress", "Customer address" },
+        { "Amount", "Monetary amount" },
+        { "Date", "Document date" },
+        { "DocumentNumber", "Document reference number" },
+        { "OrganisationLogo", "Organisation logo image" }
+    };
+
     protected override async Task OnInitializedAsync()
     {
-        // Get the current ClaimsPrincipal from AuthenticationState
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var principal = authState.User;
-
-        // Use UserManager to get the full ApplicationUser
         var user = await UserManager.GetUserAsync(principal);
         currentUserOrgId = user?.OrganisationId;
 
@@ -422,7 +485,8 @@
         templateModel = new DocumentTemplateModel
         {
             Id = Guid.Empty,
-            OrganisationId = currentUserOrgId // Automatically set from current user
+            OrganisationId = currentUserOrgId,
+            IsActive = true
         };
         isEditing = false;
         showTemplateModal = true;
@@ -435,38 +499,6 @@
         templateModel = new DocumentTemplateModel();
         isEditing = false;
         errorMessage = string.Empty;
-    }
-
-    private async Task EditTemplate(Guid templateId)
-    {
-        try
-        {
-            var template = await _db.DocumentTemplates.FindAsync(templateId);
-            if (template != null)
-            {
-                templateModel = new DocumentTemplateModel
-                {
-                    Id = template.Id,
-                    Name = template.Name,
-                    Description = template.Description,
-                    DocumentType = template.DocumentType,
-                    Content = template.Content,
-                    IsActive = template.IsActive,
-                    OrganisationId = template.OrganisationId // Preserve existing org ID
-                };
-                isEditing = true;
-                showTemplateModal = true;
-                errorMessage = string.Empty;
-            }
-            else
-            {
-                errorMessage = "Template not found.";
-            }
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Error loading template: {ex.Message}";
-        }
     }
 
     private async Task SaveTemplate()
@@ -484,7 +516,7 @@
                     template.DocumentType = templateModel.DocumentType;
                     template.Content = templateModel.Content;
                     template.IsActive = templateModel.IsActive;
-                    // OrganisationId remains unchanged for edits
+                    template.LogoBase64 = templateModel.LogoBase64;
 
                     _db.DocumentTemplates.Update(template);
                     await _db.SaveChangesAsync();
@@ -508,7 +540,8 @@
                     Content = templateModel.Content,
                     IsActive = templateModel.IsActive,
                     CreatedDate = DateTime.UtcNow,
-                    OrganisationId = currentUserOrgId // Set from current user
+                    OrganisationId = currentUserOrgId,
+                    LogoBase64 = templateModel.LogoBase64
                 };
 
                 _db.DocumentTemplates.Add(newTemplate);
@@ -521,6 +554,40 @@
         catch (Exception ex)
         {
             errorMessage = $"Error saving template: {ex.Message}";
+        }
+    }
+
+    private async Task EditTemplate(Guid templateId)
+    {
+        try
+        {
+            var template = await _db.DocumentTemplates.FindAsync(templateId);
+            if (template != null)
+            {
+                templateModel = new DocumentTemplateModel
+                {
+                    Id = template.Id,
+                    Name = template.Name,
+                    Description = template.Description,
+                    DocumentType = template.DocumentType,
+                    Content = template.Content,
+                    IsActive = template.IsActive,
+                    OrganisationId = template.OrganisationId,
+                    LogoBase64 = template.LogoBase64
+                };
+                isEditing = true;
+                showTemplateModal = true;
+                showPreviewModal = false;
+                errorMessage = string.Empty;
+            }
+            else
+            {
+                errorMessage = "Template not found.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading template: {ex.Message}";
         }
     }
 
@@ -575,6 +642,90 @@
         previewTemplate = null;
     }
 
+    private async Task HandleLogoUpload(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            if (file.Size > 1 * 1024 * 1024)
+            {
+                errorMessage = "Logo file size must be less than 1MB";
+                return;
+            }
+
+            if (!file.ContentType.StartsWith("image/png") && !file.ContentType.StartsWith("image/jpeg"))
+            {
+                errorMessage = "Please select a PNG or JPG file";
+                return;
+            }
+
+            try
+            {
+                using var stream = file.OpenReadStream(1 * 1024 * 1024);
+                using var memoryStream = new MemoryStream();
+                await stream.CopyToAsync(memoryStream);
+                var fileBytes = memoryStream.ToArray();
+                templateModel.LogoBase64 = Convert.ToBase64String(fileBytes);
+                errorMessage = string.Empty;
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error uploading logo: {ex.Message}";
+            }
+        }
+    }
+
+    private void RemoveLogo()
+    {
+        templateModel.LogoBase64 = string.Empty;
+        templateModel.LogoFile = null;
+        StateHasChanged();
+    }
+
+
+    private string ProcessPreviewContent(string content, string? logoBase64)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+            return string.Empty;
+
+        var previewContent = content;
+
+        // Prepend logo at the top if it exists
+        if (!string.IsNullOrEmpty(logoBase64))
+        {
+            previewContent = $"<div style='text-align: center; margin-bottom: 1rem;'><img src='data:image/*;base64,{logoBase64}' style='max-width: 150px; max-height: 100px;' alt='Organisation Logo' /></div>{previewContent}";
+        }
+
+        foreach (var placeholder in availablePlaceholders)
+        {
+            var sampleValue = GetSampleValue(placeholder.Key);
+            if (placeholder.Key == "OrganisationLogo" && !string.IsNullOrEmpty(logoBase64))
+            {
+                sampleValue = $"<img src='data:image/*;base64,{logoBase64}' style='max-width: 150px; max-height: 100px; display: block; margin-left: auto; margin-right: auto;' alt='Organisation Logo' />";
+            }
+            previewContent = previewContent.Replace($"{{{{{placeholder.Key}}}}}", sampleValue);
+        }
+
+        return previewContent;
+    }
+
+    private string GetSampleValue(string placeholder)
+    {
+        return placeholder switch
+        {
+            "OrganisationName" => "Sample Organisation",
+            "OrganisationAddress" => "123 Main St, City",
+            "CustomerName" => "John Doe",
+            "CustomerAddress" => "456 Client Rd, City",
+            "Amount" => "$1,000.00",
+            "Date" => DateTime.Now.ToString("dd/MM/yyyy"),
+            "DocumentNumber" => "DOC-2025-001",
+            "OrganisationLogo" => "", // Handled in ProcessPreviewContent
+            _ => $"[{placeholder}]"
+        };
+    }
+
     public class DocumentTemplateModel
     {
         public Guid Id { get; set; }
@@ -593,5 +744,9 @@
         public bool IsActive { get; set; } = true;
 
         public Guid? OrganisationId { get; set; }
+
+        public string LogoBase64 { get; set; } = string.Empty;
+
+        public IBrowserFile? LogoFile { get; set; }
     }
 }

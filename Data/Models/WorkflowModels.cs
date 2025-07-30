@@ -73,7 +73,7 @@ namespace LocalGov360.Data.Models
         public string? InitiatedById { get; set; } = "";
         public WorkflowStatus Status { get; set; } = WorkflowStatus.Pending;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public int ServiceId { get; set; }
+        public int? ServiceId  { get; set; }
         public Guid WorkflowTemplateId { get; set; }
         public WorkflowTemplate Template { get; set; } = null!;
         public virtual Service Service { get; set; }

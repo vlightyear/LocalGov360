@@ -1,174 +1,1406 @@
 ﻿@page "/service-list"
-@using Microsoft.AspNetCore.Authorization
-
-@attribute [Authorize]
-@attribute [StreamRendering]
 @rendermode InteractiveServer
-<PageTitle>Local Councils & Services</PageTitle>
+@using System.ComponentModel.DataAnnotations
+@using LocalGov360.Data
+@using LocalGov360.Services
+@using LocalGov360.Data.Models
+@using Microsoft.AspNetCore.Html
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
+@using static LocalGov360.Data.Models.ServiceModels
+@inject IServiceService ServiceService
+@inject IWorkflowFactory WorkflowFactory
+@inject IJSRuntime JS
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ApplicationDbContext _db
 
-<div class="container my-4">
-    <div class="text-center mb-4">
-        <h2 class="fw-bold">Find Council Services</h2>
-        <p class="text-muted">Select your local council to see the services available to you.</p>
-    </div>
+<PageTitle>Available Services</PageTitle>
 
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="input-group mb-3">
-                <span class="input-group-text">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-geo-alt-fill" viewBox="0 0 16 16">
-                        <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z" />
-                    </svg>
-                </span>
-                <select class="form-select form-select-lg" @onchange="OnCouncilSelected">
-                    <option value="">-- Select a Council --</option>
-                    @foreach (var council in Councils)
-                    {
-                        <option value="@council.Name">@council.Name (@council.Type)</option>
-                    }
-                </select>
+<div class="modern-container">
+    <!-- Animated Header -->
+    <div class="hero-section">
+        <div class="hero-content">
+            <div class="hero-icon">
+                <i class="fas fa-concierge-bell"></i>
             </div>
+            <h1 class="hero-title">Local Government Services Portal</h1>
+            <p class="hero-subtitle">Select your local council and access available services</p>
         </div>
+        <div class="hero-decoration"></div>
     </div>
 
-    @if (SelectedCouncil != null)
+    @if (!string.IsNullOrWhiteSpace(Feedback))
     {
-        <hr class="my-4" />
-        <h4 class="text-center mb-4">Services offered by <strong>@SelectedCouncil.Name</strong></h4>
-        <div class="row g-3">
-            @foreach (var service in SelectedCouncil.Services)
-            {
-                <div class="col-md-4">
-                    <div class="card h-100 text-center service-card" @onclick="() => SelectService(service)">
-                        <div class="card-body">
-                            <h5 class="card-title">@service.Name</h5>
-                            <p class="card-text text-muted">Click to learn more</p>
-                        </div>
-                    </div>
-                </div>
-            }
+        <div class="notification @(Feedback.Contains("Error") ? "notification-error" : "notification-success")">
+            <div class="notification-content">
+                <i class="fas @(Feedback.Contains("Error") ? "fa-exclamation-circle" : "fa-check-circle")"></i>
+                <span>@Feedback</span>
+            </div>
+            <button class="notification-close" @onclick="() => Feedback = null">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
     }
-    else
+
+    @if (CurrentView == "select-organization")
     {
-        <div class="text-center mt-5">
-            <p class="text-muted">Please select a council to view its services.</p>
+        <div class="view-container">
+            <div class="card modern-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <h3>Select Local Council</h3>
+                </div>
+                <div class="card-content">
+                    @if (Organizations == null)
+                    {
+                        <div class="loading-state">
+                            <div class="spinner"></div>
+                            <p>Loading organizations...</p>
+                        </div>
+                    }
+                    else if (!Organizations.Any())
+                    {
+                        <div class="empty-state">
+                            <i class="fas fa-building"></i>
+                            <h4>No organizations available</h4>
+                            <p>Please contact your administrator.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="form-group">
+                            <label class="form-label">Choose your local council:</label>
+                            <div class="select-wrapper">
+                                <select class="modern-select" @onchange="OnOrganizationSelected">
+                                    <option value="">-- Select Local Council --</option>
+                                    @foreach (var org in Organizations)
+                                    {
+                                        <option value="@org.Id">@org.Name</option>
+                                    }
+                                </select>
+                                <i class="fas fa-chevron-down select-arrow"></i>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (CurrentView == "services-list")
+    {
+        <div class="organization-bar">
+            <div class="organization-info">
+                <div class="organization-icon">
+                    <i class="fas fa-building"></i>
+                </div>
+                <div>
+                    <span class="organization-label">Selected Organization</span>
+                    <h4 class="organization-name">@SelectedOrganization?.Name</h4>
+                </div>
+            </div>
+            <button class="btn-secondary" @onclick='() => ShowView("select-organization")'>
+                <i class="fas fa-exchange-alt"></i>
+                Change Council
+            </button>
+        </div>
+
+        <div class="card modern-card">
+            <div class="card-header">
+                <div class="card-icon">
+                    <i class="fas fa-list"></i>
+                </div>
+                <h3>Available Services</h3>
+            </div>
+            <div class="card-content">
+                @if (Services == null)
+                {
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                        <p>Loading services...</p>
+                    </div>
+                }
+                else if (!Services.Any())
+                {
+                    <div class="empty-state">
+                        <i class="fas fa-clipboard-list"></i>
+                        <h4>No services available</h4>
+                        <p>This local council has not published any services yet.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="services-grid">
+                        @foreach (var service in Services.OrderBy(s => s.Name))
+                        {
+                            <div class="service-card" @onclick="() => StartServiceAsync(service.Id)">
+                                <div class="service-header">
+                                    <div class="service-icon">
+                                        <i class="fas fa-file-alt"></i>
+                                    </div>
+                                    <div class="service-info">
+                                        <h5 class="service-title">@service.Name</h5>
+                                        <span class="service-fields">@service.Fields.Count field@(service.Fields.Count != 1 ? "s" : "")</span>
+                                    </div>
+                                </div>
+
+                                @if (!string.IsNullOrEmpty(service.Description))
+                                {
+                                    <p class="service-description">
+                                        @(service.Description.Length > 100 ? service.Description.Substring(0, 100) + "..." : service.Description)
+                                    </p>
+                                }
+
+                                <div class="service-footer">
+                                    <button class="btn-primary service-button">
+                                        <i class="fas fa-play"></i>
+                                        Start Application
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (CurrentView == "service-form" && ServiceFormModel != null)
+    {
+        <div class="form-header">
+            <div class="form-title-section">
+                <h2 class="form-title">@ServiceFormModel.ServiceName</h2>
+                @if (!string.IsNullOrEmpty(ServiceFormModel.ServiceDescription))
+                {
+                    <p class="form-subtitle">@ServiceFormModel.ServiceDescription</p>
+                }
+            </div>
+            <button class="btn-secondary" @onclick='() => ShowView("services-list")'>
+                <i class="fas fa-arrow-left"></i>
+                Back to Services
+            </button>
+        </div>
+
+        <div class="card modern-card">
+            <div class="card-header">
+                <div class="card-icon">
+                    <i class="fas fa-edit"></i>
+                </div>
+                <h3>Application Form</h3>
+            </div>
+            <div class="card-content">
+                <EditForm Model="ServiceFormModel" OnValidSubmit="SubmitServiceFormAsync">
+                    <DataAnnotationsValidator />
+
+                    @foreach (var field in ServiceFormModel.Fields)
+                    {
+                        <div class="form-field">
+                            <label class="field-label">
+                                @field.Label
+                                @if (field.IsRequired)
+                                {
+                                    <span class="required-indicator">*</span>
+                                }
+                            </label>
+
+                            @if (!string.IsNullOrEmpty(field.Description))
+                            {
+                                <div class="field-description">@field.Description</div>
+                            }
+
+                            <div class="field-input">
+                                @switch (field.Type)
+                                {
+                                    case ServiceModels.FieldType.TextArea:
+                                        <InputTextArea class="modern-textarea" @bind-Value="field.Value"
+                                                       placeholder="@field.Placeholder" rows="4" />
+                                        break;
+                                    case ServiceModels.FieldType.Select:
+                                        <div class="select-wrapper">
+                                            <InputSelect class="modern-select" @bind-Value="field.Value">
+                                                <option value="">-- Please select --</option>
+                                                @foreach (var option in field.ParsedOptions)
+                                                {
+                                                    <option value="@option">@option</option>
+                                                }
+                                            </InputSelect>
+                                            <i class="fas fa-chevron-down select-arrow"></i>
+                                        </div>
+                                        break;
+                                    case ServiceModels.FieldType.Radio:
+                                        <InputRadioGroup @bind-Value="field.Value" class="radio-group">
+                                            @foreach (var option in field.ParsedOptions)
+                                            {
+                                                <div class="radio-item">
+                                                    <InputRadio class="modern-radio" Value="@option" id="@($"radio_{field.Id}_{option}")" />
+                                                    <label class="radio-label" for="@($"radio_{field.Id}_{option}")">@option</label>
+                                                </div>
+                                            }
+                                        </InputRadioGroup>
+                                        break;
+                                    case ServiceModels.FieldType.Checkbox:
+                                        <div class="checkbox-group">
+                                            @foreach (var option in field.ParsedOptions)
+                                            {
+                                                <div class="checkbox-item">
+                                                    <input class="modern-checkbox" type="checkbox" id="@($"check_{field.Id}_{option}")"
+                                                           @bind="field.CheckboxValues[option]" />
+                                                    <label class="checkbox-label" for="@($"check_{field.Id}_{option}")">@option</label>
+                                                </div>
+                                            }
+                                        </div>
+                                        break;
+                                    case ServiceModels.FieldType.File:
+                                        <InputFile class="modern-file" OnChange="e => field.Files = e.GetMultipleFiles()" multiple />
+                                        break;
+                                    case ServiceModels.FieldType.Email:
+                                        <InputText type="email" class="modern-input" @bind-Value="field.Value" placeholder="@field.Placeholder" />
+                                        break;
+                                    case ServiceModels.FieldType.Date:
+                                        <InputDate class="modern-input" @bind-Value="DateValue"
+                                                   @onchange="(e) => field.Value = e.Value?.ToString()" />
+                                        break;
+                                    case ServiceModels.FieldType.Number:
+                                        <InputNumber class="modern-input" @bind-Value="NumberValue"
+                                                     @onchange="(e) => field.Value = e.Value?.ToString()" placeholder="@field.Placeholder" />
+                                        break;
+                                    default:
+                                        <InputText type="text" class="modern-input" @bind-Value="field.Value" placeholder="@field.Placeholder" />
+                                        break;
+                                }
+                            </div>
+                            <ValidationMessage For="@(() => field.Value)" class="field-error" />
+                        </div>
+                    }
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary btn-large" disabled="@IsSubmitting">
+                            @if (IsSubmitting)
+                            {
+                                <div class="btn-spinner"></div>
+                                <span>Submitting...</span>
+                            }
+                            else
+                            {
+                                <i class="fas fa-paper-plane"></i>
+                                <span>Submit Application</span>
+                            }
+                        </button>
+                        <button type="button"
+                                class="btn-secondary btn-large"
+                                @onclick="@(() => ShowView("services-list"))"
+                                disabled="@IsSubmitting">
+                            <i class="fas fa-times"></i>
+                            Cancel
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
         </div>
     }
 </div>
 
-@if (showModal)
-{
-    <div class="modal fade show" tabindex="-1" style="display: block;" role="dialog">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">@SelectedService?.Name</h5>
-                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
-                </div>
-                <div class="modal-body text-center py-4">
-                    <h3 class="fw-light">🚀 Coming Soon!</h3>
-                    <p class="text-muted">This service will be available shortly. Please check back later.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="modal-backdrop fade show"></div>
-}
-
-
 <style>
-    .service-card {
+    .modern-container {
+        --primary-black: #000000;
+        --secondary-black: #1a1a1a;
+        --light-gray: #f8f9fa;
+        --medium-gray: #6c757d;
+        --border-gray: #e9ecef;
+        --hover-gray: #f5f5f5;
+        --shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+        --shadow-hover: 0 8px 40px rgba(0, 0, 0, 0.12);
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        --border-radius: 12px;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    .modern-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: var(--light-gray);
+        min-height: 100vh;
+    }
+
+    /* Hero Section */
+    .hero-section {
+        position: relative;
+        background: linear-gradient(135deg, var(--primary-black) 0%, var(--secondary-black) 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: var(--border-radius);
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+    }
+
+    .hero-icon {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        opacity: 0.9;
+    }
+
+    .hero-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0 0 0.25rem 0;
+        letter-spacing: -0.02em;
+    }
+
+    .hero-subtitle {
+        font-size: 0.9rem;
+        opacity: 0.8;
+        margin: 0;
+        font-weight: 400;
+    }
+
+    .hero-decoration {
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 40%;
+        height: 200%;
+        background: linear-gradient(45deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+        transform: rotate(15deg);
+    }
+
+    /* Notifications */
+    .notification {
+        background: white;
+        border: 1px solid var(--border-gray);
+        border-radius: var(--border-radius);
+        padding: 1rem 1.5rem;
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: var(--shadow);
+        animation: slide-in-down-animation 0.3s ease-out;
+    }
+
+    .notification-success {
+        border-left: 4px solid #22c55e;
+    }
+
+    .notification-error {
+        border-left: 4px solid #ef4444;
+    }
+
+    .notification-content {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+        .notification-content i {
+            font-size: 1.1rem;
+        }
+
+    .notification-success .notification-content i {
+        color: #22c55e;
+    }
+
+    .notification-error .notification-content i {
+        color: #ef4444;
+    }
+
+    .notification-close {
+        background: none;
+        border: none;
+        font-size: 1rem;
         cursor: pointer;
-        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        color: var(--medium-gray);
+        padding: 0.25rem;
+        border-radius: 4px;
+        transition: var(--transition);
+    }
+
+        .notification-close:hover {
+            background: var(--hover-gray);
+            color: var(--primary-black);
+        }
+
+    /* Cards */
+    .modern-card {
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        margin-bottom: 2rem;
+        overflow: hidden;
+        transition: var(--transition);
+    }
+
+    .card-header {
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid var(--border-gray);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        background: var(--primary-black);
+        color: white;
+    }
+
+    .card-icon {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        font-size: 1.2rem;
+    }
+
+    .card-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+    }
+
+    .card-content {
+        padding: 2rem;
+    }
+
+    /* View Container */
+    .view-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 400px;
+    }
+
+        .view-container .modern-card {
+            width: 100%;
+            max-width: 500px;
+            margin: 0;
+        }
+
+    /* Loading and Empty States */
+    .loading-state, .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--medium-gray);
+    }
+
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid var(--border-gray);
+        border-top: 3px solid var(--primary-black);
+        border-radius: 50%;
+        animation: spin-animation 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .empty-state h4 {
+        margin: 0 0 0.5rem 0;
+        color: var(--primary-black);
+    }
+
+    /* Organization Bar */
+    .organization-bar {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 1.5rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-gray);
+    }
+
+    .organization-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .organization-icon {
+        width: 48px;
+        height: 48px;
+        background: var(--primary-black);
+        color: white;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    .organization-label {
+        color: var(--medium-gray);
+        font-size: 0.875rem;
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+
+    .organization-name {
+        margin: 0;
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--primary-black);
+    }
+
+    /* Services Grid */
+    .services-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .service-card {
+        background: white;
+        border: 1px solid var(--border-gray);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        cursor: pointer;
+        transition: var(--transition);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
     }
 
         .service-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--primary-black);
         }
+
+    .service-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .service-icon {
+        width: 48px;
+        height: 48px;
+        background: var(--primary-black);
+        color: white;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .service-info {
+        flex: 1;
+    }
+
+    .service-title {
+        margin: 0 0 0.25rem 0;
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--primary-black);
+        line-height: 1.3;
+    }
+
+    .service-fields {
+        color: var(--medium-gray);
+        font-size: 0.875rem;
+    }
+
+    .service-description {
+        color: var(--medium-gray);
+        margin: 0 0 1.5rem 0;
+        line-height: 1.5;
+        flex: 1;
+    }
+
+    .service-footer {
+        margin-top: auto;
+    }
+
+    .service-button {
+        width: 100%;
+        pointer-events: none;
+    }
+
+    /* Form Header */
+    .form-header {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        margin-bottom: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-gray);
+    }
+
+    .form-title {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--primary-black);
+        letter-spacing: -0.02em;
+    }
+
+    .form-subtitle {
+        margin: 0;
+        color: var(--medium-gray);
+        line-height: 1.5;
+    }
+
+    /* Form Fields */
+    .form-field {
+        margin-bottom: 2rem;
+    }
+
+    .field-label {
+        display: block;
+        font-weight: 600;
+        color: var(--primary-black);
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        letter-spacing: 0.01em;
+    }
+
+    .required-indicator {
+        color: #ef4444;
+        margin-left: 0.25rem;
+    }
+
+    .field-description {
+        color: var(--medium-gray);
+        font-size: 0.875rem;
+        margin-bottom: 0.75rem;
+        line-height: 1.4;
+    }
+
+    .field-input {
+        position: relative;
+    }
+
+    /* Form Inputs */
+    .modern-input, .modern-textarea, .modern-select, .modern-file {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--border-gray);
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: var(--transition);
+        background: white;
+        font-family: inherit;
+    }
+
+        .modern-input:focus, .modern-textarea:focus, .modern-select:focus {
+            outline: none;
+            border-color: var(--primary-black);
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+        }
+
+    .modern-textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    .select-wrapper {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+    }
+
+    .select-arrow {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--medium-gray);
+        pointer-events: none;
+        font-size: 0.875rem;
+        z-index: 1;
+    }
+
+    .select-wrapper:hover .select-arrow {
+        color: var(--primary-black);
+    }
+
+    .modern-select {
+        appearance: none;
+        background-image: none;
+        padding-right: 2.5rem;
+        cursor: pointer;
+        background-color: white;
+    }
+
+        .modern-select:focus {
+            outline: none;
+            border-color: var(--primary-black);
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .modern-select option {
+            padding: 0.5rem;
+            background-color: white;
+            color: var(--primary-black);
+        }
+
+    /* Radio and Checkbox Groups */
+    .radio-group, .checkbox-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .radio-item, .checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .modern-radio, .modern-checkbox {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+
+    .radio-label, .checkbox-label {
+        cursor: pointer;
+        font-size: 0.95rem;
+        color: var(--primary-black);
+        user-select: none;
+    }
+
+    /* File Input */
+    .modern-file {
+        cursor: pointer;
+    }
+
+        .modern-file::file-selector-button {
+            background: var(--primary-black);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            margin-right: 1rem;
+            transition: var(--transition);
+        }
+
+            .modern-file::file-selector-button:hover {
+                background: var(--secondary-black);
+            }
+
+    /* Form Group */
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 600;
+        color: var(--primary-black);
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    /* Buttons */
+    .btn-primary, .btn-secondary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: var(--transition);
+        text-decoration: none;
+        font-family: inherit;
+        line-height: 1;
+    }
+
+    .btn-primary {
+        background: var(--primary-black);
+        color: white;
+    }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--secondary-black);
+            transform: translateY(-1px);
+        }
+
+    .btn-secondary {
+        background: white;
+        border: 1px solid var(--border-gray);
+        color: var(--primary-black);
+    }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: var(--hover-gray);
+            border-color: var(--primary-black);
+        }
+
+    .btn-large {
+        padding: 1rem 2rem;
+        font-size: 1rem;
+    }
+
+    .btn-primary:disabled, .btn-secondary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    /* Button Spinner */
+    .btn-spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top: 2px solid white;
+        border-radius: 50%;
+        animation: spin-animation 1s linear infinite;
+    }
+
+    /* Form Actions */
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--border-gray);
+    }
+
+    /* Field Error */
+    .field-error {
+        color: #ef4444;
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
+        display: block;
+    }
+
+    /* Animations */
+    .spin {
+        animation: spin-animation 1s linear infinite;
+    }
+
+    .slide-in-down {
+        animation: slide-in-down-animation 0.3s ease-out;
+    }
+
+ 
+        transform: rotate(360deg);
+    }
+
+    }
+
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    }
+
+    /* Alternative Dropdown Styles */
+
+    /* Option 2: Council Card Grid */
+    .council-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .council-card {
+        background: white;
+        border: 2px solid var(--border-gray);
+        border-radius: 8px;
+        padding: 1.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: var(--transition);
+        position: relative;
+    }
+
+        .council-card:hover {
+            border-color: var(--primary-black);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+    .council-icon {
+        width: 48px;
+        height: 48px;
+        background: var(--primary-black);
+        color: white;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 1.2rem;
+    }
+
+    .council-name {
+        margin: 0 0 0.5rem 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--primary-black);
+    }
+
+    .council-arrow {
+        color: var(--medium-gray);
+        font-size: 0.875rem;
+    }
+
+    .council-card:hover .council-arrow {
+        color: var(--primary-black);
+    }
+
+    /* Option 3: Council List */
+    .council-list {
+        margin-top: 1rem;
+    }
+
+    .council-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border: 1px solid var(--border-gray);
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        cursor: pointer;
+        transition: var(--transition);
+        background: white;
+    }
+
+        .council-item:hover {
+            border-color: var(--primary-black);
+            background: var(--hover-gray);
+        }
+
+    .council-item-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--primary-black);
+        color: white;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        font-size: 1rem;
+    }
+
+    .council-item-content {
+        flex: 1;
+    }
+
+    .council-item-name {
+        margin: 0 0 0.25rem 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--primary-black);
+    }
+
+    .council-item-description {
+        color: var(--medium-gray);
+        font-size: 0.875rem;
+    }
+
+    .council-item-arrow {
+        color: var(--medium-gray);
+        font-size: 0.875rem;
+    }
+
+    .council-item:hover .council-item-arrow {
+        color: var(--primary-black);
+    }
+
+    .responsive-small {
+        /* styles for small screens */
+    }
+
+    .responsive-medium {
+        /* styles for medium screens */
+    }
 </style>
 
+@code
+{
+    private string CurrentView = "select-organization";
+    private string? Feedback;
+    private List<Organization>? Organizations;
+    private Organization? SelectedOrganization;
+    private List<ServiceModels.Service>? Services;
+    private UserServiceFormModel? ServiceFormModel;
+    private bool IsSubmitting = false;
+    private DateTime? DateValue;
+    private decimal? NumberValue;
 
-@code {
-    // Models
-    private class Council
+    private ClaimsPrincipal user;
+    private ApplicationUser appUser;
+
+    protected override async Task OnInitializedAsync()
     {
-        public string Name { get; set; } = "";
-        public string Type { get; set; } = ""; // City, Municipal, District
-        public List<Service> Services { get; set; } = new();
-    }
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        user = authState.User;
 
-    private class Service
-    {
-        public string Name { get; set; } = "";
-        // IsSelected is no longer needed for this UI flow
-    }
-
-    // Component State
-    private List<Council> Councils = new();
-    private Council? SelectedCouncil;
-    private Service? SelectedService;
-    private bool showModal = false;
-
-    protected override void OnInitialized()
-    {
-        // Sample Data - Replace with your actual data source
-        Councils = new List<Council>
+        if (user.Identity != null && user.Identity.IsAuthenticated)
         {
-            new Council
+            appUser = await UserManager.GetUserAsync(user);
+        }
+
+        await LoadOrganizationsAsync();
+    }
+
+    private async Task LoadOrganizationsAsync()
+    {
+        try
+        {
+            // Load all active organizations - you might want to filter this based on your business logic
+            Organizations = await _db.Organisations
+                .OrderBy(o => o.Name)
+                .Select(o => new Organization { Id = o.Id, Name = o.Name })
+                .ToListAsync();
+
+            // Debug logging - remove this after testing
+            Console.WriteLine($"Loaded {Organizations?.Count ?? 0} organizations:");
+            if (Organizations != null)
             {
-                Name = "Lusaka City Council", Type = "City",
-                Services = new List<Service>
+                foreach (var org in Organizations)
                 {
-                    new() { Name = "Water Supply" },
-                    new() { Name = "Waste Management" },
-                    new() { Name = "Urban Planning" },
-                    new() { Name = "Public Health" }
-                }
-            },
-            new Council
-            {
-                Name = "Mumbwa District Council", Type = "District",
-                Services = new List<Service>
-                {
-                    new() { Name = "Road Maintenance" },
-                    new() { Name = "Market Licensing" },
-                    new() { Name = "Cemeteries & Mortuary" }
-                }
-            },
-            new Council
-            {
-                Name = "Chingola Municipal Council", Type = "Municipal",
-                Services = new List<Service>
-                {
-                    new() { Name = "Fire & Rescue Services" },
-                    new() { Name = "Recreation Facilities" },
-                    new() { Name = "Public Sanitation" }
+                    Console.WriteLine($"- {org.Id}: {org.Name}");
                 }
             }
-        };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading organizations: {ex}");
+            Feedback = $"Error loading organizations: {ex.Message}";
+        }
     }
 
-    private void OnCouncilSelected(ChangeEventArgs e)
+    private async Task SelectCouncil(Guid orgId)
     {
-        var selectedName = e.Value?.ToString();
-        SelectedCouncil = Councils.FirstOrDefault(c => c.Name == selectedName);
-        CloseModal(); // Close modal if it was open from a previous selection
+        try
+        {
+            Console.WriteLine($"SelectCouncil called with orgId: {orgId}");
+            SelectedOrganization = Organizations?.FirstOrDefault(o => o.Id == orgId);
+            if (SelectedOrganization != null)
+            {
+                Console.WriteLine($"Selected organization: {SelectedOrganization.Name}");
+                await LoadServicesForOrganizationAsync(orgId);
+                ShowView("services-list");
+            }
+            else
+            {
+                Console.WriteLine("Organization not found");
+                Feedback = "Council not found";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in SelectCouncil: {ex}");
+            Feedback = $"Error selecting council: {ex.Message}";
+        }
     }
 
-    private void SelectService(Service service)
+    private async Task OnOrganizationSelected(ChangeEventArgs e)
     {
-        SelectedService = service;
-        showModal = true;
+        if (Guid.TryParse(e.Value?.ToString(), out var orgId))
+        {
+            SelectedOrganization = Organizations?.FirstOrDefault(o => o.Id == orgId);
+            if (SelectedOrganization != null)
+            {
+                await LoadServicesForOrganizationAsync(orgId);
+                ShowView("services-list");
+            }
+        }
     }
 
-    private void CloseModal()
+    private async Task LoadServicesForOrganizationAsync(Guid organizationId)
     {
-        showModal = false;
-        SelectedService = null;
+        try
+        {
+            Console.WriteLine($"Loading services for organization: {organizationId}");
+
+            // Use the same pattern as your ServiceService but adapted for the organization filter
+            Services = await _db.Services
+                .Where(s => s.OrganisationId == organizationId && s.IsActive)
+                .Include(s => s.Fields) // This should match your ServiceService pattern
+                .Select(s => new ServiceModels.Service
+                {
+                    Id = s.Id,
+                    Name = s.Name,
+                    Description = s.Description ?? "",
+                    WorkflowTemplateId = s.WorkflowTemplateId,
+                    DocumentTemplateId = s.DocumentTemplateId,
+                    Fields = s.Fields.Select(f => new ServiceModels.ServiceField
+                    {
+                        Id = f.Id,
+                        Name = f.Name ?? "",
+                        Label = f.Label ?? "",
+                        Description = f.Description ?? "",
+                        FieldType = f.FieldType,
+                        IsRequired = f.IsRequired,
+                        Placeholder = f.Placeholder ?? "",
+                        DefaultValue = f.DefaultValue ?? "",
+                        DisplayOrder = f.DisplayOrder,
+                        Options = f.Options ?? new List<ServiceModels.FieldOption>()
+                    }).OrderBy(f => f.DisplayOrder).ToList()
+                })
+                .OrderBy(s => s.Name)
+                .ToListAsync();
+
+            Console.WriteLine($"Loaded {Services?.Count ?? 0} services for organization {organizationId}");
+            if (Services != null)
+            {
+                foreach (var service in Services)
+                {
+                    Console.WriteLine($"Service: {service.Id} - {service.Name} (Fields: {service.Fields?.Count ?? 0})");
+                    if (service.Fields != null)
+                    {
+                        foreach (var field in service.Fields)
+                        {
+                            Console.WriteLine($"  Field: {field.Id} - {field.Label} ({field.FieldType})");
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading services: {ex}");
+            Feedback = $"Error loading services: {ex.Message}";
+            Services = new List<ServiceModels.Service>();
+        }
+    }
+
+    private async Task StartServiceAsync(int serviceId)
+    {
+        try
+        {
+            Console.WriteLine($"StartServiceAsync called with serviceId: {serviceId}");
+            Console.WriteLine($"Available services count: {Services?.Count ?? 0}");
+
+            var service = Services?.FirstOrDefault(s => s.Id == serviceId);
+            if (service == null)
+            {
+                Console.WriteLine($"Service with ID {serviceId} not found in Services list, trying ServiceService");
+
+                // Fallback: Try to load the service using the ServiceService
+                try
+                {
+                    service = await ServiceService.GetServiceAsync(serviceId);
+                    Console.WriteLine($"Loaded service via ServiceService: {service?.Name ?? "null"}");
+
+                    if (service == null)
+                    {
+                        Feedback = $"Service not found (ID: {serviceId})";
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error loading service via ServiceService: {ex.Message}");
+                    Feedback = $"Service not found (ID: {serviceId})";
+                    return;
+                }
+            }
+
+            Console.WriteLine($"Found service: {service.Name} with {service.Fields?.Count ?? 0} fields");
+
+            ServiceFormModel = new UserServiceFormModel
+            {
+                ServiceId = service.Id,
+                ServiceName = service.Name,
+                ServiceDescription = service.Description,
+                WorkflowTemplateId = service.WorkflowTemplateId,
+                DocumentTemplateId = service.DocumentTemplateId,
+                Fields = service.Fields?.Select(f => new UserFieldModel
+                {
+                    Id = f.Id,
+                    Name = f.Name,
+                    Label = f.Label,
+                    Description = f.Description,
+                    Type = f.FieldType,
+                    IsRequired = f.IsRequired,
+                    Placeholder = f.Placeholder,
+                    DefaultValue = f.DefaultValue,
+                    OptionsRaw = string.Join(Environment.NewLine, f.Options?.Select(o => o.Value) ?? new List<string>()),
+                    Value = f.DefaultValue ?? "",
+                    CheckboxValues = f.Options?.ToDictionary(o => o.Value, o => false) ?? new Dictionary<string, bool>()
+                }).ToList() ?? new List<UserFieldModel>()
+            };
+
+            Console.WriteLine($"ServiceFormModel created with {ServiceFormModel.Fields.Count} fields");
+            foreach (var field in ServiceFormModel.Fields)
+            {
+                Console.WriteLine($"  Field: {field.Label} ({field.Type}) - Required: {field.IsRequired}");
+            }
+
+            ShowView("service-form");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in StartServiceAsync: {ex}");
+            Feedback = $"Error loading service form: {ex.Message}";
+        }
+    }
+
+    private async Task SubmitServiceFormAsync()
+    {
+        if (ServiceFormModel == null) return;
+
+        IsSubmitting = true;
+        try
+        {
+            // Validate required fields
+            foreach (var field in ServiceFormModel.Fields.Where(f => f.IsRequired))
+            {
+                if (field.Type == ServiceModels.FieldType.Checkbox)
+                {
+                    if (!field.CheckboxValues.Any(kv => kv.Value))
+                    {
+                        Feedback = $"Field '{field.Label}' is required";
+                        return;
+                    }
+                }
+                else if (string.IsNullOrWhiteSpace(field.Value))
+                {
+                    Feedback = $"Field '{field.Label}' is required";
+                    return;
+                }
+            }
+
+            var values = new List<SubmissionValue>();
+
+            foreach (var field in ServiceFormModel.Fields)
+            {
+                if (field.Type == ServiceModels.FieldType.Checkbox)
+                {
+                    foreach (var kv in field.CheckboxValues.Where(kv => kv.Value))
+                    {
+                        values.Add(new SubmissionValue
+                        {
+                            FieldId = field.Id,
+                            Value = kv.Key
+                        });
+                    }
+                }
+                else if (!string.IsNullOrEmpty(field.Value))
+                {
+                    values.Add(new SubmissionValue
+                    {
+                        FieldId = field.Id,
+                        Value = field.Value
+                    });
+                }
+            }
+
+            var submittedBy = appUser?.UserName ?? "Anonymous";
+            var submission = await ServiceService.SubmitServiceAsync(ServiceFormModel.ServiceId, new SubmitServiceRequest
+            {
+                SubmittedBy = submittedBy,
+                IpAddress = "0.0.0.0", // You might want to get the actual IP
+                UserAgent = "User Portal",
+                Values = values
+            });
+
+            // Start workflow if template is assigned
+            if (ServiceFormModel.WorkflowTemplateId.HasValue && appUser != null)
+            {
+                var workflow = await WorkflowFactory.CreateInstanceAsync(
+                    ServiceFormModel.WorkflowTemplateId.Value,
+                    appUser.Id,
+                    ServiceFormModel.ServiceId);
+
+                submission.WorkflowInstanceId = workflow.Id;
+                _db.Update(submission);
+                await _db.SaveChangesAsync();
+            }
+
+            Feedback = "Your application has been submitted successfully! You will be contacted regarding the status of your request.";
+            ServiceFormModel = null;
+            ShowView("services-list");
+        }
+        catch (Exception ex)
+        {
+            Feedback = $"Error submitting application: {ex.Message}";
+        }
+        finally
+        {
+            IsSubmitting = false;
+        }
+    }
+
+    private void ShowView(string view)
+    {
+        CurrentView = view;
+        Feedback = null;
+        StateHasChanged();
+    }
+
+    public class Organization
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+    }
+
+    public class UserServiceFormModel
+    {
+        public int ServiceId { get; set; }
+        public string ServiceName { get; set; } = string.Empty;
+        public string ServiceDescription { get; set; } = string.Empty;
+        public Guid? WorkflowTemplateId { get; set; }
+        public Guid? DocumentTemplateId { get; set; }
+        public List<UserFieldModel> Fields { get; set; } = new();
+    }
+
+    public class UserFieldModel
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Label { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public ServiceModels.FieldType Type { get; set; }
+        public bool IsRequired { get; set; }
+        public string Placeholder { get; set; } = string.Empty;
+        public string? DefaultValue { get; set; }
+        public string? OptionsRaw { get; set; }
+
+        public List<string> ParsedOptions =>
+            OptionsRaw?.Split(Environment.NewLine,
+                StringSplitOptions.RemoveEmptyEntries |
+                StringSplitOptions.TrimEntries)
+            .ToList() ?? new();
+
+        [Required]
+        public string Value { get; set; } = string.Empty;
+        public Dictionary<string, bool> CheckboxValues { get; set; } = new();
+        public IReadOnlyList<IBrowserFile>? Files { get; set; }
     }
 }
