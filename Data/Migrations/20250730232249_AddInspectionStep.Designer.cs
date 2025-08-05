@@ -4,6 +4,7 @@ using LocalGov360.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LocalGov360.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250730232249_AddInspectionStep")]
+    partial class AddInspectionStep
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -173,12 +176,6 @@ namespace LocalGov360.Migrations
                     b.Property<Guid?>("DocumentTemplateId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime?>("EndDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("FeeType")
-                        .HasColumnType("int");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -196,12 +193,6 @@ namespace LocalGov360.Migrations
 
                     b.Property<Guid?>("OrganisationId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal?>("ServiceFee")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime?>("StartDate")
-                        .HasColumnType("datetime2");
 
                     b.Property<Guid?>("WorkflowTemplateId")
                         .HasColumnType("uniqueidentifier");
@@ -392,8 +383,8 @@ namespace LocalGov360.Migrations
                     b.Property<string>("ResponsePayload")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("ServiceId")
-                        .HasColumnType("int");
+                    b.Property<Guid>("ServiceId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -500,8 +491,7 @@ namespace LocalGov360.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("ServiceId")
                         .HasColumnType("int");
@@ -517,8 +507,6 @@ namespace LocalGov360.Migrations
                     b.HasIndex("InitiatedById");
 
                     b.HasIndex("ServiceId");
-
-                    b.HasIndex("Status");
 
                     b.HasIndex("WorkflowTemplateId");
 
@@ -548,8 +536,7 @@ namespace LocalGov360.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Order")
                         .HasColumnType("int");
@@ -567,10 +554,6 @@ namespace LocalGov360.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("Order");
-
-                    b.HasIndex("Status");
 
                     b.HasIndex("WorkflowInstanceId");
 
@@ -592,13 +575,11 @@ namespace LocalGov360.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid?>("OrganisationId")
                         .HasColumnType("uniqueidentifier");
@@ -618,8 +599,7 @@ namespace LocalGov360.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Discriminator")
                         .IsRequired()
@@ -628,8 +608,7 @@ namespace LocalGov360.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Order")
                         .HasColumnType("int");
@@ -638,8 +617,6 @@ namespace LocalGov360.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("Order");
 
                     b.HasIndex("WorkflowTemplateId");
 
@@ -770,25 +747,17 @@ namespace LocalGov360.Migrations
 
                     b.Property<string>("ActualApprovers")
                         .IsRequired()
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("ActualApprovers");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("MinimumApprovals")
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasColumnType("int")
-                        .HasColumnName("MinimumApprovals");
+                        .HasColumnType("int");
 
                     b.Property<string>("RequiredApprovers")
                         .IsRequired()
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("RequiredApprovers");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("RequiresAll")
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasColumnType("bit")
-                        .HasColumnName("RequiresAll");
+                        .HasColumnType("bit");
 
                     b.HasDiscriminator().HasValue("ApprovalInstanceStep");
                 });
@@ -796,12 +765,6 @@ namespace LocalGov360.Migrations
             modelBuilder.Entity("LocalGov360.Data.Models.InspectionInstanceStep", b =>
                 {
                     b.HasBaseType("LocalGov360.Data.Models.WorkflowInstanceStep");
-
-                    b.Property<string>("ActualApprovers")
-                        .IsRequired()
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("ActualApprovers");
 
                     b.Property<string>("InspectionComment")
                         .IsRequired()
@@ -812,24 +775,7 @@ namespace LocalGov360.Migrations
 
                     b.Property<string>("InspectionFile")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<int>("MinimumApprovals")
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasColumnType("int")
-                        .HasColumnName("MinimumApprovals");
-
-                    b.Property<string>("RequiredApprovers")
-                        .IsRequired()
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("RequiredApprovers");
-
-                    b.Property<bool>("RequiresAll")
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasColumnType("bit")
-                        .HasColumnName("RequiresAll");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasDiscriminator().HasValue("InspectionInstanceStep");
                 });
@@ -839,13 +785,11 @@ namespace LocalGov360.Migrations
                     b.HasBaseType("LocalGov360.Data.Models.WorkflowInstanceStep");
 
                     b.Property<decimal>("Amount")
-                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Currency")
                         .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("TransactionId")
                         .HasColumnType("nvarchar(max)");
@@ -858,20 +802,14 @@ namespace LocalGov360.Migrations
                     b.HasBaseType("LocalGov360.Data.Models.WorkflowTemplateStep");
 
                     b.Property<int>("MinimumApprovals")
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasColumnType("int")
-                        .HasColumnName("MinimumApprovals");
+                        .HasColumnType("int");
 
                     b.Property<string>("RequiredApprovers")
                         .IsRequired()
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("RequiredApprovers");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("RequiresAll")
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasColumnType("bit")
-                        .HasColumnName("RequiresAll");
+                        .HasColumnType("bit");
 
                     b.HasDiscriminator().HasValue("ApprovalTemplateStep");
                 });
@@ -879,22 +817,6 @@ namespace LocalGov360.Migrations
             modelBuilder.Entity("LocalGov360.Data.Models.InspectionTemplateStep", b =>
                 {
                     b.HasBaseType("LocalGov360.Data.Models.WorkflowTemplateStep");
-
-                    b.Property<int>("MinimumApprovals")
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasColumnType("int")
-                        .HasColumnName("MinimumApprovals");
-
-                    b.Property<string>("RequiredApprovers")
-                        .IsRequired()
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("RequiredApprovers");
-
-                    b.Property<bool>("RequiresAll")
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasColumnType("bit")
-                        .HasColumnName("RequiresAll");
 
                     b.HasDiscriminator().HasValue("InspectionTemplateStep");
                 });
@@ -904,13 +826,11 @@ namespace LocalGov360.Migrations
                     b.HasBaseType("LocalGov360.Data.Models.WorkflowTemplateStep");
 
                     b.Property<decimal>("Amount")
-                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Currency")
                         .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasDiscriminator().HasValue("PaymentTemplateStep");
                 });
@@ -1008,18 +928,16 @@ namespace LocalGov360.Migrations
                 {
                     b.HasOne("LocalGov360.Data.ApplicationUser", "InitiatedBy")
                         .WithMany()
-                        .HasForeignKey("InitiatedById")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .HasForeignKey("InitiatedById");
 
                     b.HasOne("LocalGov360.Data.Models.ServiceModels+Service", "Service")
                         .WithMany()
-                        .HasForeignKey("ServiceId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .HasForeignKey("ServiceId");
 
                     b.HasOne("LocalGov360.Data.Models.WorkflowTemplate", "Template")
                         .WithMany()
                         .HasForeignKey("WorkflowTemplateId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("InitiatedBy");
@@ -1044,8 +962,7 @@ namespace LocalGov360.Migrations
                 {
                     b.HasOne("LocalGov360.Data.Models.Organisation", "Organisation")
                         .WithMany()
-                        .HasForeignKey("OrganisationId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .HasForeignKey("OrganisationId");
 
                     b.Navigation("Organisation");
                 });

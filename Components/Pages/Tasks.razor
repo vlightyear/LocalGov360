@@ -10,6 +10,7 @@
 @inject NavigationManager NavigationManager
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject TinggPaymentService TinggPaymentService
 @rendermode InteractiveServer
 
 <style>
@@ -143,6 +144,21 @@
                     </div>
                 </div>
                 <div class="card-body px-0 pb-2">
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            @errorMessage
+                            <button type="button" class="btn-close" @onclick="() => errorMessage = null" aria-label="Close"></button>
+                        </div>
+                    }
+                    @if (isProcessingPayment)
+                    {
+                        <div class="text-center p-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Processing payment...</span>
+                            </div>
+                        </div>
+                    }
                     @if (isLoading)
                     {
                         <div class="text-center p-4">
@@ -169,11 +185,11 @@
                                     @foreach (var tl in TaskList)
                                     {
                                         var step = tl.Steps
-                                                        .Where(s => s.Status == StepStatus.InProgress
-                                                        && s is ApprovalInstanceStep ats
-                                                        && ats.RequiredApprovers.Any(r => roleIds.Contains(r)))
-                                                        .OrderBy(s => s.Order)
-                                                        .FirstOrDefault();
+                                        .Where(s => s.Status == StepStatus.InProgress
+                                        && s is ApprovalInstanceStep ats
+                                        && ats.RequiredApprovers.Any(r => roleIds.Contains(r)))
+                                        .OrderBy(s => s.Order)
+                                        .FirstOrDefault();
                                         if (tl.Steps.Any(s => s.Status == StepStatus.InProgress && s.Name == "Payment"))
                                         {
                                             step = tl.Steps.FirstOrDefault(s => s.Status == StepStatus.InProgress && s.Name == "Payment");
@@ -190,6 +206,10 @@
                                                     </div>
                                                     <div class="d-flex flex-column justify-content-center">
                                                         <h6 class="mb-0 text-sm">@(tl?.Service?.Name ?? "Unknown")</h6>
+                                                        @if (tl?.Service?.ServiceFee != null)
+                                                        {
+                                                            <p class="text-xs text-secondary mb-0">Fee: K @(tl.Service.ServiceFee.Value.ToString("N2")) (@tl.Service.FeeType)</p>
+                                                        }
                                                     </div>
                                                 </div>
                                             </td>
@@ -238,18 +258,20 @@
                                                     @(tl.CreatedAt.ToString("dd/MM/yy"))
                                                 </span>
                                             </td>
-                                            <td class="">
-                                                <div class="">
-                                                    <br />
-                                                    @if(step.Name == "Payment")
+                                            <td class="roles-table-actions">
+                                                <div class="action-buttons">
+                                                    @if (step?.Name == "Payment")
                                                     {
-                                                        <button class="btn btn-sm btn-outline-primary w-auto" @onclick="() => OpenPaymentTask(tl.Id)">
+                                                        <button class="btn btn-sm btn-outline-primary w-auto"
+                                                                @onclick="() => OpenPaymentTask(tl.Id)"
+                                                                disabled="@isProcessingPayment">
                                                             <i class="fas fa-money-check-alt"></i> Make Payment
                                                         </button>
                                                     }
                                                     else
                                                     {
-                                                        <button class="btn btn-sm btn-outline-primary w-auto" @onclick="() => OpenTask(tl.Id)">
+                                                        <button class="btn btn-sm btn-outline-primary w-auto"
+                                                                @onclick="() => OpenTask(tl.Id)">
                                                             <i class="fas fa-folder-open"></i> Open Task
                                                         </button>
                                                     }
@@ -275,9 +297,10 @@
 
 @code {
     private bool isLoading = true;
+    private bool isProcessingPayment = false;
+    private string? errorMessage;
     private ApplicationUser appUser;
-    private List<string> roleIds;
-
+    private List<string> roleIds = new();
     private List<WorkflowInstance> TaskList = new();
 
     protected override async Task OnInitializedAsync()
@@ -290,7 +313,6 @@
             appUser = await UserManager.GetUserAsync(user);
 
             var roleNames = await UserManager.GetRolesAsync(appUser);
-
             var roles = new List<IdentityRole>();
 
             foreach (var roleName in roleNames)
@@ -312,32 +334,37 @@
     {
         isLoading = true;
         TaskList.Clear();
+        errorMessage = null;
         StateHasChanged();
 
         try
         {
             using var context = DbContextFactory.CreateDbContext();
-            var TmpTaskList = await context.WorkflowInstances
-                                        .Include(wi => wi.Service)
-                                        .Include(wi => wi.Steps)
-                                        .Include(wi => wi.InitiatedBy)
-                                        .OrderBy(wi => wi.CreatedAt)
-                                        .ToListAsync();
-            TaskList = TmpTaskList
-                            .Where(wi => wi.Steps
-                                .OfType<ApprovalInstanceStep>()
-                                .Any(s =>
-                                    s.Status == StepStatus.InProgress &&
-                                    s.RequiredApprovers.Any(ra => roleIds.Contains(ra))))
-                            .ToList();
+            var tmpTaskList = await context.WorkflowInstances
+                .Include(wi => wi.Service)
+                .Include(wi => wi.Steps)
+                .Include(wi => wi.InitiatedBy)
+                .OrderBy(wi => wi.CreatedAt)
+                .ToListAsync();
 
-            var PaymentList = TmpTaskList.Where(tl => tl.InitiatedById == appUser.Id && tl.Steps.Any(s => s.Status == StepStatus.InProgress));
-            TaskList = TaskList.Concat(PaymentList).ToList();
+            TaskList = tmpTaskList
+                .Where(wi => wi.Steps
+                    .OfType<ApprovalInstanceStep>()
+                    .Any(s => s.Status == StepStatus.InProgress &&
+                              s.RequiredApprovers.Any(ra => roleIds.Contains(ra))))
+                .ToList();
 
+            var paymentList = tmpTaskList
+                .Where(tl => tl.InitiatedById == appUser.Id &&
+                             tl.Steps.Any(s => s.Status == StepStatus.InProgress && s.Name == "Payment"))
+                .ToList();
+
+            TaskList = TaskList.Concat(paymentList).Distinct().ToList();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading tasks: {ex.Message}");
+            errorMessage = $"Error loading tasks: {ex.Message}";
+            Console.WriteLine(errorMessage);
         }
         finally
         {
@@ -372,13 +399,80 @@
         return colors[index];
     }
 
-    private void OpenTask(Guid WorkflowInstanceId)
+    private void OpenTask(Guid workflowInstanceId)
     {
-        NavigationManager.NavigateTo($"/tasks/{WorkflowInstanceId}");
+        NavigationManager.NavigateTo($"/tasks/{workflowInstanceId}");
     }
 
-    private void OpenPaymentTask(Guid WorkflowInstanceId)
+    private async Task OpenPaymentTask(Guid workflowInstanceId)
     {
-        //NavigationManager.NavigateTo($"/tasks/{WorkflowInstanceId}");
+        isProcessingPayment = true;
+        errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
+            var workflowInstance = await context.WorkflowInstances
+                .Include(wi => wi.Service)
+                .Include(wi => wi.Steps)
+                .FirstOrDefaultAsync(wi => wi.Id == workflowInstanceId);
+
+            if (workflowInstance == null)
+            {
+                errorMessage = "Workflow instance not found.";
+                return;
+            }
+
+            var paymentStep = workflowInstance.Steps
+                .FirstOrDefault(s => s.Status == StepStatus.InProgress && s.Name == "Payment");
+
+            if (paymentStep == null)
+            {
+                errorMessage = "No payment step found in progress.";
+                return;
+            }
+
+            var service = workflowInstance.Service;
+            if (service == null)
+            {
+                errorMessage = "Service not found for this workflow.";
+                return;
+            }
+
+            if (!service.ServiceFee.HasValue || service.ServiceFee <= 0)
+            {
+                errorMessage = "Invalid or missing service fee.";
+                return;
+            }
+
+            var payment = await TinggPaymentService.InitiateTinggPaymentAsync(
+                organisationId: service.OrganisationId ?? Guid.Empty,
+                workflowInstanceId: workflowInstanceId,
+                stepId: paymentStep.Id,
+                serviceId: service.Id, // Now int, matches Services table
+                amount: service.ServiceFee.Value,
+                createdBy: appUser.UserName ?? appUser.Email
+            );
+
+            if (!string.IsNullOrEmpty(payment.PaymentUrl))
+            {
+                NavigationManager.NavigateTo(payment.PaymentUrl, forceLoad: true);
+            }
+            else
+            {
+                errorMessage = "Payment URL not provided by Tingg.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error initiating payment: {ex.Message}";
+            Console.WriteLine(errorMessage);
+        }
+        finally
+        {
+            isProcessingPayment = false;
+            StateHasChanged();
+        }
     }
 }

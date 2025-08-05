@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
-
 namespace LocalGov360.Data.Models
 {
     public class ServiceModels
@@ -35,6 +34,12 @@ namespace LocalGov360.Data.Models
             Custom
         }
 
+        public enum FeeType
+        {
+            Fixed,
+            Variable
+        }
+
         public class Service
         {
             public int Id { get; set; }
@@ -47,8 +52,12 @@ namespace LocalGov360.Data.Models
             public string Description { get; set; } = string.Empty;
 
             public bool IsActive { get; set; } = true;
+            public decimal? ServiceFee { get; set; } // Changed to nullable
+            public FeeType FeeType { get; set; } = FeeType.Fixed;
             public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
             public DateTime? ModifiedDate { get; set; }
+            public DateTime? StartDate { get; set; }
+            public DateTime? EndDate { get; set; }
 
             [MaxLength(100)]
             public string CreatedBy { get; set; } = string.Empty;
@@ -169,3 +178,5 @@ namespace LocalGov360.Data.Models
         }
     }
 }
+
+

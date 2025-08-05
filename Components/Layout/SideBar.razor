@@ -10,7 +10,8 @@
             var isCouncilAdmin = user.IsInRole("CouncilAdmin");
             var isAdmin = user.IsInRole("admin");
             var isDeveloper = user.IsInRole("developer");
-            var hasNoRole = !isCouncilAdmin && !isAdmin && !isDeveloper;
+            var isCustomer = user.IsInRole("customer");
+            var hasNoRole = !isCouncilAdmin && !isAdmin && !isDeveloper && !isCustomer;
         }
         <aside class="sidenav navbar navbar-vertical navbar-expand-xs border-radius-lg fixed-start ms-2 bg-white my-2" id="sidenav-main">
             <div class="sidenav-header">
@@ -36,7 +37,7 @@
                         <li class="nav-item">
                             <a class="nav-link @GetActiveClass("/service")" href="/service">
                                 <i class="material-symbols-rounded opacity-5">construction</i>
-                                <span class="nav-link-text ms-1">Services</span>
+                                <span class="nav-link-text ms-1">Services Setup</span>
                             </a>
                         </li>
                     }
@@ -46,7 +47,7 @@
                         <li class="nav-item">
                             <a class="nav-link @GetActiveClass("/paymentservice")" href="/paymentservice">
                                 <i class="material-symbols-rounded opacity-5">credit_card</i>
-                                <span class="nav-link-text ms-1">Payment</span>
+                                <span class="nav-link-text ms-1">Payment Setup</span>
                             </a>
                         </li>
                     }
@@ -58,7 +59,7 @@
                         <li class="nav-item">
                             <a class="nav-link @GetActiveClass("/documenttemplates")" href="/documenttemplates">
                                 <i class="material-symbols-rounded opacity-5">description</i>
-                                <span class="nav-link-text ms-1">Documents</span>
+                                <span class="nav-link-text ms-1">Documents Setup</span>
                             </a>
                         </li>
                     }
@@ -68,7 +69,7 @@
 
 
                     <!-- Service List (Available to everyone EXCEPT CouncilAdmin) -->
-                    @if (hasNoRole || isAdmin || isDeveloper)
+                    @if (hasNoRole || isAdmin || isDeveloper || isCustomer)
                     {
                         <li class="nav-item">
                             <a class="nav-link @GetActiveClass("/service-list")" href="/service-list">
@@ -78,6 +79,8 @@
                         </li>
                     }
 
+                 
+
                     <li class="nav-item">
                         <a class="nav-link @GetActiveClass("/service-list")" href="/Tasks">
                             <i class="material-symbols-rounded opacity-5">checklist</i>
@@ -85,17 +88,31 @@
                         </a>
                     </li>
 
+                    <!-- Service List (Available to everyone EXCEPT CouncilAdmin) -->
+                    @if (hasNoRole || isAdmin || isDeveloper || isCustomer)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link @GetActiveClass("/service-payments")" href="/service-payments">
+                                <i class="material-symbols-rounded opacity-5">list_alt</i>
+                                <span class="nav-link-text ms-1">Service Payments</span>
+                            </a>
+                        </li>
+                    }
+
+
+
                     <li class="nav-item mt-3">
                         <h6 class="ps-4 ms-2 text-uppercase text-xs text-dark font-weight-bolder opacity-5">Account pages</h6>
                     </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link @GetActiveClass("/profile")" href="/profile">
-                            <i class="material-symbols-rounded opacity-5">person</i>
-                            <span class="nav-link-text ms-1">Profile</span>
-                        </a>
-                    </li>
-
+                     @if (hasNoRole  || isCustomer)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link @GetActiveClass("/user-profile")" href="/user-profile">
+                                <i class="material-symbols-rounded opacity-5">person</i>
+                                <span class="nav-link-text ms-1">Profile</span>
+                            </a>
+                        </li>
+                    }
                     <!-- Users (Admin/Developer only) -->
                     @if (isAdmin || isDeveloper)
                     {

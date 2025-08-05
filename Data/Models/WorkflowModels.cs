@@ -12,6 +12,7 @@ namespace LocalGov360.Data.Models
         Cancelled,
         Rejected
     }
+
     public enum StepStatus
     {
         Pending,
@@ -26,7 +27,8 @@ namespace LocalGov360.Data.Models
     public enum StepType
     {
         Payment,
-        Approval
+        Approval,
+        Inspection
     }
 
     // -------------  CONFIGURATION  -------------
@@ -63,6 +65,15 @@ namespace LocalGov360.Data.Models
         public List<string> RequiredApprovers { get; set; } = new();
         public bool RequiresAll { get; set; }
         public int MinimumApprovals { get; set; } = 1;
+    
+    }
+
+    public class InspectionTemplateStep : WorkflowTemplateStep
+    {
+        public List<string> RequiredApprovers { get; set; } = new();
+        public bool RequiresAll { get; set; }
+        public int MinimumApprovals { get; set; } = 1;
+    
     }
 
     // -------------  INSTANCE  -------------
@@ -73,7 +84,7 @@ namespace LocalGov360.Data.Models
         public string? InitiatedById { get; set; } = "";
         public WorkflowStatus Status { get; set; } = WorkflowStatus.Pending;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public int? ServiceId  { get; set; }
+        public int? ServiceId { get; set; }
         public Guid WorkflowTemplateId { get; set; }
         public WorkflowTemplate Template { get; set; } = null!;
         public virtual Service Service { get; set; }
@@ -110,6 +121,22 @@ namespace LocalGov360.Data.Models
         public List<string> ActualApprovers { get; set; } = new();
         public bool RequiresAll { get; set; }
         public int MinimumApprovals { get; set; }
+       
+    }
+
+    public class InspectionInstanceStep : WorkflowInstanceStep
+    {
+        public DateTime? InspectionDate { get; set; }
+        public string InspectionComment { get; set; } = "";
+        public string InspectionFile { get; set; } = ""; // File path or URL to inspection document
+     
+
+
+        public List<string> RequiredApprovers { get; set; } = new();
+        public List<string> ActualApprovers { get; set; } = new();
+        public bool RequiresAll { get; set; } = false;
+        public int MinimumApprovals { get; set; } = 1;
+
     }
 
     // Core workflow interfaces
@@ -180,6 +207,7 @@ namespace LocalGov360.Data.Models
         public WorkflowStatus Status { get; set; } = WorkflowStatus.Pending;
         public IList<IWorkflowStep> Steps { get; } = new List<IWorkflowStep>();
         public IWorkflowContext Context { get; private set; }
+        public int ServiceId { get; private set; }
 
         public Workflow(string name, string description, string initiatedBy)
         {
@@ -188,10 +216,10 @@ namespace LocalGov360.Data.Models
             Context = new WorkflowContext(Id, initiatedBy);
         }
 
-        public Workflow(string name, string description, string initiatedBy, int ServiceId)
+        public Workflow(string name, string description, string initiatedBy, int serviceId)
         {
             Name = name;
-            ServiceId = ServiceId;
+            ServiceId = serviceId;
             Description = description;
             Context = new WorkflowContext(Id, initiatedBy);
         }

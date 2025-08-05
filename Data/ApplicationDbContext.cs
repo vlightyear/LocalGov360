@@ -13,8 +13,7 @@ namespace LocalGov360.Data
     {
         public DbSet<Organisation> Organisations { get; set; }
         public DbSet<DocumentTemplate> DocumentTemplates { get; set; }
-        public DbSet<ServicePaymentsModels> ServicePayments { get; set; }
-       
+        public DbSet<ServicePayment> ServicePayments { get; set; }
 
 
         public DbSet<TinggConfiguration> TinggConfigurations { get; set; }
@@ -100,27 +99,214 @@ namespace LocalGov360.Data
 
                 entity.HasIndex(e => new { e.SubmissionId, e.FieldId }).IsUnique();
             });
+            // Entity Framework Configuration in OnModelCreating method
 
-            //Workflow
+            // Configure Workflow Template relationships
             modelBuilder.Entity<WorkflowTemplate>()
-            .HasMany(w => w.Steps)
-            .WithOne(s => s.WorkflowTemplate)
-            .OnDelete(DeleteBehavior.Cascade);
+                .HasMany(w => w.Steps)
+                .WithOne(s => s.WorkflowTemplate)
+                .OnDelete(DeleteBehavior.Cascade);
 
+            // Configure Workflow Template Step inheritance
             modelBuilder.Entity<WorkflowTemplateStep>()
-                        .HasDiscriminator<string>("Discriminator")
-                        .HasValue<PaymentTemplateStep>(nameof(PaymentTemplateStep))
-                        .HasValue<ApprovalTemplateStep>(nameof(ApprovalTemplateStep));
+                .HasDiscriminator<string>("Discriminator")
+                .HasValue<PaymentTemplateStep>(nameof(PaymentTemplateStep))
+                .HasValue<ApprovalTemplateStep>(nameof(ApprovalTemplateStep))
+                .HasValue<InspectionTemplateStep>(nameof(InspectionTemplateStep));
+
+            // Configure Workflow Instance relationships
+            modelBuilder.Entity<WorkflowInstance>()
+                .HasMany(w => w.Steps)
+                .WithOne(s => s.WorkflowInstance)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure Workflow Instance Step inheritance
+            modelBuilder.Entity<WorkflowInstanceStep>()
+                .HasDiscriminator<string>("Discriminator")
+                .HasValue<PaymentInstanceStep>(nameof(PaymentInstanceStep))
+                .HasValue<ApprovalInstanceStep>(nameof(ApprovalInstanceStep))
+                .HasValue<InspectionInstanceStep>(nameof(InspectionInstanceStep));
+
+            // Configure JSON conversion for List<string> properties in Template Steps
+            // Map to existing columns without creating new ones
+            modelBuilder.Entity<ApprovalTemplateStep>()
+                .Property(e => e.RequiredApprovers)
+                .HasColumnName("RequiredApprovers")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
+                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null) ?? new List<string>())
+                .HasColumnType("nvarchar(max)");
+
+            modelBuilder.Entity<ApprovalTemplateStep>()
+                .Property(e => e.RequiresAll)
+                .HasColumnName("RequiresAll");
+
+            modelBuilder.Entity<ApprovalTemplateStep>()
+                .Property(e => e.MinimumApprovals)
+                .HasColumnName("MinimumApprovals");
+
+            modelBuilder.Entity<InspectionTemplateStep>()
+                .Property(e => e.RequiredApprovers)
+                .HasColumnName("RequiredApprovers")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
+                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null) ?? new List<string>())
+                .HasColumnType("nvarchar(max)");
+
+            modelBuilder.Entity<InspectionTemplateStep>()
+                .Property(e => e.RequiresAll)
+                .HasColumnName("RequiresAll");
+
+            modelBuilder.Entity<InspectionTemplateStep>()
+                .Property(e => e.MinimumApprovals)
+                .HasColumnName("MinimumApprovals");
+
+            // Configure JSON conversion for List<string> properties in Instance Steps
+            // Map to existing columns without creating new ones
+            modelBuilder.Entity<ApprovalInstanceStep>()
+                .Property(e => e.RequiredApprovers)
+                .HasColumnName("RequiredApprovers")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
+                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null) ?? new List<string>())
+                .HasColumnType("nvarchar(max)");
+
+            modelBuilder.Entity<ApprovalInstanceStep>()
+                .Property(e => e.ActualApprovers)
+                .HasColumnName("ActualApprovers")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
+                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null) ?? new List<string>())
+                .HasColumnType("nvarchar(max)");
+
+            modelBuilder.Entity<ApprovalInstanceStep>()
+                .Property(e => e.RequiresAll)
+                .HasColumnName("RequiresAll");
+
+            modelBuilder.Entity<ApprovalInstanceStep>()
+                .Property(e => e.MinimumApprovals)
+                .HasColumnName("MinimumApprovals");
+
+            modelBuilder.Entity<InspectionInstanceStep>()
+                .Property(e => e.RequiredApprovers)
+                .HasColumnName("RequiredApprovers")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
+                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null) ?? new List<string>())
+                .HasColumnType("nvarchar(max)");
+
+            modelBuilder.Entity<InspectionInstanceStep>()
+                .Property(e => e.ActualApprovers)
+                .HasColumnName("ActualApprovers")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
+                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null) ?? new List<string>())
+                .HasColumnType("nvarchar(max)");
+
+            modelBuilder.Entity<InspectionInstanceStep>()
+                .Property(e => e.RequiresAll)
+                .HasColumnName("RequiresAll");
+
+            modelBuilder.Entity<InspectionInstanceStep>()
+                .Property(e => e.MinimumApprovals)
+                .HasColumnName("MinimumApprovals");
+
+            // Configure decimal precision for payment amounts
+            modelBuilder.Entity<PaymentTemplateStep>()
+                .Property(e => e.Amount)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<PaymentInstanceStep>()
+                .Property(e => e.Amount)
+                .HasPrecision(18, 2);
+
+            // Configure foreign key relationships
+            modelBuilder.Entity<WorkflowInstance>()
+                .HasOne(w => w.Template)
+                .WithMany()
+                .HasForeignKey(w => w.WorkflowTemplateId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<WorkflowInstance>()
-                        .HasMany(w => w.Steps)
-                        .WithOne(s => s.WorkflowInstance)
-                        .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(w => w.InitiatedBy)
+                .WithMany()
+                .HasForeignKey(w => w.InitiatedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<WorkflowInstance>()
+                .HasOne(w => w.Service)
+                .WithMany()
+                .HasForeignKey(w => w.ServiceId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<WorkflowTemplate>()
+                .HasOne(w => w.Organisation)
+                .WithMany()
+                .HasForeignKey(w => w.OrganisationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure indexes for better performance
+            modelBuilder.Entity<WorkflowInstance>()
+                .HasIndex(w => w.Status);
+
+            modelBuilder.Entity<WorkflowInstance>()
+                .HasIndex(w => w.InitiatedById);
+
+            modelBuilder.Entity<WorkflowInstance>()
+                .HasIndex(w => w.ServiceId);
 
             modelBuilder.Entity<WorkflowInstanceStep>()
-                        .HasDiscriminator<string>("Discriminator")
-                        .HasValue<PaymentInstanceStep>(nameof(PaymentInstanceStep))
-                        .HasValue<ApprovalInstanceStep>(nameof(ApprovalInstanceStep));
+                .HasIndex(w => w.Status);
+
+            modelBuilder.Entity<WorkflowInstanceStep>()
+                .HasIndex(w => w.Order);
+
+            modelBuilder.Entity<WorkflowTemplateStep>()
+                .HasIndex(w => w.Order);
+
+            // Configure string lengths to avoid nvarchar(max) where appropriate
+            modelBuilder.Entity<WorkflowTemplate>()
+                .Property(e => e.Name)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            modelBuilder.Entity<WorkflowTemplate>()
+                .Property(e => e.Description)
+                .HasMaxLength(1000);
+
+            modelBuilder.Entity<WorkflowTemplateStep>()
+                .Property(e => e.Name)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            modelBuilder.Entity<WorkflowTemplateStep>()
+                .Property(e => e.Description)
+                .HasMaxLength(1000);
+
+            modelBuilder.Entity<WorkflowInstance>()
+                .Property(e => e.Name)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            modelBuilder.Entity<WorkflowInstanceStep>()
+                .Property(e => e.Name)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            modelBuilder.Entity<PaymentTemplateStep>()
+                .Property(e => e.Currency)
+                .HasMaxLength(3)
+                .IsRequired();
+
+            modelBuilder.Entity<PaymentInstanceStep>()
+                .Property(e => e.Currency)
+                .HasMaxLength(3)
+                .IsRequired();
+
+            modelBuilder.Entity<InspectionInstanceStep>()
+                .Property(e => e.InspectionFile)
+                .HasMaxLength(500);
+
         }
     }
 }

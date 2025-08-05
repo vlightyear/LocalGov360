@@ -5,14 +5,14 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace LocalGov360.Data.Models
 {
     [Table("ServicePayments")]
-    public class ServicePaymentsModels
+    public class ServicePayment
     {
         [Key]
         public Guid Id { get; set; } = Guid.NewGuid();
 
         public Guid WorkflowInstanceId { get; set; }
         public Guid WorkflowStepId { get; set; }
-        public Guid ServiceId { get; set; }
+        public int?  ServiceId { get; set; }
         public Guid? OrganisationId { get; set; } // <-- Fix here
 
         public string PaymentMethod { get; set; } = string.Empty;
