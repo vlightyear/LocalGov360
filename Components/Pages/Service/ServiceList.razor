@@ -63,9 +63,9 @@
                             <div class="row">
                                 <div class="col-md-6 mx-auto">
                                     <div class="form-group">
-                                        <label class="form-label">Choose your local council:</label>
+                                        <label class="form-label"> </label>
                                         <select class="form-select" @onchange="OnOrganizationSelected">
-                                            <option value="">-- Select Local Council --</option>
+                                            <option value=""> Select Local Council </option>
                                             @foreach (var org in Organizations)
                                             {
                                                 <option value="@org.Id">@org.Name</option>

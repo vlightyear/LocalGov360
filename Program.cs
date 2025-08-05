@@ -35,6 +35,7 @@ builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSe
 builder.Services.AddScoped<IWorkflowFactory, WorkflowFactory>();
 builder.Services.AddScoped<IServiceService, ServiceService>();
 builder.Services.AddScoped<IFormValidator, FormValidator>();
+builder.Services.AddScoped<TinggCallbackService>();
 
 builder.Services.AddControllers()
     .AddNewtonsoftJson(options =>
@@ -188,4 +189,11 @@ using (var scope = app.Services.CreateScope())
 
         }
 }
+
+app.MapPost("/callback", async (HttpRequest request, TinggCallbackService callbackService) =>
+{
+    return await callbackService.ReceiveCallbackAsync(request);
+});
+
+
 app.Run();

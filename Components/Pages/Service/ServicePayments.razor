@@ -410,28 +410,42 @@
                         </div>
 
                         <!-- Pagination -->
-                        <div class="pagination-container">
-                            <ul class="pagination">
-                                <li class="page-item @(currentPage == 1 ? "disabled" : "")">
-                                    <a class="page-link" href="#" @onclick="() => ChangePage(1)">First</a>
-                                </li>
-                                <li class="page-item @(currentPage == 1 ? "disabled" : "")">
-                                    <a class="page-link" href="#" @onclick="() => ChangePage(currentPage - 1)">Previous</a>
+                        <div style="display: flex; justify-content: center; margin: 2rem 0; padding: 1rem 0;">
+                            <ul style="display: flex; list-style: none; margin: 0; padding: 0; gap: 0.25rem; align-items: center;">
+
+                                <li style="margin: 0;" class="@(currentPage == 1 ? "disabled" : "")">
+                                    <a href="#"
+                                       @onclick="() => ChangePage(currentPage - 1)"
+                                       style="display: flex; align-items: center; justify-content: center; padding: 0.5rem 0.75rem; min-width: 2.5rem; height: 2.5rem; text-decoration: none; color: @(currentPage == 1 ? "#6b7280" : "#ffffff"); background-color: @(currentPage == 1 ? "#374151" : "#000000"); border: 1px solid @(currentPage == 1 ? "#4b5563" : "#000000"); border-radius: 0.375rem; font-size: 0.875rem; font-weight: 500; transition: all 0.2s ease-in-out; cursor: @(currentPage == 1 ? "not-allowed" : "pointer"); user-select: none; opacity: @(currentPage == 1 ? "0.6" : "1");"
+                                       onmouseover="if (@(currentPage != 1)) { this.style.backgroundColor='#1f2937'; this.style.borderColor='#1f2937'; this.style.color='#ffffff'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.3)'; }"
+                                       onmouseout="if (@(currentPage != 1)) { this.style.backgroundColor='#000000'; this.style.borderColor='#000000'; this.style.color='#ffffff'; this.style.transform='none'; this.style.boxShadow='none'; }">
+                                        Previous
+                                    </a>
                                 </li>
 
                                 @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
                                 {
-                                    <li class="page-item @(i == currentPage ? "active" : "")">
-                                        <a class="page-link" href="#" @onclick="() => ChangePage(i)">@i</a>
+                                    <li style="margin: 0;" class="@(i == currentPage ? "active" : "")">
+                                        <a href="#"
+                                           @onclick="() => ChangePage(i)"
+                                           style="display: flex; align-items: center; justify-content: center; padding: 0.5rem 0.75rem; min-width: 2.5rem; height: 2.5rem; text-decoration: none; color: @(i == currentPage ? "#000000" : "#ffffff"); background-color: @(i == currentPage ? "#ffffff" : "#000000"); border: 1px solid @(i == currentPage ? "#000000" : "#000000"); border-radius: 0.375rem; font-size: 0.875rem; font-weight: 500; transition: all 0.2s ease-in-out; cursor: pointer; user-select: none; box-shadow: @(i == currentPage ? "0 2px 8px rgba(0, 0, 0, 0.2)" : "none");"
+                                           onmouseover="if (@(i != currentPage)) { this.style.backgroundColor='#1f2937'; this.style.borderColor='#1f2937'; this.style.color='#ffffff'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.3)'; } else { this.style.backgroundColor='#f3f4f6'; this.style.borderColor='#000000'; this.style.color='#000000'; }"
+                                           onmouseout="if (@(i != currentPage)) { this.style.backgroundColor='#000000'; this.style.borderColor='#000000'; this.style.color='#ffffff'; this.style.transform='none'; this.style.boxShadow='none'; } else { this.style.backgroundColor='#ffffff'; this.style.borderColor='#000000'; this.style.color='#000000'; this.style.boxShadow='0 2px 8px rgba(0, 0, 0, 0.2)'; }">
+                                            @i
+                                        </a>
                                     </li>
                                 }
 
-                                <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
-                                    <a class="page-link" href="#" @onclick="() => ChangePage(currentPage + 1)">Next</a>
+                                <li style="margin: 0;" class="@(currentPage == totalPages ? "disabled" : "")">
+                                    <a href="#"
+                                       @onclick="() => ChangePage(currentPage + 1)"
+                                       style="display: flex; align-items: center; justify-content: center; padding: 0.5rem 0.75rem; min-width: 2.5rem; height: 2.5rem; text-decoration: none; color: @(currentPage == totalPages ? "#6b7280" : "#ffffff"); background-color: @(currentPage == totalPages ? "#374151" : "#000000"); border: 1px solid @(currentPage == totalPages ? "#4b5563" : "#000000"); border-radius: 0.375rem; font-size: 0.875rem; font-weight: 500; transition: all 0.2s ease-in-out; cursor: @(currentPage == totalPages ? "not-allowed" : "pointer"); user-select: none; opacity: @(currentPage == totalPages ? "0.6" : "1");"
+                                       onmouseover="if (@(currentPage != totalPages)) { this.style.backgroundColor='#1f2937'; this.style.borderColor='#1f2937'; this.style.color='#ffffff'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.3)'; }"
+                                       onmouseout="if (@(currentPage != totalPages)) { this.style.backgroundColor='#000000'; this.style.borderColor='#000000'; this.style.color='#ffffff'; this.style.transform='none'; this.style.boxShadow='none'; }">
+                                        Next
+                                    </a>
                                 </li>
-                                <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
-                                    <a class="page-link" href="#" @onclick="() => ChangePage(totalPages)">Last</a>
-                                </li>
+
                             </ul>
                         </div>
 

@@ -50,16 +50,17 @@ public class TinggPaymentService
             var token = await GetAuthToken(config);
             _logger.LogInformation("Obtained auth token.");
 
-            // Prepare payload
+            // Generate transaction reference and account
             var transactionRef = Guid.NewGuid().ToString("N");
             var accountNumber = $"SVC-{serviceId}-{DateTime.UtcNow.Ticks}";
 
-            // Use fixed names here, you can change to parameters if needed
+            // Static/fixed test user info (replace in production)
             var customerFirstName = "Brian";
             var customerLastName = "Chanda";
             var customerPhone = "260968365822";
             var customerEmail = "bc@gmil.com";
 
+            // Express Checkout payload
             var payload = new
             {
                 customer_first_name = customerFirstName,
@@ -85,9 +86,9 @@ public class TinggPaymentService
             };
 
             var requestBody = JsonSerializer.Serialize(payload, jsonOptions);
-            _logger.LogInformation("Prepared payment request payload.");
+            _logger.LogInformation("Prepared express checkout payload.");
 
-            // Create and save initial payment record
+            // Save pending payment record
             var payment = new ServicePayment
             {
                 WorkflowInstanceId = workflowInstanceId,
@@ -106,28 +107,25 @@ public class TinggPaymentService
 
             _context.ServicePayments.Add(payment);
             await _context.SaveChangesAsync();
-            _logger.LogInformation("Saved initial payment record with status 'Pending'.");
+            _logger.LogInformation("Saved pending payment record.");
 
-            // Prepare HTTP request to Tingg API
+            // Send Express Checkout request
             var request = new HttpRequestMessage(HttpMethod.Post, config.CheckoutRequestUrl);
             request.Headers.Add("ApiKey", config.ApiKey);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 
-            // Send request
             var response = await _http.SendAsync(request);
             var responseContent = await response.Content.ReadAsStringAsync();
 
-            _logger.LogInformation("Received payment response with status code: {StatusCode}", response.StatusCode);
-            _logger.LogInformation("Full payment response content: {ResponseContent}", responseContent);
+            _logger.LogInformation("Received express checkout response: {StatusCode}", response.StatusCode);
+            _logger.LogInformation("Response content: {ResponseContent}", responseContent);
 
-            // Update payment with response info
             payment.ResponsePayload = responseContent;
             payment.Status = response.IsSuccessStatusCode ? "Pending" : "Failed";
 
             if (response.IsSuccessStatusCode)
             {
-                // Parse checkout URL from response
                 var checkoutUrl = ExtractCheckoutUrl(responseContent);
                 if (!string.IsNullOrEmpty(checkoutUrl))
                 {
@@ -136,12 +134,12 @@ public class TinggPaymentService
                 }
                 else
                 {
-                    _logger.LogWarning("Checkout URL not found in payment response.");
+                    _logger.LogWarning("Checkout URL not found in response.");
                 }
             }
             else
             {
-                _logger.LogError("Payment request failed with status code: {StatusCode}", response.StatusCode);
+                _logger.LogError("Express checkout request failed.");
             }
 
             await _context.SaveChangesAsync();
@@ -149,7 +147,7 @@ public class TinggPaymentService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during Tingg payment initiation.");
+            _logger.LogError(ex, "Error during express checkout initiation.");
             throw;
         }
     }
@@ -163,35 +161,28 @@ public class TinggPaymentService
             grant_type = "client_credentials"
         };
 
-        var requestBody = JsonSerializer.Serialize(payload);
-
         var request = new HttpRequestMessage(HttpMethod.Post, config.AuthTokenRequestUrl);
         request.Headers.Add("ApiKey", config.ApiKey);
-        request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+        request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
 
         var response = await _http.SendAsync(request);
-        var responseContent = await response.Content.ReadAsStringAsync();
+        var content = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
         {
-            var errMsg = $"Auth failed: {response.StatusCode} - {responseContent}";
-            _logger.LogError(errMsg);
-            throw new Exception(errMsg);
+            var err = $"Auth failed: {response.StatusCode} - {content}";
+            _logger.LogError(err);
+            throw new Exception(err);
         }
 
-        using var jsonDoc = JsonDocument.Parse(responseContent);
+        using var jsonDoc = JsonDocument.Parse(content);
         if (jsonDoc.RootElement.TryGetProperty("access_token", out var tokenProp) ||
             jsonDoc.RootElement.TryGetProperty("accessToken", out tokenProp))
         {
-            var token = tokenProp.GetString();
-            if (string.IsNullOrEmpty(token))
-            {
-                throw new Exception("Token value was null or empty");
-            }
-            return token;
+            return tokenProp.GetString() ?? throw new Exception("Empty access token");
         }
 
-        throw new Exception("Token property not found in auth response");
+        throw new Exception("Access token not found in auth response.");
     }
 
     private string? ExtractCheckoutUrl(string json)
@@ -199,10 +190,8 @@ public class TinggPaymentService
         try
         {
             using var jsonDoc = JsonDocument.Parse(json);
-
             var root = jsonDoc.RootElement;
 
-            // Prefer 'checkoutUrl' (long url) first
             if (root.TryGetProperty("data", out var data) &&
                 data.TryGetProperty("checkoutUrl", out var longUrl) &&
                 !string.IsNullOrEmpty(longUrl.GetString()))
@@ -210,7 +199,6 @@ public class TinggPaymentService
                 return longUrl.GetString();
             }
 
-            // Try 'results.short_url' fallback
             if (root.TryGetProperty("results", out var results) &&
                 results.TryGetProperty("short_url", out var shortUrl) &&
                 !string.IsNullOrEmpty(shortUrl.GetString()))
@@ -218,7 +206,6 @@ public class TinggPaymentService
                 return shortUrl.GetString();
             }
 
-            // Try 'checkoutUrl' or 'checkout_url' at root as last resort
             if (root.TryGetProperty("checkoutUrl", out var url) && !string.IsNullOrEmpty(url.GetString()))
             {
                 return url.GetString();
@@ -233,7 +220,7 @@ public class TinggPaymentService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to parse checkout URL from JSON.");
+            _logger.LogWarning(ex, "Failed to parse checkout URL.");
             return null;
         }
     }

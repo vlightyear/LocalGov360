@@ -28,6 +28,7 @@ namespace LocalGov360.Data.Models
 
         public string? CreatedBy { get; set; }
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+        public string AccountingStatus { get; set; } = "Pending";
     }
 
 
