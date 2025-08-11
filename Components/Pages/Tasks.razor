@@ -331,8 +331,8 @@
                                     s.RequiredApprovers.Any(ra => roleIds.Contains(ra))))
                             .ToList();
 
-            var PaymentList = TmpTaskList.Where(tl => tl.InitiatedById == appUser.Id && tl.Steps.Any(s => s.Status == StepStatus.InProgress));
-            TaskList = TaskList.Concat(PaymentList).ToList();
+            //var PaymentList = TmpTaskList.Where(tl => tl.InitiatedById == appUser.Id && tl.Steps.Any(s => s.Status == StepStatus.InProgress));
+            //TaskList = TaskList.Concat(PaymentList).ToList();
 
         }
         catch (Exception ex)
