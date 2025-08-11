@@ -30,11 +30,12 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
-
+builder.Services.AddHttpClient<TinggPaymentService>();
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 builder.Services.AddScoped<IWorkflowFactory, WorkflowFactory>();
 builder.Services.AddScoped<IServiceService, ServiceService>();
 builder.Services.AddScoped<IFormValidator, FormValidator>();
+builder.Services.AddScoped<TinggCallbackService>();
 
 builder.Services.AddControllers()
     .AddNewtonsoftJson(options =>
@@ -135,8 +136,64 @@ using (var scope = app.Services.CreateScope())
             OrganisationId = org.Id
         };
         await userManager.CreateAsync(user, "Test@1234");
-        await userManager.AddToRoleAsync(user, "admin");
+        await userManager.AddToRoleAsync(user, "CouncilAdmin");
     }
+
+    if (await userManager.FindByEmailAsync("bc@gmail.com") == null)
+    {
+        var user = new ApplicationUser
+        {
+            UserName = "bc@gmail.com",
+            Email = "bc@gmail.com"
+        };
+        await userManager.CreateAsync(user, "Test@1234");
+        await userManager.AddToRoleAsync(user, "customer");
+
+
+
+       using (var serviceScope = app.Services.CreateScope())
+{
+    var db = serviceScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            // Ensure DB exists (optional)
+            db.Database.Migrate();
+
+            var configId = Guid.Parse("94BEC6AE-3C27-4B92-A142-2211F8B245D8");
+
+            if (!db.TinggConfigurations.Any(c => c.Id == configId))
+            {
+                db.TinggConfigurations.Add(new TinggConfiguration
+                {
+                    Id = configId,
+                    OrganisationId = Guid.Parse("E30FB762-28A3-486D-8D3C-D696A4AE33C8"),
+                    ApiBaseUrl = "https://sandbox.tingg.africa",
+                    ApiKey = "ViR64sAFdAkvAoGaJqATWcW3tXREXGf",
+                    AuthTokenRequestUrl = "https://api-approval.tingg.africa/v1/oauth/token/request",
+                    CallbackUrl = "https://fd68ef02f459.ngrok-free.app/api/tinggcallback",
+                    CheckoutRequestUrl = "https://api-approval.tingg.africa/v3/checkout-api/checkout/request",
+                    ClientId = "c5549f4f-08da-4843-8dc4-32a567a1ef10",
+                    ClientSecret = "mrmTNUmwhahKnVYTbSmIGXLJgaTuejBfLrBJqzv",
+                    CountryCode = "ZMB",
+                    CurrencyCode = "ZMW",
+                    FailRedirectUrl = "https://fd68ef02f459.ngrok-free.app/your-fail-url",
+                    PaymentModeCode = "STK_PUSH",
+                    ServiceCode = "ECOBANK_ZAMBIA_COLLE",
+                    SuccessRedirectUrl = "https://fd68ef02f459.ngrok-free.app/your-success-url"
+                });
+
+                db.SaveChanges();
+            }
+        }
+
+
+
+        }
 }
+
+app.MapPost("/callback", async (HttpRequest request, TinggCallbackService callbackService) =>
+{
+    return await callbackService.ReceiveCallbackAsync(request);
+});
+
 
 app.Run();

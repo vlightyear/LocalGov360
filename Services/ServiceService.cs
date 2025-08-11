@@ -2,7 +2,7 @@
 using LocalGov360.Data.Models;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
+
 
 namespace LocalGov360.Services
 {
@@ -37,6 +37,13 @@ namespace LocalGov360.Services
                 Description = request.Description,
                 CreatedBy = request.CreatedBy,
                 CreatedDate = DateTime.UtcNow,
+                OrganisationId = request.OrganisationId,
+                WorkflowTemplateId = request.WorkflowTemplateId,
+                DocumentTemplateId = request.DocumentTemplateId,
+                ServiceFee = request.ServiceFee, // Now nullable
+                FeeType = request.FeeType,
+                StartDate = request.StartDate,
+                EndDate = request.EndDate,
                 Fields = request.Fields.Select((field, index) => new ServiceModels.ServiceField
                 {
                     Name = !string.IsNullOrWhiteSpace(field.Name) ? field.Name : field.Label,
@@ -62,14 +69,21 @@ namespace LocalGov360.Services
         {
             return await _context.Services
                 .Include(f => f.Fields)
+                .Include(f => f.WorkflowTemplate)
+                .Include(f => f.DocumentTemplate)
                 .FirstOrDefaultAsync(f => f.Id == serviceId);
         }
 
         public async Task<List<ServiceModels.Service>> GetActiveServicesAsync()
         {
+            var currentDate = DateTime.UtcNow;
             return await _context.Services
-                .Where(f => f.IsActive)
+                .Where(f => f.IsActive &&
+                           (!f.StartDate.HasValue || f.StartDate <= currentDate) &&
+                           (!f.EndDate.HasValue || f.EndDate >= currentDate))
                 .Include(f => f.Fields)
+                .Include(f => f.WorkflowTemplate)
+                .Include(f => f.DocumentTemplate)
                 .OrderBy(f => f.Name)
                 .ToListAsync();
         }
@@ -86,6 +100,12 @@ namespace LocalGov360.Services
             service.Description = request.Description;
             service.ModifiedBy = request.ModifiedBy;
             service.ModifiedDate = DateTime.UtcNow;
+            service.WorkflowTemplateId = request.WorkflowTemplateId;
+            service.DocumentTemplateId = request.DocumentTemplateId;
+            service.ServiceFee = request.ServiceFee; // Now nullable
+            service.FeeType = request.FeeType;
+            service.StartDate = request.StartDate;
+            service.EndDate = request.EndDate;
 
             _context.ServiceFields.RemoveRange(service.Fields);
             service.Fields = request.Fields.Select((field, index) => new ServiceModels.ServiceField
@@ -244,8 +264,15 @@ namespace LocalGov360.Services
     public class CreateServiceRequest
     {
         public string Name { get; set; }
+        public Guid? OrganisationId { get; set; }
         public string Description { get; set; }
         public string CreatedBy { get; set; }
+        public Guid? WorkflowTemplateId { get; set; }
+        public Guid? DocumentTemplateId { get; set; }
+        public decimal? ServiceFee { get; set; } // Changed to nullable
+        public ServiceModels.FeeType FeeType { get; set; } = ServiceModels.FeeType.Fixed;
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
         public List<CreateServiceFieldRequest> Fields { get; set; } = new List<CreateServiceFieldRequest>();
     }
 
@@ -266,8 +293,15 @@ namespace LocalGov360.Services
     public class UpdateServiceRequest
     {
         public string Name { get; set; }
+        public Guid? OrganisationId { get; set; }
         public string Description { get; set; }
         public string ModifiedBy { get; set; }
+        public Guid? WorkflowTemplateId { get; set; }
+        public Guid? DocumentTemplateId { get; set; }
+        public decimal? ServiceFee { get; set; } // Changed to nullable
+        public ServiceModels.FeeType FeeType { get; set; } = ServiceModels.FeeType.Fixed;
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
         public List<CreateServiceFieldRequest> Fields { get; set; } = new List<CreateServiceFieldRequest>();
     }
 

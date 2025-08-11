@@ -1,0 +1,540 @@
+﻿@page "/paymentservice"
+@using LocalGov360.Data
+@using LocalGov360.Data.Models
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@attribute [Authorize(Roles = "developer,CouncilAdmin")]
+@rendermode InteractiveServer
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IJSRuntime JS
+@inject UserManager<ApplicationUser> UserManager
+
+<style>
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .header-buttons {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .blazor-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .blazor-modal-content {
+        background: white;
+        border-radius: 0.5rem;
+        width: 90%;
+        max-width: 600px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .modal-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+
+    .btn-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #000;
+        opacity: 0.5;
+        cursor: pointer;
+        line-height: 1;
+    }
+
+        .btn-close:hover {
+            opacity: 0.75;
+        }
+
+    .btn-dark {
+        background-color: #343a40;
+        border-color: #343a40;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+    }
+
+        .btn-dark:hover {
+            background-color: #23272b;
+            border-color: #1d2124;
+            color: white;
+        }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        text-decoration: none;
+    }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+            border-color: #545b62;
+            color: white;
+        }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .form-full-width {
+        grid-column: 1 / -1;
+    }
+
+    .alert {
+        margin-bottom: 1rem;
+    }
+</style>
+
+<div class="container-fluid py-2">
+    <div class="row">
+        <div class="col-12">
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger" role="alert">
+                    @errorMessage
+                </div>
+            }
+            <div class="card my-4">
+                <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                    <div class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3">
+                        <h6 class="text-white text-capitalize ps-3">Payment Service Configurations</h6>
+                        <div class="ps-3 pb-2 d-flex align-items-center header-buttons">
+                            <button class="btn btn-sm btn-outline-light" @onclick="LoadConfigurations">
+                                <i class="fas fa-sync-alt me-1"></i> Refresh
+                            </button>
+                            @if (currentUserOrgId.HasValue)
+                            {
+                                <button class="btn btn-sm btn-outline-light" @onclick="ShowCreateModal">
+                                    <i class="fas fa-plus-circle me-1"></i> Add Configuration
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body px-0 pb-2">
+                    @if (isLoading)
+                    {
+                        <div class="text-center p-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    }
+                    else if (configurations.Any())
+                    {
+                        <div class="table-responsive p-0">
+                            <table class="table align-items-center mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Service Code</th>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Country Code</th>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Currency Code</th>
+                                        <th class="text-secondary opacity-7">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var config in configurations)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex px-2 py-1">
+                                                    <div class="d-flex flex-column justify-content-center">
+                                                        <h6 class="mb-0 text-sm">@config.ServiceCode</h6>
+                                                        <p class="text-xs text-secondary mb-0">@config.ApiBaseUrl</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <p class="text-xs text-secondary mb-0">@config.CountryCode</p>
+                                            </td>
+                                            <td>
+                                                <p class="text-xs text-secondary mb-0">@config.CurrencyCode</p>
+                                            </td>
+                                            <td class="align-middle">
+                                                @if (config.OrganisationId == currentUserOrgId)
+                                                {
+                                                    <div class="btn-group action-buttons">
+                                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => EditConfiguration(config)">
+                                                            <i class="fas fa-edit"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(config)">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-xs text-secondary">No actions available</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center p-4">
+                            <p class="text-muted">No configurations found.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create/Edit Modal -->
+@if (showModal)
+{
+    <div class="blazor-modal" @onclick="CloseModal">
+        <div class="blazor-modal-content" @onclick:stopPropagation>
+            <div class="modal-header">
+                <h5 class="modal-title">@(currentConfig.Id == Guid.Empty ? "Create" : "Edit") Payment Service Configuration</h5>
+                <button type="button" class="btn-close" @onclick="CloseModal">×</button>
+            </div>
+            <div class="modal-body">
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger" role="alert">
+                        @errorMessage
+                    </div>
+                }
+                <EditForm Model="@currentConfig" OnValidSubmit="SaveConfiguration">
+                    <DataAnnotationsValidator />
+                    <div class="form-grid">
+                        <div class="mb-3">
+                            <label for="apiBaseUrl" class="form-label">API Base URL</label>
+                            <InputText id="apiBaseUrl" @bind-Value="currentConfig.ApiBaseUrl" class="form-control" />
+                            <ValidationMessage For="@(() => currentConfig.ApiBaseUrl)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="apiKey" class="form-label">API Key</label>
+                            <InputText id="apiKey" @bind-Value="currentConfig.ApiKey" class="form-control" />
+                            <ValidationMessage For="@(() => currentConfig.ApiKey)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="authTokenRequestUrl" class="form-label">Auth Token Request URL</label>
+                            <InputText id="authTokenRequestUrl" @bind-Value="currentConfig.AuthTokenRequestUrl" class="form-control" />
+                            <ValidationMessage For="@(() => currentConfig.AuthTokenRequestUrl)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="callbackUrl" class="form-label">Callback URL</label>
+                            <InputText id="callbackUrl" @bind-Value="currentConfig.CallbackUrl" class="form-control" />
+                            <ValidationMessage For="@(() => currentConfig.CallbackUrl)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="checkoutRequestUrl" class="form-label">Checkout Request URL</label>
+                            <InputText id="checkoutRequestUrl" @bind-Value="currentConfig.CheckoutRequestUrl" class="form-control" />
+                            <ValidationMessage For="@(() => currentConfig.CheckoutRequestUrl)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="clientId" class="form-label">Client ID</label>
+                            <InputText id="clientId" @bind-Value="currentConfig.ClientId" class="form-control" />
+                            <ValidationMessage For="@(() => currentConfig.ClientId)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="clientSecret" class="form-label">Client Secret</label>
+                            <InputText id="clientSecret" @bind-Value="currentConfig.ClientSecret" class="form-control" />
+                            <ValidationMessage For="@(() => currentConfig.ClientSecret)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="countryCode" class="form-label">Country Code</label>
+                            <InputText id="countryCode" @bind-Value="currentConfig.CountryCode" class="form-control" />
+                            <ValidationMessage For="@(() => currentConfig.CountryCode)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="currencyCode" class="form-label">Currency Code</label>
+                            <InputText id="currencyCode" @bind-Value="currentConfig.CurrencyCode" class="form-control" />
+                            <ValidationMessage For="@(() => currentConfig.CurrencyCode)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="failRedirectUrl" class="form-label">Fail Redirect URL</label>
+                            <InputText id="failRedirectUrl" @bind-Value="currentConfig.FailRedirectUrl" class="form-control" />
+                            <ValidationMessage For="@(() => currentConfig.FailRedirectUrl)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="paymentModeCode" class="form-label">Payment Mode Code</label>
+                            <InputText id="paymentModeCode" @bind-Value="currentConfig.PaymentModeCode" class="form-control" />
+                            <ValidationMessage For="@(() => currentConfig.PaymentModeCode)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="serviceCode" class="form-label">Service Code</label>
+                            <InputText id="serviceCode" @bind-Value="currentConfig.ServiceCode" class="form-control" />
+                            <ValidationMessage For="@(() => currentConfig.ServiceCode)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="successRedirectUrl" class="form-label">Success Redirect URL</label>
+                            <InputText id="successRedirectUrl" @bind-Value="currentConfig.SuccessRedirectUrl" class="form-control" />
+                            <ValidationMessage For="@(() => currentConfig.SuccessRedirectUrl)" />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                        <button type="submit" class="btn btn-dark">Save</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<TinggConfiguration> configurations = new();
+    private TinggConfiguration currentConfig = new();
+    private bool isLoading = true;
+    private bool showModal = false;
+    private string errorMessage = string.Empty;
+    private Guid? currentUserOrgId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var principal = authState.User;
+        var user = await UserManager.GetUserAsync(principal);
+        currentUserOrgId = user?.OrganisationId;
+
+        if (!currentUserOrgId.HasValue)
+        {
+            errorMessage = "User organization not found.";
+            return;
+        }
+
+        await LoadConfigurations();
+    }
+
+    private async Task LoadConfigurations()
+    {
+        isLoading = true;
+        configurations.Clear();
+        errorMessage = string.Empty;
+        StateHasChanged();
+
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
+            configurations = await context.TinggConfigurations
+                .Where(c => c.OrganisationId == currentUserOrgId)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading configurations: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ShowCreateModal()
+    {
+        if (!currentUserOrgId.HasValue)
+        {
+            errorMessage = "User organization not found.";
+            return;
+        }
+
+        currentConfig = new TinggConfiguration
+        {
+            Id = Guid.Empty,
+            OrganisationId = currentUserOrgId // Automatically set from current user
+        };
+        showModal = true;
+        errorMessage = string.Empty;
+    }
+
+    private void EditConfiguration(TinggConfiguration config)
+    {
+        if (!currentUserOrgId.HasValue)
+        {
+            errorMessage = "User organization not found.";
+            return;
+        }
+
+        if (config.OrganisationId != currentUserOrgId)
+        {
+            errorMessage = "You are not authorized to edit this configuration.";
+            return;
+        }
+
+        currentConfig = new TinggConfiguration
+        {
+            Id = config.Id,
+            OrganisationId = config.OrganisationId,
+            ApiBaseUrl = config.ApiBaseUrl,
+            ApiKey = config.ApiKey,
+            AuthTokenRequestUrl = config.AuthTokenRequestUrl,
+            CallbackUrl = config.CallbackUrl,
+            CheckoutRequestUrl = config.CheckoutRequestUrl,
+            ClientId = config.ClientId,
+            ClientSecret = config.ClientSecret,
+            CountryCode = config.CountryCode,
+            CurrencyCode = config.CurrencyCode,
+            FailRedirectUrl = config.FailRedirectUrl,
+            PaymentModeCode = config.PaymentModeCode,
+            ServiceCode = config.ServiceCode,
+            SuccessRedirectUrl = config.SuccessRedirectUrl
+        };
+        showModal = true;
+        errorMessage = string.Empty;
+    }
+
+    private async Task SaveConfiguration()
+    {
+        if (!currentUserOrgId.HasValue)
+        {
+            errorMessage = "User organization not found.";
+            return;
+        }
+
+        errorMessage = string.Empty;
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
+
+            if (currentConfig.Id == Guid.Empty)
+            {
+                // Create new - OrganizationId is already set from current user
+                currentConfig.Id = Guid.NewGuid();
+                context.TinggConfigurations.Add(currentConfig);
+            }
+            else
+            {
+                // Update existing - verify OrganizationId
+                var existingConfig = await context.TinggConfigurations.FindAsync(currentConfig.Id);
+                if (existingConfig == null)
+                {
+                    errorMessage = "Configuration not found.";
+                    return;
+                }
+                if (existingConfig.OrganisationId != currentUserOrgId)
+                {
+                    errorMessage = "You are not authorized to update this configuration.";
+                    return;
+                }
+
+                // Update all fields except OrganizationId
+                existingConfig.ApiBaseUrl = currentConfig.ApiBaseUrl;
+                existingConfig.ApiKey = currentConfig.ApiKey;
+                existingConfig.AuthTokenRequestUrl = currentConfig.AuthTokenRequestUrl;
+                existingConfig.CallbackUrl = currentConfig.CallbackUrl;
+                existingConfig.CheckoutRequestUrl = currentConfig.CheckoutRequestUrl;
+                existingConfig.ClientId = currentConfig.ClientId;
+                existingConfig.ClientSecret = currentConfig.ClientSecret;
+                existingConfig.CountryCode = currentConfig.CountryCode;
+                existingConfig.CurrencyCode = currentConfig.CurrencyCode;
+                existingConfig.FailRedirectUrl = currentConfig.FailRedirectUrl;
+                existingConfig.PaymentModeCode = currentConfig.PaymentModeCode;
+                existingConfig.ServiceCode = currentConfig.ServiceCode;
+                existingConfig.SuccessRedirectUrl = currentConfig.SuccessRedirectUrl;
+            }
+
+            await context.SaveChangesAsync();
+            await LoadConfigurations();
+            showModal = false;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving configuration: {ex.Message}";
+        }
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+        currentConfig = new TinggConfiguration();
+        errorMessage = string.Empty;
+    }
+
+    private async Task ConfirmDelete(TinggConfiguration config)
+    {
+        if (!currentUserOrgId.HasValue)
+        {
+            errorMessage = "User organization not found.";
+            return;
+        }
+
+        if (config.OrganisationId != currentUserOrgId)
+        {
+            errorMessage = "You are not authorized to delete this configuration.";
+            return;
+        }
+
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete the configuration for {config.ServiceCode}?");
+        if (confirmed)
+        {
+            await DeleteConfiguration(config);
+        }
+    }
+
+    private async Task DeleteConfiguration(TinggConfiguration config)
+    {
+        if (!currentUserOrgId.HasValue)
+        {
+            errorMessage = "User organization not found.";
+            return;
+        }
+
+        if (config.OrganisationId != currentUserOrgId)
+        {
+            errorMessage = "You are not authorized to delete this configuration.";
+            return;
+        }
+
+        errorMessage = string.Empty;
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
+            context.TinggConfigurations.Remove(config);
+            await context.SaveChangesAsync();
+            await LoadConfigurations();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error deleting configuration: {ex.Message}";
+        }
+    }
+}

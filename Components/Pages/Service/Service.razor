@@ -4,10 +4,9 @@
 @using LocalGov360.Data
 @using LocalGov360.Services
 @using LocalGov360.Data.Models
-@using Microsoft.AspNetCore.Html
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
-@using static LocalGov360.Data.Models.ServiceModels
 @inject IServiceService ServiceService
 @inject IWorkflowFactory WorkflowFactory
 @inject IJSRuntime JS
@@ -16,7 +15,6 @@
 @inject ApplicationDbContext _db
 
 <PageTitle>Service Builder</PageTitle>
-
 
 <div class="container-fluid py-4">
     <!-- Navigation -->
@@ -69,6 +67,63 @@
                             <div class="mb-3">
                                 <label class="form-label">Description</label>
                                 <InputTextArea class="form-control" rows="3" @bind-Value="BuilderModel.Description" />
+                                <ValidationMessage For="() => BuilderModel.Description" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Service Fee</label>
+                                <InputNumber class="form-control" @bind-Value="BuilderModel.ServiceFee" />
+                                <small class="text-muted">Leave empty if no fee is applicable</small>
+                                <ValidationMessage For="() => BuilderModel.ServiceFee" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Fee Type</label>
+                                <InputSelect class="form-select" @bind-Value="BuilderModel.FeeType">
+                                    @foreach (var feeType in Enum.GetValues<ServiceModels.FeeType>())
+                                    {
+                                        <option value="@feeType">@feeType</option>
+                                    }
+                                </InputSelect>
+                            </div>
+
+                            @* Commented out StartDate and EndDate inputs per request *@
+                            @*
+                            <div class="mb-3">
+                                <label class="form-label">Start Date</label>
+                                <InputDate class="form-control" @bind-Value="BuilderModel.StartDate" />
+                                <small class="text-muted">Leave empty if no start date is specified</small>
+                                <ValidationMessage For="() => BuilderModel.StartDate" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">End Date</label>
+                                <InputDate class="form-control" @bind-Value="BuilderModel.EndDate" />
+                                <small class="text-muted">Leave empty if no end date is specified</small>
+                                <ValidationMessage For="() => BuilderModel.EndDate" />
+                            </div>
+                            *@
+
+                            <div class="mb-3">
+                                <label class="form-label">Workflow Template</label>
+                                <InputSelect class="form-select" @bind-Value="BuilderModel.WorkflowTemplateId">
+                                    <option value="">-- Select Workflow Template (Optional) --</option>
+                                    @foreach (var template in WorkflowTemplates)
+                                    {
+                                        <option value="@template.Id">@template.Name</option>
+                                    }
+                                </InputSelect>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Document Template</label>
+                                <InputSelect class="form-select" @bind-Value="BuilderModel.DocumentTemplateId">
+                                    <option value="">-- Select Document Template (Optional) --</option>
+                                    @foreach (var template in DocumentTemplates)
+                                    {
+                                        <option value="@template.Id">@template.Name</option>
+                                    }
+                                </InputSelect>
                             </div>
 
                             <h6>Fields</h6>
@@ -183,6 +238,21 @@
                         {
                             <h4 class="mb-3">@BuilderModel.Name</h4>
                             <p class="text-muted mb-3">@(string.IsNullOrEmpty(BuilderModel.Description) ? "No description provided" : BuilderModel.Description)</p>
+                            @if (BuilderModel.ServiceFee.HasValue)
+                            {
+                                <p class="mb-3"><strong>Fee:</strong> K @BuilderModel.ServiceFee.Value.ToString("N2") (@BuilderModel.FeeType)</p>
+                            }
+                            @* Commented out StartDate and EndDate display per request *@
+                            @*
+                            @if (BuilderModel.StartDate.HasValue)
+                            {
+                                <p class="mb-3"><strong>Start Date:</strong> @BuilderModel.StartDate.Value.ToString("d")</p>
+                            }
+                            @if (BuilderModel.EndDate.HasValue)
+                            {
+                                <p class="mb-3"><strong>End Date:</strong> @BuilderModel.EndDate.Value.ToString("d")</p>
+                            }
+                            *@
 
                             <div class="border rounded p-3">
                                 @foreach (var f in BuilderModel.Fields)
@@ -300,10 +370,14 @@
                 {
                     <style>
                         td.description-cell {
-                            max-width: 300px; /* limit width of the column */
-                            white-space: normal; /* allow wrapping to next line */
-                            word-wrap: break-word; /* break long words without spaces */
-                            overflow-wrap: break-word; /* fallback for long words */
+                            max-width: 300px;
+                            white-space: normal;
+                            word-wrap: break-word;
+                            overflow-wrap: break-word;
+                        }
+
+                        td.date-cell {
+                            white-space: nowrap;
                         }
                     </style>
 
@@ -313,6 +387,12 @@
                                 <tr>
                                     <th>Name</th>
                                     <th>Description</th>
+                                    <th>Fee</th>
+                                    @* Commented out Start Date and End Date columns per request *@
+                                    @*
+                                    <th>Start Date</th>
+                                    <th>End Date</th>
+                                    *@
                                     <th>Fields</th>
                                     <th>Created</th>
                                     <th>Actions</th>
@@ -326,12 +406,18 @@
                                         <td class="description-cell">
                                             @(string.IsNullOrEmpty(svc.Description) ? "-" : svc.Description)
                                         </td>
+                                        <td>@(svc.ServiceFee.HasValue ? $"K {svc.ServiceFee.Value.ToString("N2")} ({svc.FeeType})" : "-")</td>
+                                        @* Commented out Start Date and End Date data per request *@
+                                        @*
+                                        <td class="date-cell">@(svc.StartDate.HasValue ? svc.StartDate.Value.ToString("d") : "-")</td>
+                                        <td class="date-cell">@(svc.EndDate.HasValue ? svc.EndDate.Value.ToString("d") : "-")</td>
+                                        *@
                                         <td>@svc.Fields.Count</td>
-                                        <td>@svc.CreatedDate.ToLocalTime().ToString("g")</td>
+                                        <td class="date-cell">@svc.CreatedDate.ToLocalTime().ToString("g")</td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
                                                 <button class="btn btn-dark" @onclick="() => FillServiceAsync(svc.Id)">
-                                                    <i class="fas fa-edit"></i>View Form
+                                                    <i class="fas fa-edit"></i> View Form
                                                 </button>
                                                 <button class="btn btn-secondary" @onclick="() => EditServiceAsync(svc.Id)">
                                                     <i class="fas fa-cog"></i> Edit
@@ -343,7 +429,6 @@
                             </tbody>
                         </table>
                     </div>
-
                 }
             </div>
         </div>
@@ -356,6 +441,21 @@
                 <div>
                     <h5 class="mb-0">@FillModel.ServiceName</h5>
                     <p class="mb-0 text-muted">@FillModel.ServiceDescription</p>
+                    @if (FillModel.ServiceFee.HasValue)
+                    {
+                        <p class="mb-0 text-muted"><strong>Fee:</strong> K @FillModel.ServiceFee.Value.ToString("N2") (@FillModel.FeeType)</p>
+                    }
+                    @* Commented out StartDate and EndDate display per request *@
+                    @*
+                    @if (FillModel.StartDate.HasValue)
+                    {
+                        <p class="mb-0 text-muted"><strong>Start Date:</strong> @FillModel.StartDate.Value.ToString("d")</p>
+                    }
+                    @if (FillModel.EndDate.HasValue)
+                    {
+                        <p class="mb-0 text-muted"><strong>End Date:</strong> @FillModel.EndDate.Value.ToString("d")</p>
+                    }
+                    *@
                 </div>
                 <button class="btn btn-sm btn-outline-secondary" @onclick='() => ShowView("list")'>
                     <i class="fas fa-arrow-left"></i> Back to List
@@ -450,12 +550,14 @@
     private string CurrentView = "list";
     private string? Feedback;
     private List<ServiceModels.Service>? Services;
-
+    private List<WorkflowTemplate> WorkflowTemplates = new();
+    private List<DocumentTemplate> DocumentTemplates = new();
     private int? EditServiceId;
     private ServiceBuilderModel BuilderModel = new();
     private FillServiceModel? FillModel;
-    private ClaimsPrincipal user;
-    private ApplicationUser appUser;
+    private ClaimsPrincipal user = default!;
+    private ApplicationUser appUser = default!;
+    private Guid? currentUserOrgId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -465,8 +567,11 @@
         if (user.Identity != null && user.Identity.IsAuthenticated)
         {
             appUser = await UserManager.GetUserAsync(user);
+            currentUserOrgId = appUser.OrganisationId;
         }
         await LoadServicesAsync();
+        await LoadWorkflowTemplatesAsync();
+        await LoadDocumentTemplatesAsync();
     }
 
     private async Task LoadServicesAsync()
@@ -481,9 +586,41 @@
         }
     }
 
+    private async Task LoadWorkflowTemplatesAsync()
+    {
+        try
+        {
+            WorkflowTemplates = await _db.WorkflowTemplates
+                .Where(t => t.OrganisationId == currentUserOrgId)
+                .Select(t => new WorkflowTemplate { Id = t.Id, Name = t.Name })
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            Feedback = $"Error loading workflow templates: {ex.Message}";
+        }
+    }
+
+    private async Task LoadDocumentTemplatesAsync()
+    {
+        try
+        {
+            DocumentTemplates = await _db.DocumentTemplates
+                .Where(t => t.OrganisationId == currentUserOrgId && t.IsActive)
+                .Select(t => new DocumentTemplate { Id = t.Id, Name = t.Name })
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            Feedback = $"Error loading document templates: {ex.Message}";
+        }
+    }
+
     private void ShowView(string view)
     {
         CurrentView = view;
+        BuilderModel = new ServiceBuilderModel();
+        EditServiceId = null;
         StateHasChanged();
     }
 
@@ -509,7 +646,8 @@
             {
                 if ((field.Type == ServiceModels.FieldType.Select ||
                      field.Type == ServiceModels.FieldType.Radio ||
-                     field.Type == ServiceModels.FieldType.Checkbox) &&
+                     field.Type == ServiceModels.FieldType.Checkbox ||
+                     field.Type == ServiceModels.FieldType.MultiSelect) &&
                     string.IsNullOrWhiteSpace(field.OptionsRaw))
                 {
                     Feedback = $"Error: Field '{field.Label}' requires options";
@@ -537,24 +675,42 @@
 
             if (EditServiceId is null)
             {
-                await ServiceService.CreateServiceAsync(new CreateServiceRequest
+                var service = await ServiceService.CreateServiceAsync(new CreateServiceRequest
                 {
                     Name = BuilderModel.Name,
                     Description = BuilderModel.Description,
-                    CreatedBy = "CurrentUser",
+                    CreatedBy = user.Identity?.Name ?? "Anonymous",
+                    OrganisationId = currentUserOrgId,
+                    WorkflowTemplateId = BuilderModel.WorkflowTemplateId,
+                    DocumentTemplateId = BuilderModel.DocumentTemplateId,
+                    ServiceFee = BuilderModel.ServiceFee,
+                    FeeType = BuilderModel.FeeType,
+                    StartDate = BuilderModel.StartDate,
+                    EndDate = BuilderModel.EndDate,
                     Fields = payloadFields
                 });
                 Feedback = "Service created successfully!";
             }
             else
             {
-                await ServiceService.UpdateServiceAsync(EditServiceId.Value, new UpdateServiceRequest
+                var service = await ServiceService.UpdateServiceAsync(EditServiceId.Value, new UpdateServiceRequest
                 {
                     Name = BuilderModel.Name,
                     Description = BuilderModel.Description,
-                    ModifiedBy = "CurrentUser",
+                    ModifiedBy = user.Identity?.Name ?? "Anonymous",
+                    WorkflowTemplateId = BuilderModel.WorkflowTemplateId,
+                    DocumentTemplateId = BuilderModel.DocumentTemplateId,
+                    ServiceFee = BuilderModel.ServiceFee,
+                    FeeType = BuilderModel.FeeType,
+                    StartDate = BuilderModel.StartDate,
+                    EndDate = BuilderModel.EndDate,
                     Fields = payloadFields
                 });
+                if (service == null)
+                {
+                    Feedback = "Error: Service not found";
+                    return;
+                }
                 Feedback = "Service updated successfully!";
             }
 
@@ -610,6 +766,12 @@
             {
                 Name = svc.Name,
                 Description = svc.Description,
+                ServiceFee = svc.ServiceFee,
+                FeeType = svc.FeeType,
+                StartDate = svc.StartDate,
+                EndDate = svc.EndDate,
+                WorkflowTemplateId = svc.WorkflowTemplateId,
+                DocumentTemplateId = svc.DocumentTemplateId,
                 Fields = svc.Fields.Select(f => new FieldBuilderModel
                 {
                     Name = f.Name,
@@ -646,7 +808,12 @@
                 ServiceId = svc.Id,
                 ServiceName = svc.Name,
                 ServiceDescription = svc.Description,
+                ServiceFee = svc.ServiceFee,
+                FeeType = svc.FeeType,
+                StartDate = svc.StartDate,
+                EndDate = svc.EndDate,
                 WorkflowTemplateId = svc.WorkflowTemplateId,
+                DocumentTemplateId = svc.DocumentTemplateId,
                 Fields = svc.Fields.Select(f => new FieldFillModel
                 {
                     Id = f.Id,
@@ -706,19 +873,21 @@
                 }
             }
 
-            ServiceSubmission submission = await ServiceService.SubmitServiceAsync(FillModel.ServiceId, new SubmitServiceRequest
+            var submission = await ServiceService.SubmitServiceAsync(FillModel.ServiceId, new SubmitServiceRequest
             {
-                SubmittedBy = "Anonymous",
+                SubmittedBy = user.Identity?.Name ?? "Anonymous",
                 IpAddress = "0.0.0.0",
                 UserAgent = "Blazor",
                 Values = values
             });
 
-            WorkflowInstance workflow = await WorkflowFactory.CreateInstanceAsync(FillModel.WorkflowTemplateId.Value, appUser.Id, FillModel.ServiceId);
-
-            submission.WorkflowInstanceId = workflow.Id;
-            _db.Update(submission);
-            await _db.SaveChangesAsync();
+            if (FillModel.WorkflowTemplateId.HasValue)
+            {
+                var workflow = await WorkflowFactory.CreateInstanceAsync(FillModel.WorkflowTemplateId.Value, appUser.Id, FillModel.ServiceId);
+                submission.WorkflowInstanceId = workflow.Id;
+                _db.Update(submission);
+                await _db.SaveChangesAsync();
+            }
 
             Feedback = "Form submitted successfully!";
             FillModel = null;
@@ -739,6 +908,15 @@
         [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
         public string Description { get; set; } = string.Empty;
 
+        [Range(0, double.MaxValue, ErrorMessage = "Fee must be a positive number")]
+        public decimal? ServiceFee { get; set; }
+
+        public ServiceModels.FeeType FeeType { get; set; } = ServiceModels.FeeType.Fixed;
+
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public Guid? WorkflowTemplateId { get; set; }
+        public Guid? DocumentTemplateId { get; set; }
         public List<FieldBuilderModel> Fields { get; set; } = new();
     }
 
@@ -779,7 +957,13 @@
         public int ServiceId { get; set; }
         public string ServiceName { get; set; } = string.Empty;
         public string ServiceDescription { get; set; } = string.Empty;
+        [Range(0, double.MaxValue, ErrorMessage = "Fee must be a positive number")]
+        public decimal? ServiceFee { get; set; }
+        public ServiceModels.FeeType FeeType { get; set; } = ServiceModels.FeeType.Fixed;
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
         public Guid? WorkflowTemplateId { get; set; }
+        public Guid? DocumentTemplateId { get; set; }
         public List<FieldFillModel> Fields { get; set; } = new();
     }
 

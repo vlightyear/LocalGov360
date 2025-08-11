@@ -104,6 +104,7 @@
                                 <th>Order</th>
                                 <th>Name</th>
                                 <th>Type</th>
+                                <th>Configuration</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -118,18 +119,44 @@
                                     <td>
                                         <input class="form-control form-control-sm" @bind="step.Name" />
                                     </td>
-                                    <td>@(step is PaymentTemplateStep ? "Payment" : "Approval")</td>
                                     <td>
-                                        @if (step is ApprovalTemplateStep approval)
+                                        @if (step is PaymentTemplateStep)
                                         {
-                                            // build a temporary array that the select can bind to
-                                            var selected = approval.RequiredApprovers.ToArray();
-
+                                            <span class="badge bg-gradient-success">Payment</span>
+                                        }
+                                        else if (step is ApprovalTemplateStep)
+                                        {
+                                            <span class="badge bg-gradient-warning">Approval</span>
+                                        }
+                                        else if (step is InspectionTemplateStep)
+                                        {
+                                            <span class="badge bg-gradient-info">Inspection</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (step is PaymentTemplateStep)
+                                        {
+                                            <span class="text-muted">No configuration needed</span>
+                                        }
+                                        else if (step is ApprovalTemplateStep approval)
+                                        {
                                             <select multiple class="form-select form-select-sm"
                                                     @onchange="@(e => OnApproversChanged(approval, e))">
                                                 @foreach (var role in Roles)
                                                 {
                                                     <option value="@role.Id" selected="@approval.RequiredApprovers.Contains(role.Id)">
+                                                        @role.Name
+                                                    </option>
+                                                }
+                                            </select>
+                                        }
+                                        else if (step is InspectionTemplateStep inspection)
+                                        {
+                                            <select multiple class="form-select form-select-sm"
+                                                    @onchange="@(e => OnApproversChanged(inspection, e))">
+                                                @foreach (var role in Roles)
+                                                {
+                                                    <option value="@role.Id" selected="@inspection.RequiredApprovers.Contains(role.Id)">
                                                         @role.Name
                                                     </option>
                                                 }
@@ -147,11 +174,14 @@
                     </table>
 
                     <div class="d-flex mt-2">
-                        <button class="btn btn-sm btn-outline-primary" @onclick="AddPaymentStep">
+                        <button class="btn btn-sm btn-outline-success" @onclick="AddPaymentStep">
                             <i class="fas fa-credit-card me-1"></i>Add Payment
                         </button>
-                        <button class="btn btn-sm btn-outline-primary ms-2" @onclick="AddApprovalStep">
+                        <button class="btn btn-sm btn-outline-warning ms-2" @onclick="AddApprovalStep">
                             <i class="fas fa-user-check me-1"></i>Add Approval
+                        </button>
+                        <button class="btn btn-sm btn-outline-info ms-2" @onclick="AddInspectionStep">
+                            <i class="fas fa-search me-1"></i>Add Inspection
                         </button>
                     </div>
                 </div>
@@ -222,7 +252,6 @@
         StateHasChanged();
     }
 
-
     private void CloseModal()
     {
         ShowModal = false;
@@ -245,6 +274,16 @@
         {
             Order = EditingSteps.Count + 1,
             Name = "Approval",
+            RequiredApprovers = new()
+        });
+    }
+
+    private void AddInspectionStep()
+    {
+        EditingSteps.Add(new InspectionTemplateStep
+        {
+            Order = EditingSteps.Count + 1,
+            Name = "Inspection",
             RequiredApprovers = new()
         });
     }
@@ -289,7 +328,6 @@
             Db.WorkflowTemplateSteps.Add(s);
         }
 
-
         await Db.SaveChangesAsync();
         await Load();
         CloseModal();
@@ -304,9 +342,16 @@
         await Load();
     }
 
-    private void OnApproversChanged(ApprovalTemplateStep step, ChangeEventArgs e)
+    private void OnApproversChanged(WorkflowTemplateStep step, ChangeEventArgs e)
     {
         var values = e.Value as IEnumerable<string> ?? Array.Empty<string>();
-        step.RequiredApprovers = values.ToList();
+        if (step is ApprovalTemplateStep approval)
+        {
+            approval.RequiredApprovers = values.ToList();
+        }
+        else if (step is InspectionTemplateStep inspection)
+        {
+            inspection.RequiredApprovers = values.ToList();
+        }
     }
 }

@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
-
 namespace LocalGov360.Data.Models
 {
     public class ServiceModels
@@ -35,6 +34,12 @@ namespace LocalGov360.Data.Models
             Custom
         }
 
+        public enum FeeType
+        {
+            Fixed,
+            Variable
+        }
+
         public class Service
         {
             public int Id { get; set; }
@@ -47,8 +52,12 @@ namespace LocalGov360.Data.Models
             public string Description { get; set; } = string.Empty;
 
             public bool IsActive { get; set; } = true;
+            public decimal? ServiceFee { get; set; } // Changed to nullable
+            public FeeType FeeType { get; set; } = FeeType.Fixed;
             public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
             public DateTime? ModifiedDate { get; set; }
+            public DateTime? StartDate { get; set; }
+            public DateTime? EndDate { get; set; }
 
             [MaxLength(100)]
             public string CreatedBy { get; set; } = string.Empty;
@@ -56,7 +65,13 @@ namespace LocalGov360.Data.Models
             [MaxLength(100)]
             public string? ModifiedBy { get; set; }
             public Guid? WorkflowTemplateId { get; set; }
-            public virtual WorkflowTemplate WorkflowTemplate { get; set; }
+            public Guid? DocumentTemplateId { get; set; }
+            public Guid? OrganisationId { get; set; }
+
+            [ForeignKey(nameof(OrganisationId))]
+            public Organisation Organisation { get; set; } = default!;
+            public virtual WorkflowTemplate? WorkflowTemplate { get; set; }
+            public virtual DocumentTemplate? DocumentTemplate { get; set; }
             public virtual ICollection<ServiceField> Fields { get; set; } = new List<ServiceField>();
             public virtual ICollection<ServiceSubmission> Submissions { get; set; } = new List<ServiceSubmission>();
         }
@@ -82,7 +97,7 @@ namespace LocalGov360.Data.Models
             public int DisplayOrder { get; set; }
 
             [MaxLength(200)]
-            public string? DefaultValue { get; set; } 
+            public string? DefaultValue { get; set; }
 
             [MaxLength(500)]
             public string Placeholder { get; set; } = string.Empty;
@@ -91,7 +106,7 @@ namespace LocalGov360.Data.Models
             public string ValidationRulesJson { get; set; } = "[]";
             public string PropertiesJson { get; set; } = "{}";
 
-            public virtual Service Service { get; set; }
+            public virtual Service Service { get; set; } = default!;
             public virtual ICollection<ServiceSubmissionValue> SubmissionValues { get; set; } = new List<ServiceSubmissionValue>();
 
             [NotMapped]
@@ -133,7 +148,7 @@ namespace LocalGov360.Data.Models
             public string UserAgent { get; set; } = string.Empty;
             public bool IsCompleted { get; set; } = true;
 
-            public virtual Service Service { get; set; }
+            public virtual Service Service { get; set; } = default!;
             public virtual ICollection<ServiceSubmissionValue> Values { get; set; } = new List<ServiceSubmissionValue>();
         }
 
@@ -144,8 +159,8 @@ namespace LocalGov360.Data.Models
             public int FieldId { get; set; }
             public string Value { get; set; } = string.Empty;
 
-            public virtual ServiceSubmission Submission { get; set; }
-            public virtual ServiceField Field { get; set; }
+            public virtual ServiceSubmission Submission { get; set; } = default!;
+            public virtual ServiceField Field { get; set; } = default!;
         }
 
         public class FieldOption
@@ -163,3 +178,5 @@ namespace LocalGov360.Data.Models
         }
     }
 }
+
+

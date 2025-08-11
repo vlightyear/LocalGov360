@@ -1,0 +1,752 @@
+@page "/documenttemplates"
+@using LocalGov360.Data
+@using LocalGov360.Data.Models
+@using LocalGov360.Services
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Authorization
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.EntityFrameworkCore
+@attribute [Authorize(Roles = "developer,CouncilAdmin")]
+@rendermode InteractiveServer
+@inject ApplicationDbContext _db
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+
+
+<style>
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .header-buttons {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .blazor-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .blazor-modal-content {
+        background: white;
+        border-radius: 0.5rem;
+        width: 90%;
+        max-width: 800px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .modal-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+
+    .btn-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #000;
+        opacity: 0.5;
+        cursor: pointer;
+        line-height: 1;
+    }
+
+        .btn-close:hover {
+            opacity: 0.75;
+        }
+
+    .btn-dark {
+        background-color: #343a40;
+        border-color: #343a40;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+    }
+
+        .btn-dark:hover {
+            background-color: #23272b;
+            border-color: #1d2124;
+            color: white;
+        }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+    }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+            border-color: #545b62;
+            color: white;
+        }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .form-full-width {
+        grid-column: 1 / -1;
+    }
+
+    .alert {
+        margin-bottom: 1rem;
+    }
+
+    .template-content {
+        height: 300px;
+        resize: vertical;
+    }
+
+    .template-preview {
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        background-color: #f8f9fa;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .status-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .status-active {
+        background-color: #d1edff;
+        color: #0c63e4;
+    }
+
+    .status-inactive {
+        background-color: #fecaca;
+        color: #dc2626;
+    }
+
+    .logo-upload-area {
+        border: 2px dashed #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        text-align: center;
+        background-color: #f8f9fa;
+    }
+
+    .logo-preview {
+        max-width: 150px;
+        max-height: 100px;
+        margin-bottom: 0.5rem;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .file-input {
+        display: block;
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        background-color: #fff;
+    }
+
+        .file-input:focus {
+            border-color: #343a40;
+            outline: none;
+        }
+</style>
+
+<div class="container-fluid py-2">
+    <div class="row">
+        <div class="col-12">
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger" role="alert">
+                    @errorMessage
+                </div>
+            }
+            <div class="card my-4">
+                <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                    <div class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3">
+                        <h6 class="text-white text-capitalize ps-3">Document Templates</h6>
+                        <div class="ps-3 pb-2 d-flex align-items-center header-buttons">
+                            <button class="btn btn-sm btn-outline-light" @onclick="RefreshTemplates">
+                                <i class="fas fa-sync-alt me-1"></i> Refresh
+                            </button>
+                            <button class="btn btn-sm btn-outline-light" @onclick="ShowCreateTemplateModal">
+                                <i class="fas fa-plus-circle me-1"></i> Add Template
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body px-0 pb-2">
+                    @if (isLoading)
+                    {
+                        <div class="text-center p-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    }
+                    else if (templates.Any())
+                    {
+                        <div class="table-responsive p-0">
+                            <table class="table align-items-center mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Template Name</th>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Document Type</th>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Organisation</th>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Status</th>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Created</th>
+                                        <th class="text-secondary opacity-7">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var template in templates)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex px-2 py-1">
+                                                    <div class="d-flex flex-column justify-content-center">
+                                                        <h6 class="mb-0 text-sm">@template.Name</h6>
+                                                        <p class="text-xs text-secondary mb-0">@template.Description</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <p class="text-xs text-secondary mb-0">@template.DocumentType</p>
+                                            </td>
+                                            <td>
+                                                <p class="text-xs text-secondary mb-0">@(template.Organisation?.Name ?? "None")</p>
+                                            </td>
+                                            <td>
+                                                <span class="status-badge @(template.IsActive ? "status-active" : "status-inactive")">
+                                                    @(template.IsActive ? "Active" : "Inactive")
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <p class="text-xs text-secondary mb-0">@template.CreatedDate.ToString("dd/MM/yyyy")</p>
+                                            </td>
+                                            <td class="align-middle">
+                                                <div class="btn-group action-buttons">
+                                                    <button class="btn btn-sm btn-outline-info" @onclick="() => PreviewTemplate(template.Id)">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => EditTemplate(template.Id)">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteTemplate(template.Id)">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center p-4">
+                            <p class="text-muted">No document templates found.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create/Edit Template Modal -->
+@if (showTemplateModal)
+{
+    <div class="blazor-modal" @onclick="CloseTemplateModal">
+        <div class="blazor-modal-content" @onclick:stopPropagation>
+            <div class="modal-header">
+                <h5 class="modal-title">@(isEditing ? "Edit" : "Create") Document Template</h5>
+                <button type="button" class="btn-close" @onclick="CloseTemplateModal">×</button>
+            </div>
+            <div class="modal-body">
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger" role="alert">
+                        @errorMessage
+                    </div>
+                }
+                <EditForm Model="@templateModel" OnValidSubmit="SaveTemplate">
+                    <DataAnnotationsValidator />
+                    <div class="form-grid">
+                        <div class="mb-3">
+                            <label for="templateName" class="form-label">Template Name</label>
+                            <InputText id="templateName" @bind-Value="templateModel.Name" class="form-control" />
+                            <ValidationMessage For="@(() => templateModel.Name)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="documentType" class="form-label">Document Type</label>
+                            <InputSelect id="documentType" @bind-Value="templateModel.DocumentType" class="form-control">
+                                <option value="">Select document type</option>
+                                @foreach (var docType in documentTypes)
+                                {
+                                    <option value="@docType">@docType</option>
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="@(() => templateModel.DocumentType)" />
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <InputCheckbox id="isActive" @bind-Value="templateModel.IsActive" class="form-check-input" />
+                                <label for="isActive" class="form-check-label">Active</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="logoUpload" class="form-label">Logo (Optional)</label>
+                            <div class="logo-upload-area">
+                                @if (!string.IsNullOrEmpty(templateModel.LogoBase64))
+                                {
+                                    <img src="data:image/*;base64,@templateModel.LogoBase64" class="logo-preview" alt="Logo preview" />
+                                    <button type="button" class="btn btn-sm btn-outline-danger mt-2" @onclick="RemoveLogo">
+                                        <i class="fas fa-trash me-1"></i> Remove Logo
+                                    </button>
+                                }
+                                <InputFile id="logoUpload" @bind-Value="templateModel.LogoFile" OnChange="HandleLogoUpload" accept="image/png,image/jpeg" class="file-input" />
+                                <small class="form-text text-muted">Upload PNG or JPG, max 1MB</small>
+                            </div>
+                            <ValidationMessage For="@(() => templateModel.LogoBase64)" />
+                        </div>
+                        <div class="mb-3 form-full-width">
+                            <label for="description" class="form-label">Description</label>
+                            <InputTextArea id="description" @bind-Value="templateModel.Description" class="form-control" rows="2" />
+                            <ValidationMessage For="@(() => templateModel.Description)" />
+                        </div>
+                        <div class="mb-3 form-full-width">
+                            <label for="templateContent" class="form-label">Template Content (HTML)</label>
+                            <InputTextArea id="templateContent" @bind-Value="templateModel.Content" class="form-control template-content" />
+                            <ValidationMessage For="@(() => templateModel.Content)" />
+                            <small class="form-text text-muted">
+                                Use placeholders like {{CustomerName}}, {{Amount}}, {{Date}}, {{OrganisationLogo}} for dynamic content.
+                            </small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseTemplateModal">Cancel</button>
+                        <button type="submit" class="btn btn-dark">Save Template</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Preview Modal -->
+@if (showPreviewModal)
+{
+    <div class="blazor-modal" @onclick="ClosePreviewModal">
+        <div class="blazor-modal-content" @onclick:stopPropagation>
+            <div class="modal-header">
+                <h5 class="modal-title">Template Preview: @previewTemplate?.Name</h5>
+                <button type="button" class="btn-close" @onclick="ClosePreviewModal">×</button>
+            </div>
+            <div class="modal-body">
+                @if (previewTemplate != null)
+                {
+                    <div class="text-center mb-3">
+                        @if (!string.IsNullOrEmpty(previewTemplate.LogoBase64))
+                        {
+                            <img src="data:image/*;base64,@previewTemplate.LogoBase64" class="logo-preview" alt="Organisation Logo" />
+                        }
+                    </div>
+                    <div class="mb-3">
+                        <strong>Document Type:</strong> @previewTemplate.DocumentType<br />
+                        <strong>Organisation:</strong> @(previewTemplate.Organisation?.Name ?? "None")<br />
+                        <strong>Status:</strong> <span class="status-badge @(previewTemplate.IsActive ? "status-active" : "status-inactive")">@(previewTemplate.IsActive ? "Active" : "Inactive")</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Description:</strong><br />
+                        @previewTemplate.Description
+                    </div>
+                    <div class="mb-3">
+                        <strong>Template Content:</strong>
+                        <div class="template-preview">
+                            @((MarkupString)ProcessPreviewContent(previewTemplate.Content, previewTemplate.LogoBase64))
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+               
+                <button type="button" class="btn btn-secondary" @onclick="ClosePreviewModal">Close</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<DocumentTemplate> templates = new();
+    private bool isLoading = true;
+    private bool showTemplateModal = false;
+    private bool showPreviewModal = false;
+    private bool isEditing = false;
+    private string errorMessage = string.Empty;
+    private DocumentTemplateModel templateModel = new();
+    private DocumentTemplate? previewTemplate;
+    private Guid? currentUserOrgId;
+
+    private List<string> documentTypes = new()
+    {
+        "Receipt", "Invoice", "Certificate", "License",
+        "Permit", "Notice", "Report", "Statement"
+    };
+
+    private Dictionary<string, string> availablePlaceholders = new()
+    {
+        { "OrganisationName", "Name of the organisation" },
+        { "OrganisationAddress", "Organisation address" },
+        { "CustomerName", "Customer/Client name" },
+        { "CustomerAddress", "Customer address" },
+        { "Amount", "Monetary amount" },
+        { "Date", "Document date" },
+        { "DocumentNumber", "Document reference number" },
+        { "OrganisationLogo", "Organisation logo image" }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var principal = authState.User;
+        var user = await UserManager.GetUserAsync(principal);
+        currentUserOrgId = user?.OrganisationId;
+
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            templates = await _db.DocumentTemplates
+                .Include(t => t.Organisation)
+                .Where(t => t.OrganisationId == currentUserOrgId)
+                .OrderByDescending(t => t.CreatedDate)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading data: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task RefreshTemplates()
+    {
+        await LoadData();
+        StateHasChanged();
+    }
+
+    private void ShowCreateTemplateModal()
+    {
+        templateModel = new DocumentTemplateModel
+        {
+            Id = Guid.Empty,
+            OrganisationId = currentUserOrgId,
+            IsActive = true
+        };
+        isEditing = false;
+        showTemplateModal = true;
+        errorMessage = string.Empty;
+    }
+
+    private void CloseTemplateModal()
+    {
+        showTemplateModal = false;
+        templateModel = new DocumentTemplateModel();
+        isEditing = false;
+        errorMessage = string.Empty;
+    }
+
+    private async Task SaveTemplate()
+    {
+        errorMessage = string.Empty;
+        try
+        {
+            if (isEditing)
+            {
+                var template = await _db.DocumentTemplates.FindAsync(templateModel.Id);
+                if (template != null)
+                {
+                    template.Name = templateModel.Name;
+                    template.Description = templateModel.Description;
+                    template.DocumentType = templateModel.DocumentType;
+                    template.Content = templateModel.Content;
+                    template.IsActive = templateModel.IsActive;
+                    template.LogoBase64 = templateModel.LogoBase64;
+
+                    _db.DocumentTemplates.Update(template);
+                    await _db.SaveChangesAsync();
+
+                    await RefreshTemplates();
+                    showTemplateModal = false;
+                }
+                else
+                {
+                    errorMessage = "Template not found.";
+                }
+            }
+            else
+            {
+                var newTemplate = new DocumentTemplate
+                {
+                    Id = Guid.NewGuid(),
+                    Name = templateModel.Name,
+                    Description = templateModel.Description,
+                    DocumentType = templateModel.DocumentType,
+                    Content = templateModel.Content,
+                    IsActive = templateModel.IsActive,
+                    CreatedDate = DateTime.UtcNow,
+                    OrganisationId = currentUserOrgId,
+                    LogoBase64 = templateModel.LogoBase64
+                };
+
+                _db.DocumentTemplates.Add(newTemplate);
+                await _db.SaveChangesAsync();
+
+                await RefreshTemplates();
+                showTemplateModal = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving template: {ex.Message}";
+        }
+    }
+
+    private async Task EditTemplate(Guid templateId)
+    {
+        try
+        {
+            var template = await _db.DocumentTemplates.FindAsync(templateId);
+            if (template != null)
+            {
+                templateModel = new DocumentTemplateModel
+                {
+                    Id = template.Id,
+                    Name = template.Name,
+                    Description = template.Description,
+                    DocumentType = template.DocumentType,
+                    Content = template.Content,
+                    IsActive = template.IsActive,
+                    OrganisationId = template.OrganisationId,
+                    LogoBase64 = template.LogoBase64
+                };
+                isEditing = true;
+                showTemplateModal = true;
+                showPreviewModal = false;
+                errorMessage = string.Empty;
+            }
+            else
+            {
+                errorMessage = "Template not found.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading template: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteTemplate(Guid templateId)
+    {
+        try
+        {
+            var template = await _db.DocumentTemplates.FindAsync(templateId);
+            if (template != null)
+            {
+                _db.DocumentTemplates.Remove(template);
+                await _db.SaveChangesAsync();
+                await RefreshTemplates();
+            }
+            else
+            {
+                errorMessage = "Template not found.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error deleting template: {ex.Message}";
+        }
+    }
+
+    private async Task PreviewTemplate(Guid templateId)
+    {
+        try
+        {
+            previewTemplate = await _db.DocumentTemplates
+                .Include(t => t.Organisation)
+                .FirstOrDefaultAsync(t => t.Id == templateId);
+
+            if (previewTemplate != null)
+            {
+                showPreviewModal = true;
+            }
+            else
+            {
+                errorMessage = "Template not found.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading preview: {ex.Message}";
+        }
+    }
+
+    private void ClosePreviewModal()
+    {
+        showPreviewModal = false;
+        previewTemplate = null;
+    }
+
+    private async Task HandleLogoUpload(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            if (file.Size > 1 * 1024 * 1024)
+            {
+                errorMessage = "Logo file size must be less than 1MB";
+                return;
+            }
+
+            if (!file.ContentType.StartsWith("image/png") && !file.ContentType.StartsWith("image/jpeg"))
+            {
+                errorMessage = "Please select a PNG or JPG file";
+                return;
+            }
+
+            try
+            {
+                using var stream = file.OpenReadStream(1 * 1024 * 1024);
+                using var memoryStream = new MemoryStream();
+                await stream.CopyToAsync(memoryStream);
+                var fileBytes = memoryStream.ToArray();
+                templateModel.LogoBase64 = Convert.ToBase64String(fileBytes);
+                errorMessage = string.Empty;
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error uploading logo: {ex.Message}";
+            }
+        }
+    }
+
+    private void RemoveLogo()
+    {
+        templateModel.LogoBase64 = string.Empty;
+        templateModel.LogoFile = null;
+        StateHasChanged();
+    }
+
+
+    private string ProcessPreviewContent(string content, string? logoBase64)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+            return string.Empty;
+
+        var previewContent = content;
+
+        // Prepend logo at the top if it exists
+        if (!string.IsNullOrEmpty(logoBase64))
+        {
+            previewContent = $"<div style='text-align: center; margin-bottom: 1rem;'><img src='data:image/*;base64,{logoBase64}' style='max-width: 150px; max-height: 100px;' alt='Organisation Logo' /></div>{previewContent}";
+        }
+
+        foreach (var placeholder in availablePlaceholders)
+        {
+            var sampleValue = GetSampleValue(placeholder.Key);
+            if (placeholder.Key == "OrganisationLogo" && !string.IsNullOrEmpty(logoBase64))
+            {
+                sampleValue = $"<img src='data:image/*;base64,{logoBase64}' style='max-width: 150px; max-height: 100px; display: block; margin-left: auto; margin-right: auto;' alt='Organisation Logo' />";
+            }
+            previewContent = previewContent.Replace($"{{{{{placeholder.Key}}}}}", sampleValue);
+        }
+
+        return previewContent;
+    }
+
+    private string GetSampleValue(string placeholder)
+    {
+        return placeholder switch
+        {
+            "OrganisationName" => "Sample Organisation",
+            "OrganisationAddress" => "123 Main St, City",
+            "CustomerName" => "John Doe",
+            "CustomerAddress" => "456 Client Rd, City",
+            "Amount" => "$1,000.00",
+            "Date" => DateTime.Now.ToString("dd/MM/yyyy"),
+            "DocumentNumber" => "DOC-2025-001",
+            "OrganisationLogo" => "", // Handled in ProcessPreviewContent
+            _ => $"[{placeholder}]"
+        };
+    }
+
+    public class DocumentTemplateModel
+    {
+        public Guid Id { get; set; }
+
+        [Required(ErrorMessage = "Template name is required")]
+        public string Name { get; set; } = string.Empty;
+
+        public string Description { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Document type is required")]
+        public string DocumentType { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Template content is required")]
+        public string Content { get; set; } = string.Empty;
+
+        public bool IsActive { get; set; } = true;
+
+        public Guid? OrganisationId { get; set; }
+
+        public string LogoBase64 { get; set; } = string.Empty;
+
+        public IBrowserFile? LogoFile { get; set; }
+    }
+}
