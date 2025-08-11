@@ -310,3 +310,4 @@ C:\Users\Administrator\Source\Repos\LocalGov360\obj\Debug\net8.0\refint\LocalGov
 C:\Users\Administrator\Source\Repos\LocalGov360\obj\Debug\net8.0\LocalGov360.pdb
 C:\Users\Administrator\Source\Repos\LocalGov360\obj\Debug\net8.0\LocalGov360.genruntimeconfig.cache
 C:\Users\Administrator\Source\Repos\LocalGov360\obj\Debug\net8.0\ref\LocalGov360.dll
+C:\Users\prime\source\repos\LocalGov360\obj\Debug\net8.0\scopedcss\Components\Pages\Service\Service.razor.rz.scp.css

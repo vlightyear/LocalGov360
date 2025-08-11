@@ -10,6 +10,7 @@
 @inject NavigationManager NavigationManager
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IWebHostEnvironment Environment
 @rendermode InteractiveServer
 
 <style>
@@ -400,6 +401,21 @@
                     <textarea class="form-control" rows="4" @bind="approvalComments"
                               placeholder="@(isApproving ? "Add any comments about your approval..." : "Please provide a reason for rejection...")"></textarea>
                 </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Add a file (Optional)</label>
+                    <InputFile OnChange="@OnInputFileChange" class="form-control" />
+                    @if (uploadProgress > 0 && uploadProgress < 100)
+                    {
+                        <div class="progress mt-2">
+                            <div class="progress-bar" style="width:@uploadProgress%">@uploadProgress%</div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(statusMessage))
+                    {
+                        <div class="alert alert-info mt-2">@statusMessage</div>
+                    }
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" @onclick="CloseApprovalModal">Cancel</button>
@@ -433,10 +449,71 @@
     private string approvalComments = string.Empty;
     private bool isSubmitting = false;
 
+    private string statusMessage = string.Empty;
+    private int uploadProgress = 0;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadUserInfo();
         await LoadTask();
+    }
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        uploadProgress = 0;
+        try
+        {
+            if (e.FileCount > 0)
+            {
+                var file = e.File;
+
+                // Set maximum file size (e.g., 10MB)
+                const long maxFileSize = 1024L * 1024 * 1024; // 10MB
+
+                var uploadsFolder = Path.Combine(Environment.WebRootPath, "uploads");
+                // Create directory if it doesn't exist
+                Directory.CreateDirectory(uploadsFolder);
+
+                // Generate a safe filename
+                var trustedFileName = Path.GetRandomFileName() + Path.GetExtension(file.Name);
+                var filePath = Path.Combine(uploadsFolder, trustedFileName);
+
+                // Save the file with increased size limit
+                var buffer = new byte[16 * 1024];
+                var totalRead = 0L;
+                var totalSize = file.Size;
+
+                // Open read stream with custom max file size
+                await using var readStream = file.OpenReadStream(maxFileSize);
+                await using var writeStream = new FileStream(filePath, FileMode.Create);
+
+                int bytesRead;
+                while ((bytesRead = await readStream.ReadAsync(buffer)) != 0)
+                {
+                    await writeStream.WriteAsync(buffer.AsMemory(0, bytesRead));
+                    totalRead += bytesRead;
+                    uploadProgress = (int)((double)totalRead / totalSize * 100);
+                    StateHasChanged(); // Force UI update
+                }
+
+                selectedStep.InspectionFile = trustedFileName;
+                statusMessage = $"File '{file.Name}' uploaded successfully! Saved as: {trustedFileName}";
+            }
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"Error: {ex.Message}";
+        }
+    }
+
+    private bool IsFileValid(IBrowserFile file)
+    {
+        // Example validation - adjust as needed
+        var allowedExtensions = new[] { ".pdf", ".docx", ".xlsx" };
+        var extension = Path.GetExtension(file.Name);
+
+        return file.Size < 5 * 1024 * 1024 && // 5MB limit
+               allowedExtensions.Contains(extension.ToLower());
     }
 
     private async Task LoadUserInfo()
@@ -559,6 +636,7 @@
                 if (isApproving)
                 {
                     step.ActualApprovers.Add(appUser.Id);
+                    step.InspectionFile = selectedStep.InspectionFile;
 
                     // Check if all required approvers have approved
                     if (step.RequiredApprovers.All(ra => step.ActualApprovers.Contains(ra) ||
