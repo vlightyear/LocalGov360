@@ -15,6 +15,8 @@ namespace LocalGov360.Data
         public DbSet<DocumentTemplate> DocumentTemplates { get; set; }
         public DbSet<ServicePayment> ServicePayments { get; set; }
 
+        public DbSet<ServiceInvoice> ServiceInvoices { get; set; }
+        public DbSet<ServiceInvoiceLineItem> ServiceInvoiceLineItems { get; set; }
 
         public DbSet<TinggConfiguration> TinggConfigurations { get; set; }
         public DbSet<Service> Services { get; set; }

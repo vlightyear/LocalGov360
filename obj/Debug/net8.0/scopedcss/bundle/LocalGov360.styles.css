@@ -221,17 +221,17 @@ main[b-d4xqkhwqh7] {
         overflow-y: auto;
     }
 }
-/* _content/LocalGov360/Components/Pages/Service/Service.razor.rz.scp.css */
+/* _content/LocalGov360/Components/Layout/Pages/Service/Service.razor.rz.scp.css */
 
-   .action-buttons[b-2x3pk7nzic] {
+   .action-buttons[b-y3zu0pzppb] {
         gap: 0.5rem;
     }
 
-    .header-buttons[b-2x3pk7nzic] {
+    .header-buttons[b-y3zu0pzppb] {
         gap: 1rem;
     }
 
-    .blazor-modal[b-2x3pk7nzic] {
+    .blazor-modal[b-y3zu0pzppb] {
         position: fixed;
         top: 0;
         left: 0;
@@ -244,7 +244,7 @@ main[b-d4xqkhwqh7] {
         justify-content: center;
     }
 
-    .blazor-modal-content[b-2x3pk7nzic] {
+    .blazor-modal-content[b-y3zu0pzppb] {
         background: white;
         border-radius: 0.5rem;
         width: 90%;
@@ -254,7 +254,7 @@ main[b-d4xqkhwqh7] {
         box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
 
-    .modal-header[b-2x3pk7nzic] {
+    .modal-header[b-y3zu0pzppb] {
         padding: 1.5rem 1.5rem 0 1.5rem;
         border-bottom: 1px solid #dee2e6;
         display: flex;
@@ -262,11 +262,11 @@ main[b-d4xqkhwqh7] {
         align-items: center;
     }
 
-    .modal-body[b-2x3pk7nzic] {
+    .modal-body[b-y3zu0pzppb] {
         padding: 1.5rem;
     }
 
-    .btn-close[b-2x3pk7nzic] {
+    .btn-close[b-y3zu0pzppb] {
         background: none;
         border: none;
         font-size: 1.5rem;
@@ -276,22 +276,22 @@ main[b-d4xqkhwqh7] {
         cursor: pointer;
     }
 
-    .btn-close:hover[b-2x3pk7nzic] {
+    .btn-close:hover[b-y3zu0pzppb] {
         opacity: 0.75;
     }
 
-    .btn-dark[b-2x3pk7nzic] {
+    .btn-dark[b-y3zu0pzppb] {
         background-color: #343a40;
         border-color: #343a40;
         color: white;
     }
 
-    .btn-dark:hover[b-2x3pk7nzic] {
+    .btn-dark:hover[b-y3zu0pzppb] {
         background-color: #23272b;
         border-color: #1d2124;
         color: white;
     }
 
-    .roles-table-actions[b-2x3pk7nzic] {
+    .roles-table-actions[b-y3zu0pzppb] {
         white-space: nowrap;
     }

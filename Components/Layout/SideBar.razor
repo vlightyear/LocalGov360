@@ -24,51 +24,19 @@
             <hr class="horizontal dark mt-0 mb-2">
             <div class="collapse navbar-collapse w-auto" id="sidenav-collapse-main">
                 <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link @GetActiveClass("/")" href="/">
-                            <i class="material-symbols-rounded opacity-5">dashboard</i>
-                            <span class="nav-link-text ms-1">Dashboard</span>
-                        </a>
-                    </li>
 
-                    <!-- Services (CouncilAdmin + Admin/Developer) -->
+                    @* Dashboard (CouncilAdmin/Admin/Developer) *@
                     @if (isCouncilAdmin || isAdmin || isDeveloper)
                     {
                         <li class="nav-item">
-                            <a class="nav-link @GetActiveClass("/service")" href="/service">
-                                <i class="material-symbols-rounded opacity-5">construction</i>
-                                <span class="nav-link-text ms-1">Services Setup</span>
+                            <a class="nav-link @GetActiveClass("/dashboard")" href="/dashboard">
+                                <i class="material-symbols-rounded opacity-5">dashboard</i>
+                                <span class="nav-link-text ms-1">Dashboard</span>
                             </a>
                         </li>
                     }
 
-                    @if (isCouncilAdmin || isAdmin || isDeveloper)
-                    {
-                        <li class="nav-item">
-                            <a class="nav-link @GetActiveClass("/paymentservice")" href="/paymentservice">
-                                <i class="material-symbols-rounded opacity-5">credit_card</i>
-                                <span class="nav-link-text ms-1">Payment Setup</span>
-                            </a>
-                        </li>
-                    }
-
-
-
-                    @if (isCouncilAdmin || isAdmin || isDeveloper)
-                    {
-                        <li class="nav-item">
-                            <a class="nav-link @GetActiveClass("/documenttemplates")" href="/documenttemplates">
-                                <i class="material-symbols-rounded opacity-5">description</i>
-                                <span class="nav-link-text ms-1">Documents Setup</span>
-                            </a>
-                        </li>
-                    }
-
-                 
-
-
-
-                    <!-- Service List (Available to everyone EXCEPT CouncilAdmin) -->
+                    @* Service List (everyone except CouncilAdmin) *@
                     @if (hasNoRole || isAdmin || isDeveloper || isCustomer)
                     {
                         <li class="nav-item">
@@ -79,32 +47,32 @@
                         </li>
                     }
 
-                 
-
+                    @* Task List (everyone) *@
                     <li class="nav-item">
-                        <a class="nav-link @GetActiveClass("/service-list")" href="/Tasks">
+                        <a class="nav-link @GetActiveClass("/Tasks")" href="/Tasks">
                             <i class="material-symbols-rounded opacity-5">checklist</i>
                             <span class="nav-link-text ms-1">Task List</span>
                         </a>
                     </li>
 
-                    <!-- Service List (Available to everyone EXCEPT CouncilAdmin) -->
+                    @* Service Payments (everyone except CouncilAdmin) *@
                     @if (hasNoRole || isAdmin || isDeveloper || isCustomer)
                     {
                         <li class="nav-item">
                             <a class="nav-link @GetActiveClass("/service-payments")" href="/service-payments">
-                                <i class="material-symbols-rounded opacity-5">list_alt</i>
+                                <i class="material-symbols-rounded opacity-5">paid</i>
                                 <span class="nav-link-text ms-1">Service Payments</span>
                             </a>
                         </li>
                     }
 
-
-
+                    @* Account pages header *@
                     <li class="nav-item mt-3">
                         <h6 class="ps-4 ms-2 text-uppercase text-xs text-dark font-weight-bolder opacity-5">Account pages</h6>
                     </li>
-                     @if (hasNoRole  || isCustomer)
+
+                    @* Profile (hasNoRole or customer) *@
+                    @if (hasNoRole || isCustomer)
                     {
                         <li class="nav-item">
                             <a class="nav-link @GetActiveClass("/user-profile")" href="/user-profile">
@@ -113,18 +81,7 @@
                             </a>
                         </li>
                     }
-                    <!-- Users (Admin/Developer only) -->
-                    @if (isAdmin || isDeveloper)
-                    {
-                        <li class="nav-item">
-                            <a class="nav-link @GetActiveClass("/users")" href="/users">
-                                <i class="material-symbols-rounded opacity-5">group</i>
-                                <span class="nav-link-text ms-1">Users</span>
-                            </a>
-                        </li>
-                    }
-
-                    <!-- Workflows (CouncilAdmin + Admin/Developer) -->
+                    @* Workflows (CouncilAdmin/Admin/Developer) *@
                     @if (isCouncilAdmin || isAdmin || isDeveloper)
                     {
                         <li class="nav-item">
@@ -134,6 +91,59 @@
                             </a>
                         </li>
                     }
+
+
+                    @* Users (admin/developer only) *@
+                    @if (isAdmin || isDeveloper)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link @GetActiveClass("/users")" href="/users">
+                                <i class="material-symbols-rounded opacity-5">groups</i>
+                                <span class="nav-link-text ms-1">Users</span>
+                            </a>
+                        </li>
+                    }
+
+                    @* Workflows (CouncilAdmin/Admin/Developer) *@
+                    @if (isCouncilAdmin || isAdmin || isDeveloper)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link @GetActiveClass("/Workflows")" href="/Workflows">
+                                <i class="material-symbols-rounded opacity-5">workflow</i>
+                                <span class="nav-link-text ms-1">Workflows</span>
+                            </a>
+                        </li>
+                    }
+
+                    @* --- SETUP GROUP MOVED TO BOTTOM --- *@
+                    @if (isCouncilAdmin || isAdmin || isDeveloper)
+                    {
+                        <li class="nav-item mt-4">
+                            <h6 class="ps-4 ms-2 text-uppercase text-xs text-dark font-weight-bolder opacity-5">Setup</h6>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link @GetActiveClass("/service")" href="/service">
+                                <i class="material-symbols-rounded opacity-5">build_circle</i>
+                                <span class="nav-link-text ms-1">Services Setup</span>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link @GetActiveClass("/paymentservice")" href="/paymentservice">
+                                <i class="material-symbols-rounded opacity-5">payment</i>
+                                <span class="nav-link-text ms-1">Payment Setup</span>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link @GetActiveClass("/documenttemplates")" href="/documenttemplates">
+                                <i class="material-symbols-rounded opacity-5">description</i>
+                                <span class="nav-link-text ms-1">Documents Setup</span>
+                            </a>
+                        </li>
+                    }
+
                 </ul>
             </div>
             <div class="sidenav-footer position-absolute w-100 bottom-0">

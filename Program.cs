@@ -169,7 +169,8 @@ using (var scope = app.Services.CreateScope())
                     ApiBaseUrl = "https://sandbox.tingg.africa",
                     ApiKey = "ViR64sAFdAkvAoGaJqATWcW3tXREXGf",
                     AuthTokenRequestUrl = "https://api-approval.tingg.africa/v1/oauth/token/request",
-                    CallbackUrl = "https://fd68ef02f459.ngrok-free.app/api/tinggcallback",
+                     CallbackUrl = "https://fd68ef02f459.ngrok-free.app/api/tinggcallback",
+                    //CallbackUrl = "https://fd68ef02f459.ngrok-free.app/api/tinggcallback",
                     CheckoutRequestUrl = "https://api-approval.tingg.africa/v3/checkout-api/checkout/request",
                     ClientId = "c5549f4f-08da-4843-8dc4-32a567a1ef10",
                     ClientSecret = "mrmTNUmwhahKnVYTbSmIGXLJgaTuejBfLrBJqzv",
@@ -189,7 +190,12 @@ using (var scope = app.Services.CreateScope())
 
         }
 }
-
+// Apply migrations automatically
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.Migrate();
+}
 app.MapPost("/callback", async (HttpRequest request, TinggCallbackService callbackService) =>
 {
     return await callbackService.ReceiveCallbackAsync(request);

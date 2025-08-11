@@ -297,7 +297,6 @@ C:\Users\Administrator\Source\Repos\LocalGov360\obj\Debug\net8.0\rjsmrazor.dswa.
 C:\Users\Administrator\Source\Repos\LocalGov360\obj\Debug\net8.0\rjsmcshtml.dswa.cache.json
 C:\Users\Administrator\Source\Repos\LocalGov360\obj\Debug\net8.0\scopedcss\Components\Layout\MainLayout.razor.rz.scp.css
 C:\Users\Administrator\Source\Repos\LocalGov360\obj\Debug\net8.0\scopedcss\Components\Layout\NavMenu.razor.rz.scp.css
-C:\Users\Administrator\Source\Repos\LocalGov360\obj\Debug\net8.0\scopedcss\Components\Pages\Service\Service.razor.rz.scp.css
 C:\Users\Administrator\Source\Repos\LocalGov360\obj\Debug\net8.0\scopedcss\bundle\LocalGov360.styles.css
 C:\Users\Administrator\Source\Repos\LocalGov360\obj\Debug\net8.0\scopedcss\projectbundle\LocalGov360.bundle.scp.css
 C:\Users\Administrator\Source\Repos\LocalGov360\obj\Debug\net8.0\staticwebassets.build.json
@@ -310,3 +309,4 @@ C:\Users\Administrator\Source\Repos\LocalGov360\obj\Debug\net8.0\refint\LocalGov
 C:\Users\Administrator\Source\Repos\LocalGov360\obj\Debug\net8.0\LocalGov360.pdb
 C:\Users\Administrator\Source\Repos\LocalGov360\obj\Debug\net8.0\LocalGov360.genruntimeconfig.cache
 C:\Users\Administrator\Source\Repos\LocalGov360\obj\Debug\net8.0\ref\LocalGov360.dll
+C:\Users\Administrator\Source\Repos\LocalGov360\obj\Debug\net8.0\scopedcss\Components\Layout\Pages\Service\Service.razor.rz.scp.css
