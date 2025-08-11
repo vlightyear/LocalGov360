@@ -104,6 +104,7 @@ namespace LocalGov360.Data.Models
         public DateTime? CompletedAt { get; set; }
         public Guid AssignedTo { get; set; }
         public string Comments { get; set; } = "";
+        public string? InspectionFile { get; set; }
         public Guid WorkflowInstanceId { get; set; }
         public WorkflowInstance WorkflowInstance { get; set; } = null!;
     }

@@ -62,3 +62,5 @@ packages/
 /obj/Debug/net8.0/staticwebassets.build.json.cache
 /obj/Debug/net8.0/staticwebassets.development.json
 /obj/project.nuget.cache
+bin/Debug/net8*/
+/bin/Debug/net8.0/LocalGov360.pdb
