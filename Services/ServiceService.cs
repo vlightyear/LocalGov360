@@ -127,36 +127,69 @@ namespace LocalGov360.Services
             await _context.SaveChangesAsync();
             return service;
         }
-        public async Task<bool> DeleteServiceAsync(int serviceId)
+       public async Task<bool> DeleteServiceAsync(int serviceId)
+{
+    using var transaction = await _context.Database.BeginTransactionAsync();
+    try
+    {
+        // 1. Delete WorkflowInstances first
+        var workflowInstances = await _context.WorkflowInstances
+            .Where(wi => wi.ServiceId == serviceId)
+            .ToListAsync();
+        if (workflowInstances.Any())
         {
-            var workflowInstances = await _context.WorkflowInstances
-                .Where(wi => wi.ServiceId == serviceId)
-                .ToListAsync();
-
-            if (workflowInstances.Any())
-            {
-                _context.WorkflowInstances.RemoveRange(workflowInstances);
-            }
-
-            var service = await _context.Services
-                .Include(s => s.Fields)
-                    .ThenInclude(f => f.SubmissionValues)
-                .FirstOrDefaultAsync(s => s.Id == serviceId);
-
-            if (service == null) return false;
-
-            foreach (var field in service.Fields)
-            {
-                _context.ServiceSubmissionValues.RemoveRange(field.SubmissionValues);
-            }
-
-            _context.ServiceFields.RemoveRange(service.Fields);
-            _context.Services.Remove(service);
-
-            await _context.SaveChangesAsync();
-            return true;
+            _context.WorkflowInstances.RemoveRange(workflowInstances);
         }
 
+        // 2. Get the service with all related data
+        var service = await _context.Services
+            .Include(s => s.Fields)
+                .ThenInclude(f => f.SubmissionValues)
+            .FirstOrDefaultAsync(s => s.Id == serviceId);
+        
+        if (service == null)
+        {
+            await transaction.RollbackAsync();
+            return false;
+        }
+
+        // 3. Delete ServiceSubmissionValues first (child records)
+        var allSubmissionValues = service.Fields.SelectMany(f => f.SubmissionValues).ToList();
+        if (allSubmissionValues.Any())
+        {
+            _context.ServiceSubmissionValues.RemoveRange(allSubmissionValues);
+        }
+
+        // 4. Delete ServiceFields (parent records)
+        if (service.Fields.Any())
+        {
+            _context.ServiceFields.RemoveRange(service.Fields);
+        }
+
+        // 5. Delete any ServicePayments related to this service
+        var servicePayments = await _context.ServicePayments
+            .Where(sp => sp.ServiceId == serviceId)
+            .ToListAsync();
+        if (servicePayments.Any())
+        {
+            _context.ServicePayments.RemoveRange(servicePayments);
+        }
+
+        // 6. Finally delete the Service itself
+        _context.Services.Remove(service);
+
+        // 7. Save all changes
+        await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
+        
+        return true;
+    }
+    catch (Exception)
+    {
+        await transaction.RollbackAsync();
+        throw;
+    }
+}
 
 
         public async Task<ServiceModels.ServiceSubmission> SubmitServiceAsync(int serviceId, SubmitServiceRequest request)

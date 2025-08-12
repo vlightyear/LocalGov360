@@ -184,15 +184,30 @@
                     <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
                         <div class="bg-black shadow-dark border-radius-lg pt-4 pb-3">
                             <h4 class="text-white text-center mb-2">@ServiceFormModel.ServiceName</h4>
-                            <div class="ps-3 d-flex align-items-center justify-content-end">
+                            <div class="ps-3 d-flex align-items-center justify-content-between">
                                 @if (!string.IsNullOrEmpty(ServiceFormModel.ServiceDescription))
                                 {
-                                    <p class="text-white mb-0 me-auto">@ServiceFormModel.ServiceDescription</p>
+                                    <p class="text-white mb-0">@ServiceFormModel.ServiceDescription</p>
                                 }
-                                <button class="btn btn-sm btn-outline-light me-3" @onclick='() => ShowView("services-list")'>
-                                    <i class="fas fa-arrow-left me-1"></i>
-                                    Back to Services
-                                </button>
+                                else
+                                {
+                                    <div></div>
+                                }
+                                <div class="d-flex align-items-center gap-3">
+                                    <!-- Progress indicator -->
+                                    <div class="d-flex align-items-center text-white">
+                                        <span class="me-2">Progress:</span>
+                                        <div class="progress bg-dark" style="width: 120px; height: 6px;">
+                                            <div class="progress-bar bg-white"
+                                                 style="width: @(TotalPages > 0 ? ((double)(CurrentPage + 1) / TotalPages) * 100 : 0)%"></div>
+                                        </div>
+                                        <span class="ms-2 small">Page @(CurrentPage + 1) / @TotalPages</span>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-light" @onclick='() => ShowView("services-list")'>
+                                        <i class="fas fa-arrow-left me-1"></i>
+                                        Back to Services
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -200,97 +215,141 @@
                         <EditForm Model="ServiceFormModel" OnValidSubmit="SubmitServiceFormAsync">
                             <DataAnnotationsValidator />
 
-                            @foreach (var field in ServiceFormModel.Fields)
-                            {
-                                <div class="form-group mb-3">
-                                    <label class="form-label">
-                                        @field.Label
-                                        @if (field.IsRequired)
-                                        {
-                                            <span class="text-danger">*</span>
-                                        }
-                                    </label>
-
-                                    @if (!string.IsNullOrEmpty(field.Description))
-                                    {
-                                        <div class="form-text text-muted mb-2">@field.Description</div>
-                                    }
-
-                                    @switch (field.Type)
-                                    {
-                                        case ServiceModels.FieldType.TextArea:
-                                            <InputTextArea class="form-control" @bind-Value="field.Value"
-                                                           placeholder="@field.Placeholder" rows="4" />
-                                            break;
-                                        case ServiceModels.FieldType.Select:
-                                            <InputSelect class="form-select" @bind-Value="field.Value">
-                                                <option value="">-- Please select --</option>
-                                                @foreach (var option in field.ParsedOptions)
-                                                {
-                                                    <option value="@option">@option</option>
-                                                }
-                                            </InputSelect>
-                                            break;
-                                        case ServiceModels.FieldType.Radio:
-                                            <InputRadioGroup @bind-Value="field.Value">
-                                                @foreach (var option in field.ParsedOptions)
-                                                {
-                                                    <div class="form-check">
-                                                        <InputRadio class="form-check-input" Value="@option" id="@($"radio_{field.Id}_{option}")" />
-                                                        <label class="form-check-label" for="@($"radio_{field.Id}_{option}")">@option</label>
-                                                    </div>
-                                                }
-                                            </InputRadioGroup>
-                                            break;
-                                        case ServiceModels.FieldType.Checkbox:
-                                            @foreach (var option in field.ParsedOptions)
-                                            {
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="@($"check_{field.Id}_{option}")"
-                                                           @bind="field.CheckboxValues[option]" />
-                                                    <label class="form-check-label" for="@($"check_{field.Id}_{option}")">@option</label>
-                                                </div>
-                                            }
-                                            break;
-                                        case ServiceModels.FieldType.File:
-                                            <InputFile class="form-control" OnChange="e => field.Files = e.GetMultipleFiles()" multiple />
-                                            break;
-                                        case ServiceModels.FieldType.Email:
-                                            <InputText type="email" class="form-control" @bind-Value="field.Value" placeholder="@field.Placeholder" />
-                                            break;
-                                        case ServiceModels.FieldType.Date:
-                                            <InputDate class="form-control" @bind-Value="DateValue"
-                                                       @onchange="(e) => field.Value = e.Value?.ToString()" />
-                                            break;
-                                        case ServiceModels.FieldType.Number:
-                                            <InputNumber class="form-control" @bind-Value="NumberValue"
-                                                         @onchange="(e) => field.Value = e.Value?.ToString()" placeholder="@field.Placeholder" />
-                                            break;
-                                        default:
-                                            <InputText type="text" class="form-control" @bind-Value="field.Value" placeholder="@field.Placeholder" />
-                                            break;
-                                    }
-                                    <ValidationMessage For="@(() => field.Value)" class="text-danger" />
-                                </div>
+                            @{
+                                var currentPageFields = ServiceFormModel.Fields.Skip(CurrentPage * FieldsPerPage).Take(FieldsPerPage).ToList();
                             }
 
-                            <div class="d-flex justify-content-end gap-2 mt-4">
-                                <button type="button" class="btn btn-secondary" @onclick="@(() => ShowView("services-list"))" disabled="@IsSubmitting">
-                                    <i class="fas fa-times me-1"></i>
-                                    Cancel
-                                </button>
-                                <button type="submit" class="btn btn-dark bg-black" disabled="@IsSubmitting">
-                                    @if (IsSubmitting)
+                            <div class="row g-4">
+                                @for (int i = 0; i < currentPageFields.Count; i++)
+                                {
+                                    var field = currentPageFields[i];
+                                    <div class="col-md-6">
+                                        <div class="card h-100 border-light">
+                                            <div class="card-body">
+                                                <label class="form-label fw-bold">
+                                                    @field.Label
+                                                    @if (field.IsRequired)
+                                                    {
+                                                        <span class="text-danger">*</span>
+                                                    }
+                                                </label>
+
+                                                @if (!string.IsNullOrEmpty(field.Description))
+                                                {
+                                                    <p class="text-muted small mb-2">@field.Description</p>
+                                                }
+
+                                                @switch (field.Type)
+                                                {
+                                                    case ServiceModels.FieldType.TextArea:
+                                                        <InputTextArea class="form-control" @bind-Value="field.Value"
+                                                                       placeholder="@field.Placeholder" rows="4" />
+                                                        break;
+                                                    case ServiceModels.FieldType.Select:
+                                                        <InputSelect class="form-select" @bind-Value="field.Value">
+                                                            <option value="">-- Please select --</option>
+                                                            @foreach (var option in field.ParsedOptions)
+                                                            {
+                                                                <option value="@option">@option</option>
+                                                            }
+                                                        </InputSelect>
+                                                        break;
+                                                    case ServiceModels.FieldType.Radio:
+                                                        <InputRadioGroup @bind-Value="field.Value">
+                                                            @foreach (var option in field.ParsedOptions)
+                                                            {
+                                                                <div class="form-check mb-1">
+                                                                    <InputRadio class="form-check-input" Value="@option" id="@($"radio_{field.Id}_{option}")" />
+                                                                    <label class="form-check-label" for="@($"radio_{field.Id}_{option}")">@option</label>
+                                                                </div>
+                                                            }
+                                                        </InputRadioGroup>
+                                                        break;
+                                                    case ServiceModels.FieldType.Checkbox:
+                                                        @foreach (var option in field.ParsedOptions)
+                                                        {
+                                                            <div class="form-check mb-1">
+                                                                <input class="form-check-input" type="checkbox" id="@($"check_{field.Id}_{option}")"
+                                                                       @bind="field.CheckboxValues[option]" />
+                                                                <label class="form-check-label" for="@($"check_{field.Id}_{option}")">@option</label>
+                                                            </div>
+                                                        }
+                                                        break;
+                                                    case ServiceModels.FieldType.File:
+                                                        <InputFile class="form-control" OnChange="e => field.Files = e.GetMultipleFiles()" multiple />
+                                                        <small class="text-muted">You can select multiple files if needed</small>
+                                                        break;
+                                                    case ServiceModels.FieldType.Email:
+                                                        <InputText type="email" class="form-control" @bind-Value="field.Value" placeholder="@field.Placeholder" />
+                                                        break;
+                                                    case ServiceModels.FieldType.Date:
+                                                        <InputDate class="form-control" @bind-Value="DateValue"
+                                                                   @onchange="(e) => field.Value = e.Value?.ToString()" />
+                                                        break;
+                                                    case ServiceModels.FieldType.Number:
+                                                        <InputNumber class="form-control" @bind-Value="NumberValue"
+                                                                     @onchange="(e) => field.Value = e.Value?.ToString()" placeholder="@field.Placeholder" />
+                                                        break;
+                                                    default:
+                                                        <InputText type="text" class="form-control" @bind-Value="field.Value" placeholder="@field.Placeholder" />
+                                                        break;
+                                                }
+                                                <ValidationMessage For="@(() => field.Value)" class="text-danger small mt-1" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Navigation buttons -->
+                            <div class="d-flex justify-content-between align-items-center mt-4 pt-4 border-top">
+                                <div>
+                                    @if (CurrentPage > 0)
                                     {
-                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                                        <span>Submitting...</span>
+                                        <button type="button" class="btn btn-outline-secondary btn-lg" @onclick="PreviousPage" disabled="@IsSubmitting">
+                                            <i class="fas fa-chevron-left me-2"></i>
+                                            Previous
+                                        </button>
                                     }
                                     else
                                     {
-                                        <i class="fas fa-paper-plane me-1"></i>
-                                        <span>Submit Application</span>
+                                        <button type="button" class="btn btn-outline-secondary btn-lg" @onclick="@(() => ShowView("services-list"))" disabled="@IsSubmitting">
+                                            <i class="fas fa-times me-2"></i>
+                                            Cancel
+                                        </button>
                                     }
-                                </button>
+                                </div>
+
+                                <div class="text-center">
+                                    <small class="text-muted">
+                                        Page @(CurrentPage + 1) of @TotalPages
+                                    </small>
+                                </div>
+
+                                <div>
+                                    @if (CurrentPage < TotalPages - 1)
+                                    {
+                                        <button type="button" class="btn btn-dark btn-lg bg-black" @onclick="NextPage" disabled="@IsSubmitting">
+                                            Next
+                                            <i class="fas fa-chevron-right ms-2"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" class="btn btn-success btn-lg" disabled="@IsSubmitting">
+                                            @if (IsSubmitting)
+                                            {
+                                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                                <span>Submitting...</span>
+                                            }
+                                            else
+                                            {
+                                                <i class="fas fa-paper-plane me-2"></i>
+                                                <span>Submit Application</span>
+                                            }
+                                        </button>
+                                    }
+                                </div>
                             </div>
                         </EditForm>
                     </div>
@@ -357,9 +416,41 @@
         margin-bottom: 0.5rem;
     }
 
+    .form-check-lg .form-check-input {
+        width: 1.5rem;
+        height: 1.5rem;
+        margin-top: 0.125rem;
+    }
+
+    .form-check-lg .form-check-label {
+        padding-left: 0.5rem;
+        line-height: 1.8;
+    }
+
+    .form-field-container {
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .progress {
+        border-radius: 3px;
+    }
+
     .spinner-border-sm {
         width: 1rem;
         height: 1rem;
+    }
+
+    .btn-lg {
+        padding: 0.75rem 1.5rem;
+        font-size: 1.1rem;
+    }
+
+    .form-control-lg, .form-select-lg {
+        font-size: 1.1rem;
+        padding: 0.75rem 1rem;
     }
 </style>
 
@@ -375,6 +466,11 @@
     private bool IsSubmitting = false;
     private DateTime? DateValue;
     private decimal? NumberValue;
+
+    // Pagination for form fields
+    private int CurrentPage = 0;
+    private const int FieldsPerPage = 8; // 8 fields per page (4 left, 4 right)
+    private int TotalPages => ServiceFormModel?.Fields.Count > 0 ? (int)Math.Ceiling((double)ServiceFormModel.Fields.Count / FieldsPerPage) : 1;
 
     private ClaimsPrincipal user;
     private ApplicationUser appUser;
@@ -533,12 +629,54 @@
                 }).ToList() ?? new List<UserFieldModel>()
             };
 
+            // Reset to first page
+            CurrentPage = 0;
             ShowView("service-form");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error in StartServiceAsync: {ex}");
             Feedback = $"Error loading service form: {ex.Message}";
+        }
+    }
+
+    private void NextPage()
+    {
+        if (ServiceFormModel != null && CurrentPage < TotalPages - 1)
+        {
+            // Validate current page fields if required
+            var currentPageFields = ServiceFormModel.Fields.Skip(CurrentPage * FieldsPerPage).Take(FieldsPerPage);
+
+            foreach (var field in currentPageFields.Where(f => f.IsRequired))
+            {
+                if (field.Type == ServiceModels.FieldType.Checkbox)
+                {
+                    if (!field.CheckboxValues.Any(kv => kv.Value))
+                    {
+                        Feedback = $"Field '{field.Label}' is required";
+                        return;
+                    }
+                }
+                else if (string.IsNullOrWhiteSpace(field.Value))
+                {
+                    Feedback = $"Field '{field.Label}' is required";
+                    return;
+                }
+            }
+
+            CurrentPage++;
+            Feedback = null; // Clear any validation messages
+            StateHasChanged();
+        }
+    }
+
+    private void PreviousPage()
+    {
+        if (CurrentPage > 0)
+        {
+            CurrentPage--;
+            Feedback = null; // Clear any validation messages
+            StateHasChanged();
         }
     }
 
@@ -549,7 +687,7 @@
         IsSubmitting = true;
         try
         {
-            // Validate required fields
+            // Validate all required fields
             foreach (var field in ServiceFormModel.Fields.Where(f => f.IsRequired))
             {
                 if (field.Type == ServiceModels.FieldType.Checkbox)
@@ -619,6 +757,7 @@
 
             Feedback = "Thank you for your submission. Please check the task list to see the next step.";
             ServiceFormModel = null;
+            CurrentPage = 0;
             ShowView("services-list");
         }
         catch (Exception ex)
@@ -635,6 +774,10 @@
     {
         CurrentView = view;
         Feedback = null;
+        if (view != "service-form")
+        {
+            CurrentPage = 0; // Reset page index when leaving form
+        }
         StateHasChanged();
     }
 

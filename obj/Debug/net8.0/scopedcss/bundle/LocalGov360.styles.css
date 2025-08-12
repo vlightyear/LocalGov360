@@ -222,76 +222,62 @@ main[b-d4xqkhwqh7] {
     }
 }
 /* _content/LocalGov360/Components/Layout/Pages/Service/Service.razor.rz.scp.css */
+.swal2-popup[b-y3zu0pzppb] {
+    border-radius: 15px !important;
+    padding: 20px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+    max-width: 400px !important;
+    width: 90% !important;
+}
 
-   .action-buttons[b-y3zu0pzppb] {
-        gap: 0.5rem;
+.swal2-title[b-y3zu0pzppb] {
+    font-size: 1.2em !important;
+    font-weight: 600 !important;
+    margin-bottom: 10px !important;
+}
+
+.swal2-html-container[b-y3zu0pzppb] {
+    font-size: 0.9em !important;
+    line-height: 1.4 !important;
+    margin: 10px 0 !important;
+}
+
+.swal2-actions[b-y3zu0pzppb] {
+    margin-top: 20px !important;
+    gap: 10px !important;
+}
+
+.swal2-confirm[b-y3zu0pzppb] {
+    border-radius: 8px !important;
+    padding: 8px 20px !important;
+    font-size: 0.9em !important;
+    font-weight: 500 !important;
+}
+
+.swal2-cancel[b-y3zu0pzppb] {
+    border-radius: 8px !important;
+    padding: 8px 20px !important;
+    font-size: 0.9em !important;
+    font-weight: 500 !important;
+}
+
+.swal2-icon[b-y3zu0pzppb] {
+    width: 60px !important;
+    height: 60px !important;
+    margin: 10px auto 15px !important;
+}
+
+    .swal2-icon.swal2-warning[b-y3zu0pzppb] {
+        border-color: #f8bb86 !important;
+        color: #f8bb86 !important;
     }
 
-    .header-buttons[b-y3zu0pzppb] {
-        gap: 1rem;
+    .swal2-icon.swal2-success[b-y3zu0pzppb] {
+        border-color: #a5dc86 !important;
+        color: #a5dc86 !important;
     }
 
-    .blazor-modal[b-y3zu0pzppb] {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0,0,0,0.5);
-        z-index: 1000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .blazor-modal-content[b-y3zu0pzppb] {
-        background: white;
-        border-radius: 0.5rem;
-        width: 90%;
-        max-width: 600px;
-        max-height: 90vh;
-        overflow-y: auto;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    }
-
-    .modal-header[b-y3zu0pzppb] {
-        padding: 1.5rem 1.5rem 0 1.5rem;
-        border-bottom: 1px solid #dee2e6;
-        display: flex;
-        justify-content: between;
-        align-items: center;
-    }
-
-    .modal-body[b-y3zu0pzppb] {
-        padding: 1.5rem;
-    }
-
-    .btn-close[b-y3zu0pzppb] {
-        background: none;
-        border: none;
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #000;
-        opacity: 0.5;
-        cursor: pointer;
-    }
-
-    .btn-close:hover[b-y3zu0pzppb] {
-        opacity: 0.75;
-    }
-
-    .btn-dark[b-y3zu0pzppb] {
-        background-color: #343a40;
-        border-color: #343a40;
-        color: white;
-    }
-
-    .btn-dark:hover[b-y3zu0pzppb] {
-        background-color: #23272b;
-        border-color: #1d2124;
-        color: white;
-    }
-
-    .roles-table-actions[b-y3zu0pzppb] {
-        white-space: nowrap;
+    .swal2-icon.swal2-error[b-y3zu0pzppb] {
+        border-color: #f27474 !important;
+        color: #f27474 !important;
     }

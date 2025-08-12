@@ -188,8 +188,8 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcQWRtaW5pc3RyYXRpb25cQ29tcG9uZW50LnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/Administration/Users.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcQWRtaW5pc3RyYXRpb25cVXNlcnMucmF6b3I=
+[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/Administration/UserManagement.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcQWRtaW5pc3RyYXRpb25cVXNlck1hbmFnZW1lbnQucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/Auth.razor]
@@ -214,6 +214,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/Home.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcSG9tZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/Organisation/CouncilUserManagement.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcT3JnYW5pc2F0aW9uXENvdW5jaWxVc2VyTWFuYWdlbWVudC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/Payments/PaymentServiceConfig.razor]

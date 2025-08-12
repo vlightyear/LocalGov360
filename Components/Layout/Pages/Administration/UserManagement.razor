@@ -9,7 +9,7 @@
 @inject NavigationManager NavigationManager
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @rendermode InteractiveServer
-@attribute [Authorize(Roles = "developer")]
+@attribute [Authorize(Roles = "developer, CouncilAdmin")]
 
 <style>
     .action-buttons {

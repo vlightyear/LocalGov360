@@ -82,16 +82,7 @@
                         </li>
                     }
                     @* Workflows (CouncilAdmin/Admin/Developer) *@
-                    @if (isCouncilAdmin || isAdmin || isDeveloper)
-                    {
-                        <li class="nav-item">
-                            <a class="nav-link @GetActiveClass("/Workflows")" href="/Workflows">
-                                <i class="material-symbols-rounded opacity-5">workflow</i>
-                                <span class="nav-link-text ms-1">Workflows</span>
-                            </a>
-                        </li>
-                    }
-
+               
 
                     @* Users (admin/developer only) *@
                     @if (isAdmin || isDeveloper)
@@ -114,6 +105,22 @@
                             </a>
                         </li>
                     }
+
+
+                 @if (isCouncilAdmin || isAdmin || isDeveloper)
+{
+    <li class="nav-item mt-4">
+        <h6 class="ps-4 ms-2 text-uppercase text-xs text-dark font-weight-bolder opacity-5">User Management</h6>
+    </li>
+
+    <li class="nav-item">
+                            <a class="nav-link @GetActiveClass("/council-users")" href="/council-users">
+            <i class="material-symbols-rounded opacity-5">manage_accounts</i>
+            <span class="nav-link-text ms-1">Role & User Management</span>
+        </a>
+    </li>
+}
+
 
                     @* --- SETUP GROUP MOVED TO BOTTOM --- *@
                     @if (isCouncilAdmin || isAdmin || isDeveloper)
