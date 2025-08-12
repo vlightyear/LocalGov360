@@ -127,16 +127,37 @@ namespace LocalGov360.Services
             await _context.SaveChangesAsync();
             return service;
         }
-
         public async Task<bool> DeleteServiceAsync(int serviceId)
         {
-            var service = await _context.Services.FindAsync(serviceId);
+            var workflowInstances = await _context.WorkflowInstances
+                .Where(wi => wi.ServiceId == serviceId)
+                .ToListAsync();
+
+            if (workflowInstances.Any())
+            {
+                _context.WorkflowInstances.RemoveRange(workflowInstances);
+            }
+
+            var service = await _context.Services
+                .Include(s => s.Fields)
+                    .ThenInclude(f => f.SubmissionValues)
+                .FirstOrDefaultAsync(s => s.Id == serviceId);
+
             if (service == null) return false;
 
+            foreach (var field in service.Fields)
+            {
+                _context.ServiceSubmissionValues.RemoveRange(field.SubmissionValues);
+            }
+
+            _context.ServiceFields.RemoveRange(service.Fields);
             _context.Services.Remove(service);
+
             await _context.SaveChangesAsync();
             return true;
         }
+
+
 
         public async Task<ServiceModels.ServiceSubmission> SubmitServiceAsync(int serviceId, SubmitServiceRequest request)
         {

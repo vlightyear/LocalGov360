@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\prime\\source\\repos\\LocalGov360\\LocalGov360.csproj": {}
+    "C:\\Users\\Administrator\\Source\\Repos\\LocalGov360\\LocalGov360.csproj": {}
   },
   "projects": {
-    "C:\\Users\\prime\\source\\repos\\LocalGov360\\LocalGov360.csproj": {
+    "C:\\Users\\Administrator\\Source\\Repos\\LocalGov360\\LocalGov360.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\prime\\source\\repos\\LocalGov360\\LocalGov360.csproj",
+        "projectUniqueName": "C:\\Users\\Administrator\\Source\\Repos\\LocalGov360\\LocalGov360.csproj",
         "projectName": "LocalGov360",
-        "projectPath": "C:\\Users\\prime\\source\\repos\\LocalGov360\\LocalGov360.csproj",
-        "packagesPath": "C:\\Users\\prime\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\prime\\source\\repos\\LocalGov360\\obj\\",
+        "projectPath": "C:\\Users\\Administrator\\Source\\Repos\\LocalGov360\\LocalGov360.csproj",
+        "packagesPath": "C:\\Users\\Administrator\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Administrator\\Source\\Repos\\LocalGov360\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\prime\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\Administrator\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -90,7 +90,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.301/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

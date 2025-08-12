@@ -87,23 +87,6 @@
                                 </InputSelect>
                             </div>
 
-                            @* Commented out StartDate and EndDate inputs per request *@
-                            @*
-                            <div class="mb-3">
-                                <label class="form-label">Start Date</label>
-                                <InputDate class="form-control" @bind-Value="BuilderModel.StartDate" />
-                                <small class="text-muted">Leave empty if no start date is specified</small>
-                                <ValidationMessage For="() => BuilderModel.StartDate" />
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">End Date</label>
-                                <InputDate class="form-control" @bind-Value="BuilderModel.EndDate" />
-                                <small class="text-muted">Leave empty if no end date is specified</small>
-                                <ValidationMessage For="() => BuilderModel.EndDate" />
-                            </div>
-                            *@
-
                             <div class="mb-3">
                                 <label class="form-label">Workflow Template</label>
                                 <InputSelect class="form-select" @bind-Value="BuilderModel.WorkflowTemplateId">
@@ -230,8 +213,24 @@
             <!-- Preview Section -->
             <div class="col-lg-6">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header d-flex justify-content-between align-items-center">
                         <h5><i class="fas fa-eye me-2"></i> Live Preview</h5>
+                        @if (BuilderModel.Fields.Any())
+                        {
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                        @onclick="PreviousPreviewPage" disabled="@(PreviewPage == 0)">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <span class="small align-self-center text-muted">
+                                    @(PreviewPage + 1) / @PreviewTotalPages
+                                </span>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                        @onclick="NextPreviewPage" disabled="@(PreviewPage >= PreviewTotalPages - 1)">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        }
                     </div>
                     <div class="card-body">
                         @if (BuilderModel.Fields.Any())
@@ -242,85 +241,138 @@
                             {
                                 <p class="mb-3"><strong>Fee:</strong> K @BuilderModel.ServiceFee.Value.ToString("N2") (@BuilderModel.FeeType)</p>
                             }
-                            @* Commented out StartDate and EndDate display per request *@
-                            @*
-                            @if (BuilderModel.StartDate.HasValue)
-                            {
-                                <p class="mb-3"><strong>Start Date:</strong> @BuilderModel.StartDate.Value.ToString("d")</p>
-                            }
-                            @if (BuilderModel.EndDate.HasValue)
-                            {
-                                <p class="mb-3"><strong>End Date:</strong> @BuilderModel.EndDate.Value.ToString("d")</p>
-                            }
-                            *@
+
+                            <!-- Progress indicator for preview -->
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <div class="progress flex-grow-1 me-3" style="height: 8px;">
+                                    <div class="progress-bar bg-secondary" role="progressbar" 
+                                         style="width: @(((double)(PreviewPage * FieldsPerPage) / BuilderModel.Fields.Count) * 100)%"
+                                         aria-valuenow="@(PreviewPage * FieldsPerPage)" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="@BuilderModel.Fields.Count"></div>
+                                </div>
+                                <span class="text-muted small">Preview Page @(PreviewPage + 1) of @PreviewTotalPages</span>
+                            </div>
 
                             <div class="border rounded p-3">
-                                @foreach (var f in BuilderModel.Fields)
-                                {
-                                    <div class="mb-3">
-                                        <label class="form-label">
-                                            @f.Label
-                                            @if (f.IsRequired)
-                                            {
-                                                <span class="text-danger">*</span>
-                                            }
-                                        </label>
+                                @{
+                                    var previewPageFields = BuilderModel.Fields.Skip(PreviewPage * FieldsPerPage).Take(FieldsPerPage).ToList();
+                                }
 
-                                        @switch (f.Type)
-                                        {
-                                            case ServiceModels.FieldType.TextArea:
-                                                <textarea class="form-control" placeholder="@f.Placeholder" rows="3">@f.DefaultValue</textarea>
-                                                break;
-                                            case ServiceModels.FieldType.Select:
-                                                <select class="form-select">
-                                                    <option value="">-- choose --</option>
-                                                    @foreach (var o in f.ParsedOptions)
+                                <!-- Fields in 2x2 grid layout for preview -->
+                                <div class="row g-4">
+                                    @for (int i = 0; i < previewPageFields.Count; i++)
+                                    {
+                                        var f = previewPageFields[i];
+                                        <div class="col-md-6">
+                                            <div class="card h-100">
+                                                <div class="card-body">
+                                                    <label class="form-label fw-bold">
+                                                        @f.Label
+                                                        @if (f.IsRequired)
+                                                        {
+                                                            <span class="text-danger">*</span>
+                                                        }
+                                                    </label>
+
+                                                    @if (!string.IsNullOrEmpty(f.Description))
                                                     {
-                                                        <option value="@o" selected="@(o == f.DefaultValue)">@o</option>
+                                                        <p class="text-muted small mb-2">@f.Description</p>
                                                     }
-                                                </select>
-                                                break;
-                                            case ServiceModels.FieldType.Radio:
-                                                @foreach (var o in f.ParsedOptions)
-                                                {
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="radio"
-                                                               name="@($"radio-{f.Name}")"
-                                                               value="@o"
-                                                               checked="@(o == f.DefaultValue)" />
-                                                        <label class="form-check-label">@o</label>
-                                                    </div>
-                                                }
-                                                break;
-                                            case ServiceModels.FieldType.Checkbox:
-                                                @foreach (var o in f.ParsedOptions)
-                                                {
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox"
-                                                               name="@($"checkbox-{f.Name}")"
-                                                               value="@o"
-                                                               checked="@(o == f.DefaultValue)" />
-                                                        <label class="form-check-label">@o</label>
-                                                    </div>
-                                                }
-                                                break;
-                                            case ServiceModels.FieldType.File:
-                                                <input type="file" class="form-control" />
-                                                break;
-                                            default:
-                                                <input type="@f.Type.ToString().ToLower()"
-                                                       class="form-control"
-                                                       placeholder="@f.Placeholder"
-                                                       value="@f.DefaultValue" />
-                                                break;
-                                        }
-                                        @if (!string.IsNullOrEmpty(f.Description))
+
+                                                    @switch (f.Type)
+                                                    {
+                                                        case ServiceModels.FieldType.TextArea:
+                                                            <textarea class="form-control" placeholder="@f.Placeholder" rows="4">@f.DefaultValue</textarea>
+                                                            break;
+                                                        case ServiceModels.FieldType.Select:
+                                                            <select class="form-select">
+                                                                <option value="">-- choose --</option>
+                                                                @foreach (var o in f.ParsedOptions)
+                                                                {
+                                                                    <option value="@o" selected="@(o == f.DefaultValue)">@o</option>
+                                                                }
+                                                            </select>
+                                                            break;
+                                                        case ServiceModels.FieldType.MultiSelect:
+                                                            <div class="border rounded p-2" style="max-height: 150px; overflow-y: auto;">
+                                                                @foreach (var o in f.ParsedOptions)
+                                                                {
+                                                                    <div class="form-check mb-1">
+                                                                        <input class="form-check-input" type="checkbox" />
+                                                                        <label class="form-check-label small">@o</label>
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                            <small class="text-muted">Select multiple options</small>
+                                                            break;
+                                                        case ServiceModels.FieldType.Radio:
+                                                            @foreach (var o in f.ParsedOptions)
+                                                            {
+                                                                <div class="form-check mb-1">
+                                                                    <input class="form-check-input" type="radio"
+                                                                           name="@($"preview-radio-{f.Name}")"
+                                                                           value="@o"
+                                                                           checked="@(o == f.DefaultValue)" />
+                                                                    <label class="form-check-label">@o</label>
+                                                                </div>
+                                                            }
+                                                            break;
+                                                        case ServiceModels.FieldType.Checkbox:
+                                                            @foreach (var o in f.ParsedOptions)
+                                                            {
+                                                                <div class="form-check mb-1">
+                                                                    <input class="form-check-input" type="checkbox"
+                                                                           name="@($"preview-checkbox-{f.Name}")"
+                                                                           value="@o"
+                                                                           checked="@(o == f.DefaultValue)" />
+                                                                    <label class="form-check-label">@o</label>
+                                                                </div>
+                                                            }
+                                                            break;
+                                                        case ServiceModels.FieldType.File:
+                                                            <input type="file" class="form-control" multiple />
+                                                            <small class="text-muted">You can select multiple files</small>
+                                                            break;
+                                                        default:
+                                                            <input type="@f.Type.ToString().ToLower()"
+                                                                   class="form-control"
+                                                                   placeholder="@f.Placeholder"
+                                                                   value="@f.DefaultValue" />
+                                                            break;
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+
+                                <!-- Navigation buttons for preview -->
+                                <div class="d-flex justify-content-between align-items-center mt-4 pt-4 border-top">
+                                    <div>
+                                        @if (PreviewPage > 0)
                                         {
-                                            <small class="text-muted">@f.Description</small>
+                                            <button type="button" class="btn btn-outline-secondary" disabled>
+                                                <i class="fas fa-chevron-left"></i> Previous
+                                            </button>
                                         }
                                     </div>
-                                }
-                                <button class="btn btn-dark">Submit Form</button>
+                                    
+                                    <div class="d-flex gap-2">
+                                        @if (PreviewPage < PreviewTotalPages - 1)
+                                        {
+                                            <button type="button" class="btn btn-secondary" disabled>
+                                                Next <i class="fas fa-chevron-right"></i>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button type="button" class="btn btn-success" disabled>
+                                                <i class="fas fa-paper-plane"></i> Submit Form
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
                             </div>
                         }
                         else
@@ -388,11 +440,6 @@
                                     <th>Name</th>
                                     <th>Description</th>
                                     <th>Fee</th>
-                                    @* Commented out Start Date and End Date columns per request *@
-                                    @*
-                                    <th>Start Date</th>
-                                    <th>End Date</th>
-                                    *@
                                     <th>Fields</th>
                                     <th>Created</th>
                                     <th>Actions</th>
@@ -407,11 +454,6 @@
                                             @(string.IsNullOrEmpty(svc.Description) ? "-" : svc.Description)
                                         </td>
                                         <td>@(svc.ServiceFee.HasValue ? $"K {svc.ServiceFee.Value.ToString("N2")} ({svc.FeeType})" : "-")</td>
-                                        @* Commented out Start Date and End Date data per request *@
-                                        @*
-                                        <td class="date-cell">@(svc.StartDate.HasValue ? svc.StartDate.Value.ToString("d") : "-")</td>
-                                        <td class="date-cell">@(svc.EndDate.HasValue ? svc.EndDate.Value.ToString("d") : "-")</td>
-                                        *@
                                         <td>@svc.Fields.Count</td>
                                         <td class="date-cell">@svc.CreatedDate.ToLocalTime().ToString("g")</td>
                                         <td>
@@ -445,17 +487,6 @@
                     {
                         <p class="mb-0 text-muted"><strong>Fee:</strong> K @FillModel.ServiceFee.Value.ToString("N2") (@FillModel.FeeType)</p>
                     }
-                    @* Commented out StartDate and EndDate display per request *@
-                    @*
-                    @if (FillModel.StartDate.HasValue)
-                    {
-                        <p class="mb-0 text-muted"><strong>Start Date:</strong> @FillModel.StartDate.Value.ToString("d")</p>
-                    }
-                    @if (FillModel.EndDate.HasValue)
-                    {
-                        <p class="mb-0 text-muted"><strong>End Date:</strong> @FillModel.EndDate.Value.ToString("d")</p>
-                    }
-                    *@
                 </div>
                 <button class="btn btn-sm btn-outline-secondary" @onclick='() => ShowView("list")'>
                     <i class="fas fa-arrow-left"></i> Back to List
@@ -465,79 +496,138 @@
                 <EditForm Model="FillModel" OnValidSubmit="SubmitFormAsync">
                     <DataAnnotationsValidator />
 
-                    @foreach (var f in FillModel.Fields)
-                    {
-                        <div class="mb-3">
-                            <label class="form-label">
-                                @f.Label
-                                @if (f.IsRequired)
-                                {
-                                    <span class="text-danger">*</span>
-                                }
-                            </label>
-
-                            @if (!string.IsNullOrEmpty(f.Description))
-                            {
-                                <p class="text-muted small mb-1">@f.Description</p>
-                            }
-
-                            @switch (f.Type)
-                            {
-                                case ServiceModels.FieldType.TextArea:
-                                    <InputTextArea class="form-control" @bind-Value="f.Value"
-                                                   placeholder="@f.Placeholder" rows="3" />
-                                    break;
-                                case ServiceModels.FieldType.Select:
-                                    <InputSelect class="form-select" @bind-Value="f.Value">
-                                        <option value="">-- choose --</option>
-                                        @foreach (var o in f.ParsedOptions)
-                                        {
-                                            <option value="@o">@o</option>
-                                        }
-                                    </InputSelect>
-                                    break;
-                                case ServiceModels.FieldType.Radio:
-                                    <InputRadioGroup @bind-Value="f.Value">
-                                        @foreach (var o in f.ParsedOptions)
-                                        {
-                                            <div class="form-check">
-                                                <InputRadio class="form-check-input" Value="@o" />
-                                                <label class="form-check-label">@o</label>
-                                            </div>
-                                        }
-                                    </InputRadioGroup>
-                                    break;
-                                case ServiceModels.FieldType.Checkbox:
-                                    @foreach (var o in f.ParsedOptions)
-                                    {
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox"
-                                                   @bind="f.CheckboxValues[o]" />
-                                            <label class="form-check-label">@o</label>
-                                        </div>
-                                    }
-                                    break;
-                                case ServiceModels.FieldType.File:
-                                    <InputFile class="form-control" OnChange="e => f.Files = e.GetMultipleFiles()" />
-                                    break;
-                                default:
-                                    <InputText type="@f.Type.ToString().ToLower()"
-                                               class="form-control"
-                                               @bind-Value="f.Value"
-                                               placeholder="@f.Placeholder" />
-                                    break;
-                            }
-                            <ValidationMessage For="@(() => f.Value)" />
+                    <!-- Progress indicator -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="progress flex-grow-1 me-3" style="height: 8px;">
+                            <div class="progress-bar bg-dark" role="progressbar" 
+                                 style="width: @(((double)(CurrentPage * FieldsPerPage) / FillModel.Fields.Count) * 100)%"
+                                 aria-valuenow="@(CurrentPage * FieldsPerPage)" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="@FillModel.Fields.Count"></div>
                         </div>
+                        <span class="text-muted small">Page @(CurrentPage + 1) of @TotalPages</span>
+                    </div>
+
+                    <!-- Fields in 2x2 grid layout for current page -->
+                    @{
+                        var currentPageFields = FillModel.Fields.Skip(CurrentPage * FieldsPerPage).Take(FieldsPerPage).ToList();
                     }
 
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-dark">
-                            <i class="fas fa-paper-plane"></i> Submit
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary" @onclick='() => ShowView("list")'>
-                            <i class="fas fa-times"></i> Cancel
-                        </button>
+                    <div class="row g-4">
+                        @for (int i = 0; i < currentPageFields.Count; i++)
+                        {
+                            var field = currentPageFields[i];
+                            <div class="col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <label class="form-label fw-bold">
+                                            @field.Label
+                                            @if (field.IsRequired)
+                                            {
+                                                <span class="text-danger">*</span>
+                                            }
+                                        </label>
+
+                                        @if (!string.IsNullOrEmpty(field.Description))
+                                        {
+                                            <p class="text-muted small mb-2">@field.Description</p>
+                                        }
+
+                                        @switch (field.Type)
+                                        {
+                                            case ServiceModels.FieldType.TextArea:
+                                                <InputTextArea class="form-control" @bind-Value="field.Value"
+                                                               placeholder="@field.Placeholder" rows="4" />
+                                                break;
+                                            case ServiceModels.FieldType.Select:
+                                                <InputSelect class="form-select" @bind-Value="field.Value">
+                                                    <option value="">-- choose --</option>
+                                                    @foreach (var o in field.ParsedOptions)
+                                                    {
+                                                        <option value="@o">@o</option>
+                                                    }
+                                                </InputSelect>
+                                                break;
+                                            case ServiceModels.FieldType.MultiSelect:
+                                                <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                                                    @foreach (var o in field.ParsedOptions)
+                                                    {
+                                                        <div class="form-check mb-1">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                   @bind="field.MultiSelectValues[o]" />
+                                                            <label class="form-check-label small">@o</label>
+                                                        </div>
+                                                    }
+                                                </div>
+                                                <small class="text-muted">Select multiple options</small>
+                                                break;
+                                            case ServiceModels.FieldType.Radio:
+                                                <InputRadioGroup @bind-Value="field.Value">
+                                                    @foreach (var o in field.ParsedOptions)
+                                                    {
+                                                        <div class="form-check mb-1">
+                                                            <InputRadio class="form-check-input" Value="@o" />
+                                                            <label class="form-check-label">@o</label>
+                                                        </div>
+                                                    }
+                                                </InputRadioGroup>
+                                                break;
+                                            case ServiceModels.FieldType.Checkbox:
+                                                @foreach (var o in field.ParsedOptions)
+                                                {
+                                                    <div class="form-check mb-1">
+                                                        <input class="form-check-input" type="checkbox"
+                                                               @bind="field.CheckboxValues[o]" />
+                                                        <label class="form-check-label">@o</label>
+                                                    </div>
+                                                }
+                                                break;
+                                            case ServiceModels.FieldType.File:
+                                                <InputFile class="form-control" OnChange="e => field.Files = e.GetMultipleFiles()" multiple />
+                                                <small class="text-muted">You can select multiple files</small>
+                                                break;
+                                            default:
+                                                <InputText type="@field.Type.ToString().ToLower()"
+                                                           class="form-control"
+                                                           @bind-Value="field.Value"
+                                                           placeholder="@field.Placeholder" />
+                                                break;
+                                        }
+                                        <ValidationMessage For="@(() => field.Value)" class="text-danger small mt-1" />
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Navigation buttons -->
+                    <div class="d-flex justify-content-between align-items-center mt-4 pt-4 border-top">
+                        <div>
+                            @if (CurrentPage > 0)
+                            {
+                                <button type="button" class="btn btn-outline-dark" @onclick="PreviousPage">
+                                    <i class="fas fa-chevron-left"></i> Previous
+                                </button>
+                            }
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            @if (CurrentPage < TotalPages - 1)
+                            {
+                                <button type="button" class="btn btn-dark" @onclick="NextPage">
+                                    Next <i class="fas fa-chevron-right"></i>
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-paper-plane"></i> Submit Form
+                                </button>
+                            }
+                            <button type="button" class="btn btn-outline-secondary" @onclick='() => ShowView("list")'>
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </div>
                     </div>
                 </EditForm>
             </div>
@@ -558,6 +648,15 @@
     private ClaimsPrincipal user = default!;
     private ApplicationUser appUser = default!;
     private Guid? currentUserOrgId;
+
+    // Pagination properties
+    private int CurrentPage = 0;
+    private const int FieldsPerPage = 8; // 2x2 grid with 2 rows = 4 fields visible, but we'll do 8 for better UX
+    private int TotalPages => FillModel?.Fields.Count > 0 ? (int)Math.Ceiling((double)FillModel.Fields.Count / FieldsPerPage) : 1;
+
+    // Preview pagination properties
+    private int PreviewPage = 0;
+    private int PreviewTotalPages => BuilderModel.Fields.Count > 0 ? (int)Math.Ceiling((double)BuilderModel.Fields.Count / FieldsPerPage) : 1;
 
     protected override async Task OnInitializedAsync()
     {
@@ -619,9 +718,68 @@
     private void ShowView(string view)
     {
         CurrentView = view;
-        BuilderModel = new ServiceBuilderModel();
-        EditServiceId = null;
+        if (view == "builder")
+        {
+            if (EditServiceId == null)
+            {
+                BuilderModel = new ServiceBuilderModel();
+            }
+        }
+        else
+        {
+            BuilderModel = new ServiceBuilderModel();
+            EditServiceId = null;
+        }
+        
+        // Reset pagination when showing fill view
+        if (view == "fill")
+        {
+            CurrentPage = 0;
+        }
+
+        // Reset preview pagination when showing builder view
+        if (view == "builder")
+        {
+            PreviewPage = 0;
+        }
+        
         StateHasChanged();
+    }
+
+    private void NextPage()
+    {
+        if (CurrentPage < TotalPages - 1)
+        {
+            CurrentPage++;
+            StateHasChanged();
+        }
+    }
+
+    private void PreviousPage()
+    {
+        if (CurrentPage > 0)
+        {
+            CurrentPage--;
+            StateHasChanged();
+        }
+    }
+
+    private void NextPreviewPage()
+    {
+        if (PreviewPage < PreviewTotalPages - 1)
+        {
+            PreviewPage++;
+            StateHasChanged();
+        }
+    }
+
+    private void PreviousPreviewPage()
+    {
+        if (PreviewPage > 0)
+        {
+            PreviewPage--;
+            StateHasChanged();
+        }
     }
 
     private void AddFieldToBuilder()
@@ -636,6 +794,9 @@
             DefaultValue = "",
             IsRequired = false
         });
+        
+        // Update preview pagination when fields are added
+        StateHasChanged();
     }
 
     private async Task SaveServiceAsync()
@@ -715,6 +876,8 @@
             }
 
             await LoadServicesAsync();
+            EditServiceId = null;
+            BuilderModel = new ServiceBuilderModel();
             ShowView("list");
         }
         catch (Exception ex)
@@ -737,6 +900,8 @@
             {
                 Feedback = "Service deleted successfully!";
                 await LoadServicesAsync();
+                EditServiceId = null;
+                BuilderModel = new ServiceBuilderModel();
                 ShowView("list");
             }
             else
@@ -784,7 +949,9 @@
                     OptionsRaw = string.Join(Environment.NewLine, f.Options.Select(o => o.Value))
                 }).ToList()
             };
-            ShowView("builder");
+
+            CurrentView = "builder";
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -826,9 +993,13 @@
                     DefaultValue = f.DefaultValue,
                     OptionsRaw = string.Join(Environment.NewLine, f.Options.Select(o => o.Value)),
                     Value = f.DefaultValue ?? "",
-                    CheckboxValues = f.Options.ToDictionary(o => o.Value, o => false)
+                    CheckboxValues = f.Options.ToDictionary(o => o.Value, o => false),
+                    MultiSelectValues = f.Options.ToDictionary(o => o.Value, o => false)
                 }).ToList()
             };
+            
+            // Reset pagination
+            CurrentPage = 0;
             ShowView("fill");
         }
         catch (Exception ex)
@@ -850,6 +1021,17 @@
                 if (f.Type == ServiceModels.FieldType.Checkbox)
                 {
                     foreach (var kv in f.CheckboxValues.Where(kv => kv.Value))
+                    {
+                        values.Add(new SubmissionValue
+                        {
+                            FieldId = f.Id,
+                            Value = kv.Key
+                        });
+                    }
+                }
+                else if (f.Type == ServiceModels.FieldType.MultiSelect)
+                {
+                    foreach (var kv in f.MultiSelectValues.Where(kv => kv.Value))
                     {
                         values.Add(new SubmissionValue
                         {
@@ -891,6 +1073,7 @@
 
             Feedback = "Form submitted successfully!";
             FillModel = null;
+            CurrentPage = 0;
             ShowView("list");
         }
         catch (Exception ex)
@@ -985,6 +1168,7 @@
             .ToList() ?? new();
         public string Value { get; set; } = string.Empty;
         public Dictionary<string, bool> CheckboxValues { get; set; } = new();
+        public Dictionary<string, bool> MultiSelectValues { get; set; } = new();
         public IReadOnlyList<IBrowserFile>? Files { get; set; }
     }
 }

@@ -1,0 +1,438 @@
+﻿@page "/dashboard"
+@rendermode InteractiveServer
+@using LocalGov360.Data
+@using LocalGov360.Data.Models
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
+@inject ApplicationDbContext _db
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Dashboard</PageTitle>
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Dashboard</h1>
+            <p class="text-muted">Overview of service payments</p>
+        </div>
+        <div>
+            <button class="btn btn-outline-secondary btn-sm" @onclick="RefreshData">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @ErrorMessage
+            <button type="button" class="btn-close" @onclick="() => ErrorMessage = null"></button>
+        </div>
+    }
+
+    @if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-muted">Loading dashboard data...</p>
+        </div>
+    }
+    else
+    {
+        <!-- Statistics Cards -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="card-title">Total Services</h5>
+                                <h2 class="mb-0">@Services.Count</h2>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-cogs fa-2x opacity-75"></i>
+                            </div>
+                        </div>
+                        <small>@Services.Count(s => s.IsActive) active services</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="card-title">Total Payments</h5>
+                                <h2 class="mb-0">@ServicePayments.Count</h2>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-credit-card fa-2x opacity-75"></i>
+                            </div>
+                        </div>
+                        <small>@ServicePayments.Count(p => p.Status == "Paid") successful payments</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="card-title">Total Revenue</h5>
+                                <h2 class="mb-0">K @TotalRevenue.ToString("N2")</h2>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-chart-line fa-2x opacity-75"></i>
+                            </div>
+                        </div>
+                        <small>From paid payments</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- Payment Analytics and Charts Row -->
+        <div class="row g-4 mb-4">
+            <!-- Payment Volume Chart -->
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Monthly Payments Volume</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="monthlyVolumeChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Service Distribution -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Service Fees Distribution</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="serviceDistributionChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Services Overview -->
+        <div class="row g-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>Services Overview</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (!Services.Any())
+                        {
+                            <div class="text-center py-4 text-muted">
+                                <i class="fas fa-cogs fa-3x mb-3 opacity-25"></i>
+                                <p>No services created yet</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="row g-3">
+                                @foreach (var service in Services.Where(s => s.IsActive).OrderByDescending(s => s.CreatedDate).Take(6))
+                                {
+                                    var paymentCount = ServicePayments.Count(p => p.ServiceId == service.Id);
+                                    var revenue = ServicePayments.Where(p => p.ServiceId == service.Id && p.Status == "Paid").Sum(p => p.Amount);
+
+                                    <div class="col-md-6 col-lg-4">
+                                        <div class="card border-start border-primary border-3">
+                                            <div class="card-body">
+                                                <h6 class="card-title">@service.Name</h6>
+                                                <p class="card-text text-muted small">
+                                                    @(string.IsNullOrEmpty(service.Description) ? "No description" :
+                                                                                            service.Description.Length > 100 ? service.Description.Substring(0, 100) + "..." : service.Description)
+                                    </p>
+                                    <div class="row text-center">
+                                        <div class="col-6">
+                                            <div class="text-primary fw-bold">@paymentCount</div>
+                                            <small class="text-muted">Payments</small>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="text-success fw-bold">K @revenue.ToString("N0")</div>
+                                            <small class="text-muted">Revenue</small>
+                                        </div>
+                                    </div>
+                                    @if (service.ServiceFee.HasValue)
+                                                {
+                                                    <div class="mt-2">
+                                                        <small class="text-muted">Fee: K @service.ServiceFee.Value.ToString("N2")</small>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    let monthlyVolumeChart, serviceDistributionChart;
+
+    window.initializeCharts = (serviceData, monthlyData) => {
+        // Destroy existing charts if they exist
+        if (monthlyVolumeChart) {
+            monthlyVolumeChart.destroy();
+        }
+        if (serviceDistributionChart) {
+            serviceDistributionChart.destroy();
+        }
+
+        // Monthly Volume Chart (Bar Chart)
+        const volumeCtx = document.getElementById('monthlyVolumeChart').getContext('2d');
+        monthlyVolumeChart = new Chart(volumeCtx, {
+            type: 'bar',
+            data: {
+                labels: monthlyData.labels,
+                datasets: [{
+                    label: 'Payment Count',
+                    data: monthlyData.counts,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }, {
+                    label: 'Revenue (K)',
+                    data: monthlyData.revenue,
+                    backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        position: 'left'
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                }
+            }
+        });
+
+        // Service Distribution Chart (Doughnut Chart)
+        const serviceCtx = document.getElementById('serviceDistributionChart').getContext('2d');
+        serviceDistributionChart = new Chart(serviceCtx, {
+            type: 'doughnut',
+            data: {
+                labels: serviceData.labels,
+                datasets: [{
+                    data: serviceData.values,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(255, 205, 86, 0.8)',
+                        'rgba(75, 192, 192, 0.8)',
+                        'rgba(153, 102, 255, 0.8)',
+                        'rgba(255, 159, 64, 0.8)',
+                        'rgba(199, 199, 199, 0.8)',
+                        'rgba(83, 102, 255, 0.8)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    };
+</script>
+
+@code {
+    private List<ServicePayment> ServicePayments = new();
+    private List<LocalGov360.Data.Models.ServiceModels.Service> Services = new();
+    private bool IsLoading = true;
+    private string? ErrorMessage;
+    private ClaimsPrincipal user = default!;
+    private ApplicationUser appUser = default!;
+    private Guid? currentUserOrgId;
+
+    private decimal TotalRevenue => ServicePayments.Where(p => p.Status == "Paid").Sum(p => p.Amount);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            user = authState.User;
+
+            if (user.Identity != null && user.Identity.IsAuthenticated)
+            {
+                appUser = await UserManager.GetUserAsync(user);
+                currentUserOrgId = appUser.OrganisationId;
+            }
+
+            await LoadDashboardData();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Initialization error: {ex.Message}";
+            IsLoading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !IsLoading && ServicePayments.Any())
+        {
+            await InitializeCharts();
+        }
+    }
+
+    private async Task LoadDashboardData()
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+
+        try
+        {
+            // Load ServicePayments - Top 1000 as per requirement
+            ServicePayments = await _db.ServicePayments
+                .Where(sp => sp.OrganisationId == currentUserOrgId)
+                .OrderByDescending(sp => sp.CreatedDate)
+                .Take(1000)
+                .ToListAsync();
+
+            // Load Services - Top 1000 as per requirement
+            Services = await _db.Services
+                .Where(s => s.OrganisationId == currentUserOrgId)
+                .OrderByDescending(s => s.CreatedDate)
+                .Take(1000)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error loading dashboard data: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+
+            // Initialize charts after data is loaded
+            if (ServicePayments.Any())
+            {
+                await Task.Delay(100); // Small delay to ensure DOM is updated
+                await InitializeCharts();
+            }
+        }
+    }
+
+    private async Task RefreshData()
+    {
+        await LoadDashboardData();
+        await InitializeCharts();
+    }
+
+    private async Task InitializeCharts()
+    {
+        try
+        {
+            // Static months from January to December for current year
+            var currentYear = DateTime.Now.Year;
+            var allMonths = new[]
+            {
+                "January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"
+            };
+
+            // Prepare service distribution data (top services by payment count)
+            var servicePaymentCounts = Services.Select(service => new
+            {
+                ServiceName = service.Name,
+                PaymentCount = ServicePayments.Count(p => p.ServiceId == service.Id)
+            })
+            .Where(s => s.PaymentCount > 0)
+            .OrderByDescending(s => s.PaymentCount)
+            .Take(8)
+            .ToList();
+
+            var serviceData = new
+            {
+                labels = servicePaymentCounts.Select(s => s.ServiceName).ToArray(),
+                values = servicePaymentCounts.Select(s => s.PaymentCount).ToArray()
+            };
+
+            // Prepare monthly data for all 12 months of current year
+            var monthlyPayments = allMonths.Select((monthName, index) => new
+            {
+                Month = monthName,
+                Count = ServicePayments.Count(p => p.CreatedDate.Year == currentYear && p.CreatedDate.Month == (index + 1)),
+                Revenue = ServicePayments.Where(p => p.CreatedDate.Year == currentYear && p.CreatedDate.Month == (index + 1) && p.Status == "Paid").Sum(p => p.Amount)
+            }).ToList();
+
+            var monthlyData = new
+            {
+                labels = monthlyPayments.Select(m => m.Month).ToArray(),
+                counts = monthlyPayments.Select(m => m.Count).ToArray(),
+                revenue = monthlyPayments.Select(m => m.Revenue).ToArray()
+            };
+
+            await JSRuntime.InvokeVoidAsync("initializeCharts", serviceData, monthlyData);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error initializing charts: {ex.Message}";
+            StateHasChanged();
+        }
+    }
+
+    private string GetStatusBadgeClass(string status)
+    {
+        return status?.ToLower() switch
+        {
+            "paid" => "bg-success",
+            "pending" => "bg-warning text-dark",
+            "failed" => "bg-danger",
+            "cancelled" => "bg-secondary",
+            _ => "bg-light text-dark"
+        };
+    }
+
+    private string GetProgressBarClass(string status)
+    {
+        return status?.ToLower() switch
+        {
+            "paid" => "bg-success",
+            "pending" => "bg-warning",
+            "failed" => "bg-danger",
+            "cancelled" => "bg-secondary",
+            _ => "bg-light"
+        };
+    }
+}
