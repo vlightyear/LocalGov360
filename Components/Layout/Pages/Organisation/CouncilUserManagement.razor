@@ -14,6 +14,7 @@
 @rendermode InteractiveServer
 @attribute [Authorize(Roles = "developer,CouncilAdmin,admin")]
 
+<PageTitle>Users Management</PageTitle>
 
 <style>
     .action-buttons {
@@ -311,7 +312,7 @@
                                             </td>
                                             <td class="align-middle text-center">
                                                 <span class="text-secondary text-xs font-weight-bold">
-                                                    @(userInfo.User.LockoutEnd.HasValue ? userInfo.User.LockoutEnd.Value.ToString("dd/MM/yy") : "Never")
+                                                    @(userInfo.User.LockoutEnd.HasValue? userInfo.User.LockoutEnd.Value.ToString("dd/MM/yy") : "Never")
                                                 </span>
                                             </td>
                                             <td class="align-middle">
@@ -400,7 +401,7 @@
                             <label for="editLastname" class="form-label">Last Name</label>
                             <InputText id="editLastname" @bind-Value="editUser.Lastname" class="form-control" />
                         </div>
-                        @if (IsDeveloper)
+                        @if (isDeveloper)
                         {
                             <div class="mb-3 form-full-width">
                                 <label for="editOrganisation" class="form-label">Organization</label>
@@ -465,7 +466,7 @@
                             <InputText id="confirmPassword" type="password" @bind-Value="newUser.ConfirmPassword" class="form-control" />
                             <ValidationMessage For="@(() => newUser.ConfirmPassword)" />
                         </div>
-                        @if (IsDeveloper)
+                        @if (isDeveloper)
                         {
                             <div class="mb-3 form-full-width">
                                 <label class="form-label">Organization</label>
@@ -713,9 +714,14 @@
 }
 
 @code {
+    // Fields - State Variables
     private List<UserInfo> users = new();
     private List<Organisation> organisations = new();
     private bool isLoading = true;
+    private string? errorMessage = null;
+    private string? successMessage = null;
+
+    // Modal State
     private bool showCreateUserModal = false;
     private bool showCreateRoleModal = false;
     private bool showManageRolesModal = false;
@@ -723,27 +729,33 @@
     private bool showEditRoleModal = false;
     private bool showRolesListModal = false;
 
+    // Data Collections
     private List<IdentityRole> allRoles = new();
     private List<IdentityRole> visibleRoles = new();
     private List<IdentityRole> availableRolesForAssignment = new();
     private List<string> userRoles = new();
+
+    // User and Authentication
     private ApplicationUser? selectedUser = null;
     private ApplicationUser? currentUser = null;
     private ClaimsPrincipal? currentClaimsPrincipal = null;
 
-    // Error and success message handling
-    private string? errorMessage = null;
-    private string? successMessage = null;
-
+    // Model Instances
     private NewUserModel newUser = new();
     private NewRoleModel newRole = new();
     private EditUserModel editUser = new();
     private EditRoleModel editRole = new();
 
-    private bool IsDeveloper => currentUser != null && (UserManager.IsInRoleAsync(currentUser, "developer").Result);
-    private bool CanCreateUser => IsDeveloper || (currentUser != null && (UserManager.IsInRoleAsync(currentUser, "CouncilAdmin").Result || UserManager.IsInRoleAsync(currentUser, "Admin").Result));
-    private bool CanCreateRole => IsDeveloper || (currentUser != null && (UserManager.IsInRoleAsync(currentUser, "CouncilAdmin").Result || UserManager.IsInRoleAsync(currentUser, "Admin").Result));
+    // Role Check Fields (FIXED: No more .Result calls)
+    private bool isDeveloper = false;
+    private bool isCouncilAdmin = false;
+    private bool isAdmin = false;
 
+    // Permission Properties
+    private bool CanCreateUser => isDeveloper || isCouncilAdmin || isAdmin;
+    private bool CanCreateRole => isDeveloper || isCouncilAdmin || isAdmin;
+
+    // Model Classes
     public class UserInfo
     {
         public ApplicationUser User { get; set; } = null!;
@@ -752,44 +764,29 @@
 
     public class NewUserModel
     {
-    
         public string Email { get; set; } = string.Empty;
-       
         public string UserName { get; set; } = string.Empty;
-        
         public string? Firstname { get; set; }
         public string? Lastname { get; set; }
         public string? Othernames { get; set; }
         public Guid? OrganisationId { get; set; }
-        
         public string NewOrganisationName { get; set; } = string.Empty;
         public bool UseNewOrganisation { get; set; } = false;
-        
-    
         public string Password { get; set; } = string.Empty;
-        
-    
         public string ConfirmPassword { get; set; } = string.Empty;
-        
         public List<string> SelectedRoles { get; set; } = new();
     }
 
     public class NewRoleModel
     {
-    
         public string Name { get; set; } = string.Empty;
     }
 
     public class EditUserModel
     {
         public string Id { get; set; } = string.Empty;
-        
-    
         public string Email { get; set; } = string.Empty;
-        
-   
         public string UserName { get; set; } = string.Empty;
-        
         public string? Firstname { get; set; }
         public string? Lastname { get; set; }
         public string? Othernames { get; set; }
@@ -799,22 +796,27 @@
     public class EditRoleModel
     {
         public string Id { get; set; } = string.Empty;
-        
-     
         public string Name { get; set; } = string.Empty;
     }
 
+    // Lifecycle Methods
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            // Get the current user's authentication state
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             currentClaimsPrincipal = authState.User;
 
             if (currentClaimsPrincipal?.Identity?.IsAuthenticated == true)
             {
                 currentUser = await UserManager.GetUserAsync(currentClaimsPrincipal);
+
+                if (currentUser != null)
+                {
+                    isDeveloper = await UserManager.IsInRoleAsync(currentUser, "developer");
+                    isCouncilAdmin = await UserManager.IsInRoleAsync(currentUser, "CouncilAdmin");
+                    isAdmin = await UserManager.IsInRoleAsync(currentUser, "admin");
+                }
             }
 
             await LoadUsers();
@@ -827,6 +829,7 @@
         }
     }
 
+    // Helper Methods
     private void SetErrorMessage(string message)
     {
         errorMessage = message;
@@ -847,55 +850,77 @@
         successMessage = null;
     }
 
-    private void SetOrganisationSelection(bool useNew)
+    private string GetUserInitials(string? email, string? userName)
     {
-        newUser.UseNewOrganisation = useNew;
-        StateHasChanged();
+        var name = !string.IsNullOrEmpty(userName) ? userName : email ?? "U";
+        if (name.Contains('@'))
+        {
+            name = name.Split('@')[0];
+        }
+
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+        {
+            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+        }
+        return name.Length >= 2 ? name.Substring(0, 2).ToUpper() : name.ToUpper();
     }
 
+    private string GetAvatarColor(string? email)
+    {
+        if (string.IsNullOrEmpty(email)) return "primary";
+
+        var colors = new[] { "primary", "secondary", "success", "info", "warning", "danger" };
+        var hash = email.GetHashCode();
+        var index = Math.Abs(hash) % colors.Length;
+        return colors[index];
+    }
+
+    // Permission Check Methods
     private bool CanEditUser(ApplicationUser user)
     {
-        if (IsDeveloper) return true;
+        if (isDeveloper) return true;
         if (currentUser == null) return false;
         return user.OrganisationId == currentUser.OrganisationId;
     }
 
     private bool CanManageRoles(ApplicationUser user)
     {
-        if (IsDeveloper) return true;
+        if (isDeveloper) return true;
         if (currentUser == null) return false;
         return user.OrganisationId == currentUser.OrganisationId;
     }
 
     private bool CanLockUser(ApplicationUser user)
     {
-        if (IsDeveloper) return true;
+        if (isDeveloper) return true;
         if (currentUser == null) return false;
         return user.OrganisationId == currentUser.OrganisationId && user.Id != currentUser.Id;
     }
 
     private bool CanDeleteUser(ApplicationUser user)
     {
-        if (IsDeveloper) return true;
+        if (isDeveloper) return true;
         if (currentUser == null) return false;
         return user.OrganisationId == currentUser.OrganisationId && user.Id != currentUser.Id;
     }
 
     private bool CanEditRole(IdentityRole role)
     {
-        if (IsDeveloper) return true;
+        if (isDeveloper) return true;
         if (currentUser == null) return false;
         return true;
     }
 
     private bool CanDeleteRole(IdentityRole role)
     {
-        if (IsDeveloper) return true;
+        if (isDeveloper) return true;
         if (currentUser == null) return false;
         var protectedRoles = new[] { "developer", "counciladmin", "admin" };
         return !protectedRoles.Contains(role.Name?.ToLower());
     }
 
+    // Data Loading Methods
     private async Task LoadUsers()
     {
         isLoading = true;
@@ -908,7 +933,7 @@
             using var context = DbContextFactory.CreateDbContext();
             var query = context.Users.Include(u => u.Organisation).AsQueryable();
 
-            if (!IsDeveloper && currentUser?.OrganisationId != null)
+            if (!isDeveloper && currentUser?.OrganisationId != null)
             {
                 query = query.Where(u => u.OrganisationId == currentUser.OrganisationId);
             }
@@ -965,32 +990,7 @@
         }
     }
 
-    private string GetUserInitials(string? email, string? userName)
-    {
-        var name = !string.IsNullOrEmpty(userName) ? userName : email ?? "U";
-        if (name.Contains('@'))
-        {
-            name = name.Split('@')[0];
-        }
-
-        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length >= 2)
-        {
-            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
-        }
-        return name.Length >= 2 ? name.Substring(0, 2).ToUpper() : name.ToUpper();
-    }
-
-    private string GetAvatarColor(string? email)
-    {
-        if (string.IsNullOrEmpty(email)) return "primary";
-
-        var colors = new[] { "primary", "secondary", "success", "info", "warning", "danger" };
-        var hash = email.GetHashCode();
-        var index = Math.Abs(hash) % colors.Length;
-        return colors[index];
-    }
-
+    // User Management Methods
     private void ShowCreateUserModal()
     {
         newUser = new NewUserModel
@@ -1145,6 +1145,109 @@
         }
     }
 
+    private async Task LockUser(string userId)
+    {
+        try
+        {
+            ClearMessages();
+            var user = await UserManager.FindByIdAsync(userId);
+            if (user != null)
+            {
+                if (!CanLockUser(user))
+                {
+                    SetErrorMessage("You cannot lock this user.");
+                    return;
+                }
+
+                var result = await UserManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddYears(100));
+                if (result.Succeeded)
+                {
+                    await LoadUsers();
+                    SetSuccessMessage($"User '{user.UserName}' has been locked.");
+                }
+                else
+                {
+                    SetErrorMessage($"Error locking user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                }
+            }
+            else
+            {
+                SetErrorMessage("User not found.");
+            }
+        }
+        catch (Exception ex)
+        {
+            SetErrorMessage($"Error locking user: {ex.Message}");
+        }
+    }
+
+    private async Task UnlockUser(string userId)
+    {
+        try
+        {
+            ClearMessages();
+            var user = await UserManager.FindByIdAsync(userId);
+            if (user != null)
+            {
+                var result = await UserManager.SetLockoutEndDateAsync(user, null);
+                if (result.Succeeded)
+                {
+                    await LoadUsers();
+                    SetSuccessMessage($"User '{user.UserName}' has been unlocked.");
+                }
+                else
+                {
+                    SetErrorMessage($"Error unlocking user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                }
+            }
+            else
+            {
+                SetErrorMessage("User not found.");
+            }
+        }
+        catch (Exception ex)
+        {
+            SetErrorMessage($"Error unlocking user: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteUser(string userId)
+    {
+        try
+        {
+            ClearMessages();
+            var user = await UserManager.FindByIdAsync(userId);
+            if (user != null)
+            {
+                if (!CanDeleteUser(user))
+                {
+                    SetErrorMessage("You cannot delete this user.");
+                    return;
+                }
+
+                var result = await UserManager.DeleteAsync(user);
+                if (result.Succeeded)
+                {
+                    await LoadUsers();
+                    SetSuccessMessage($"User '{user.UserName}' has been deleted.");
+                }
+                else
+                {
+                    SetErrorMessage($"Error deleting user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                }
+            }
+            else
+            {
+                SetErrorMessage("User not found.");
+            }
+        }
+        catch (Exception ex)
+        {
+            SetErrorMessage($"Error deleting user: {ex.Message}");
+        }
+    }
+
+    // Role Management Methods
     private void ShowCreateRoleModal()
     {
         newRole = new NewRoleModel();
@@ -1296,6 +1399,7 @@
         }
     }
 
+    // User-Role Management Methods
     private async Task ManageRoles(string userId)
     {
         try
@@ -1389,105 +1493,10 @@
         StateHasChanged();
     }
 
-    private async Task LockUser(string userId)
+    // Organization Management Methods
+    private void SetOrganisationSelection(bool useNew)
     {
-        try
-        {
-            ClearMessages();
-            var user = await UserManager.FindByIdAsync(userId);
-            if (user != null)
-            {
-                if (!CanLockUser(user))
-                {
-                    SetErrorMessage("You cannot lock this user.");
-                    return;
-                }
-
-                var result = await UserManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddYears(100));
-                if (result.Succeeded)
-                {
-                    await LoadUsers();
-                    SetSuccessMessage($"User '{user.UserName}' has been locked.");
-                }
-                else
-                {
-                    SetErrorMessage($"Error locking user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-                }
-            }
-            else
-            {
-                SetErrorMessage("User not found.");
-            }
-        }
-        catch (Exception ex)
-        {
-            SetErrorMessage($"Error locking user: {ex.Message}");
-        }
-    }
-
-    private async Task UnlockUser(string userId)
-    {
-        try
-        {
-            ClearMessages();
-            var user = await UserManager.FindByIdAsync(userId);
-            if (user != null)
-            {
-                var result = await UserManager.SetLockoutEndDateAsync(user, null);
-                if (result.Succeeded)
-                {
-                    await LoadUsers();
-                    SetSuccessMessage($"User '{user.UserName}' has been unlocked.");
-                }
-                else
-                {
-                    SetErrorMessage($"Error unlocking user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-                }
-            }
-            else
-            {
-                SetErrorMessage("User not found.");
-            }
-        }
-        catch (Exception ex)
-        {
-            SetErrorMessage($"Error unlocking user: {ex.Message}");
-        }
-    }
-
-    private async Task DeleteUser(string userId)
-    {
-        try
-        {
-            ClearMessages();
-            var user = await UserManager.FindByIdAsync(userId);
-            if (user != null)
-            {
-                if (!CanDeleteUser(user))
-                {
-                    SetErrorMessage("You cannot delete this user.");
-                    return;
-                }
-
-                var result = await UserManager.DeleteAsync(user);
-                if (result.Succeeded)
-                {
-                    await LoadUsers();
-                    SetSuccessMessage($"User '{user.UserName}' has been deleted.");
-                }
-                else
-                {
-                    SetErrorMessage($"Error deleting user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-                }
-            }
-            else
-            {
-                SetErrorMessage("User not found.");
-            }
-        }
-        catch (Exception ex)
-        {
-            SetErrorMessage($"Error deleting user: {ex.Message}");
-        }
+        newUser.UseNewOrganisation = useNew;
+        StateHasChanged();
     }
 }
