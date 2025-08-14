@@ -188,8 +188,8 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcQWRtaW5pc3RyYXRpb25cQ29tcG9uZW50LnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/prime/source/repos/LocalGov360/Components/Layout/Pages/Administration/Users.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcQWRtaW5pc3RyYXRpb25cVXNlcnMucmF6b3I=
+[C:/Users/prime/source/repos/LocalGov360/Components/Layout/Pages/Administration/UserManagement.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcQWRtaW5pc3RyYXRpb25cVXNlck1hbmFnZW1lbnQucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/prime/source/repos/LocalGov360/Components/Layout/Pages/Auth.razor]
@@ -216,20 +216,28 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcSG9tZS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/prime/source/repos/LocalGov360/Components/Layout/Pages/Organisation/CouncilUserManagement.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcT3JnYW5pc2F0aW9uXENvdW5jaWxVc2VyTWFuYWdlbWVudC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/prime/source/repos/LocalGov360/Components/Layout/Pages/Payments/PaymentServiceConfig.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcUGF5bWVudHNcUGF5bWVudFNlcnZpY2VDb25maWcucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/prime/source/repos/LocalGov360/Components/Layout/Pages/Service/SelfService.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcU2VydmljZVxTZWxmU2VydmljZS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/prime/source/repos/LocalGov360/Components/Layout/Pages/Service/ServiceDashboard.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcU2VydmljZVxTZXJ2aWNlRGFzaGJvYXJkLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/prime/source/repos/LocalGov360/Components/Layout/Pages/Service/ServiceList.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcU2VydmljZVxTZXJ2aWNlTGlzdC5yYXpvcg==
-build_metadata.AdditionalFiles.CssScope = 
-
 [C:/Users/prime/source/repos/LocalGov360/Components/Layout/Pages/Service/ServicePayments.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcU2VydmljZVxTZXJ2aWNlUGF5bWVudHMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/prime/source/repos/LocalGov360/Components/Layout/Pages/Service/WalkInCustomer.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcU2VydmljZVxXYWxrSW5DdXN0b21lci5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/prime/source/repos/LocalGov360/Components/Layout/Pages/TaskDetails.razor]
@@ -272,6 +280,6 @@ build_metadata.AdditionalFiles.CssScope = b-d4xqkhwqh7
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcTmF2TWVudS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = b-0pgx3hofy7
 
-[C:/Users/prime/source/repos/LocalGov360/Components/Layout/Pages/Service/Service.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcU2VydmljZVxTZXJ2aWNlLnJhem9y
-build_metadata.AdditionalFiles.CssScope = b-y3zu0pzppb
+[C:/Users/prime/source/repos/LocalGov360/Components/Layout/Pages/Service/ServiceBuilder.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcU2VydmljZVxTZXJ2aWNlQnVpbGRlci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-knh3d89jow
