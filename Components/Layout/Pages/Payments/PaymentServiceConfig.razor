@@ -6,6 +6,7 @@
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Identity
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject SignInManager<ApplicationUser> SignInManager
 @attribute [Authorize(Roles = "developer,CouncilAdmin")]
 @rendermode InteractiveServer
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory

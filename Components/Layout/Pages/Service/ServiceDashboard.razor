@@ -3,13 +3,16 @@
 @using LocalGov360.Data
 @using LocalGov360.Data.Models
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
 @inject ApplicationDbContext _db
 @inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IJSRuntime JSRuntime
-
+@attribute [Authorize(Roles = "developer,CouncilAdmin,admin")]
 <PageTitle>Dashboard</PageTitle>
 
 <div class="container-fluid py-4">
@@ -97,15 +100,13 @@
             </div>
         </div>
 
-
-
         <!-- Payment Analytics and Charts Row -->
         <div class="row g-4 mb-4">
             <!-- Payment Volume Chart -->
             <div class="col-lg-8">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Monthly Payments Volume</h5>
+                        <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Monthly Payments Volume</h5>
                     </div>
                     <div class="card-body">
                         <canvas id="monthlyVolumeChart" width="400" height="200"></canvas>
@@ -153,21 +154,17 @@
                                         <div class="card border-start border-primary border-3">
                                             <div class="card-body">
                                                 <h6 class="card-title">@service.Name</h6>
-                                                <p class="card-text text-muted small">
-                                                    @(string.IsNullOrEmpty(service.Description) ? "No description" :
-                                                                                            service.Description.Length > 100 ? service.Description.Substring(0, 100) + "..." : service.Description)
-                                    </p>
-                                    <div class="row text-center">
-                                        <div class="col-6">
-                                            <div class="text-primary fw-bold">@paymentCount</div>
-                                            <small class="text-muted">Payments</small>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="text-success fw-bold">K @revenue.ToString("N0")</div>
-                                            <small class="text-muted">Revenue</small>
-                                        </div>
-                                    </div>
-                                    @if (service.ServiceFee.HasValue)
+                                                <div class="row text-center">
+                                                    <div class="col-6">
+                                                        <div class="text-primary fw-bold">@paymentCount</div>
+                                                        <small class="text-muted">Payments</small>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <div class="text-success fw-bold">K @revenue.ToString("N0")</div>
+                                                        <small class="text-muted">Revenue</small>
+                                                    </div>
+                                                </div>
+                                                @if (service.ServiceFee.HasValue)
                                                 {
                                                     <div class="mt-2">
                                                         <small class="text-muted">Fee: K @service.ServiceFee.Value.ToString("N2")</small>
@@ -191,39 +188,54 @@
 
 <script>
     let monthlyVolumeChart, serviceDistributionChart;
+    let chartsInitialized = false;
 
     window.initializeCharts = (serviceData, monthlyData) => {
         // Destroy existing charts if they exist
         if (monthlyVolumeChart) {
             monthlyVolumeChart.destroy();
+            monthlyVolumeChart = null;
         }
         if (serviceDistributionChart) {
             serviceDistributionChart.destroy();
+            serviceDistributionChart = null;
         }
 
-        // Monthly Volume Chart (Bar Chart)
+        // Monthly Volume Chart (Line Chart)
         const volumeCtx = document.getElementById('monthlyVolumeChart').getContext('2d');
         monthlyVolumeChart = new Chart(volumeCtx, {
-            type: 'bar',
+            type: 'line',
             data: {
                 labels: monthlyData.labels,
                 datasets: [{
                     label: 'Payment Count',
                     data: monthlyData.counts,
-                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
                     borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.1
                 }, {
                     label: 'Revenue (K)',
                     data: monthlyData.revenue,
-                    backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
                     borderColor: 'rgba(255, 99, 132, 1)',
-                    borderWidth: 1,
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.1,
                     yAxisID: 'y1'
                 }]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 0
+                },
+                hover: {
+                    animationDuration: 0
+                },
+                responsiveAnimationDuration: 0,
                 scales: {
                     y: {
                         beginAtZero: true,
@@ -263,6 +275,14 @@
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 0
+                },
+                hover: {
+                    animationDuration: 0
+                },
+                responsiveAnimationDuration: 0,
                 plugins: {
                     legend: {
                         position: 'bottom'
@@ -270,6 +290,9 @@
                 }
             }
         });
+
+        // Mark charts as initialized
+        chartsInitialized = true;
     };
 </script>
 
@@ -277,6 +300,7 @@
     private List<ServicePayment> ServicePayments = new();
     private List<LocalGov360.Data.Models.ServiceModels.Service> Services = new();
     private bool IsLoading = true;
+    private bool chartsInitialized = false;
     private string? ErrorMessage;
     private ClaimsPrincipal user = default!;
     private ApplicationUser appUser = default!;
@@ -308,7 +332,7 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !IsLoading && ServicePayments.Any())
+        if (firstRender && !IsLoading && ServicePayments.Any() && !chartsInitialized)
         {
             await InitializeCharts();
         }
@@ -345,9 +369,9 @@
             StateHasChanged();
 
             // Initialize charts after data is loaded
-            if (ServicePayments.Any())
+            if (ServicePayments.Any() && !chartsInitialized)
             {
-                await Task.Delay(100); // Small delay to ensure DOM is updated
+                await Task.Delay(300); // Increased delay to ensure DOM is fully rendered
                 await InitializeCharts();
             }
         }

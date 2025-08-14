@@ -1,0 +1,951 @@
+﻿@page "/walkin"
+@rendermode InteractiveServer
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Authorization
+@using LocalGov360.Data
+@using LocalGov360.Services
+@using LocalGov360.Data.Models
+@using Microsoft.AspNetCore.Html
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
+@using static LocalGov360.Data.Models.ServiceModels
+@inject IServiceService ServiceService
+@inject IWorkflowFactory WorkflowFactory
+@inject IJSRuntime JS
+@inject SignInManager<ApplicationUser> SignInManager
+@inject NavigationManager NavigationManager
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ApplicationDbContext _db
+@attribute [Authorize]
+
+<PageTitle>Staff Portal - Walk-in Customer Services</PageTitle>
+
+<div class="container-fluid py-2">
+    <div class="row">
+        <div class="col-12">
+            @if (!string.IsNullOrWhiteSpace(Feedback))
+            {
+                <div class="alert @(Feedback.Contains("Error") ? "alert-danger" : "alert-success")" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="fas @(Feedback.Contains("Error") ? "fa-exclamation-circle" : "fa-check-circle") me-2"></i>
+                        <span>@Feedback</span>
+                    </div>
+                    <button type="button" class="btn-close" @onclick="() => Feedback = null"></button>
+                </div>
+            }
+
+            @if (CurrentView == "services-list")
+            {
+                <div class="card my-4">
+                    <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                        <div class="bg-black shadow-dark border-radius-lg pt-4 pb-3">
+                            <h4 class="text-white text-center mb-0">Staff Portal - Walk-in Customer Services</h4>
+                            <div class="ps-3 pb-2 d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-building text-white me-2"></i>
+                                    <span class="text-white">@StaffOrganization?.Name</span>
+                                </div>
+                                <div class="d-flex align-items-center text-white">
+                                    <i class="fas fa-user-tie me-2"></i>
+                                    <span>Staff: @(appUser?.UserName ?? "Unknown")</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-4 py-3">
+                        <h5 class="mb-0">Available Services for Walk-in Customers</h5>
+                        <p class="text-muted mb-0">Process applications on behalf of walk-in customers</p>
+                    </div>
+                    <div class="card-body px-0 pb-2">
+                        @if (Services == null)
+                        {
+                            <div class="text-center p-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading services...</span>
+                                </div>
+                                <p class="mt-2 text-muted">Loading services...</p>
+                            </div>
+                        }
+                        else if (!Services.Any())
+                        {
+                            <div class="text-center p-4">
+                                <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                                <h4>No services available</h4>
+                                <p class="text-muted">Your organization has not published any services yet.</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="row px-3">
+                                @foreach (var service in Services.OrderBy(s => s.Name))
+                                {
+                                    <div class="col-md-6 col-lg-4 mb-4">
+                                        <div class="card h-100">
+                                            <div class="card-body">
+                                                <div class="d-flex align-items-center mb-3">
+                                                    <div class="icon icon-sm border-radius-md bg-gradient-dark me-3">
+                                                        <i class="fas fa-file-alt text-white"></i>
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="mb-0">@service.Name</h6>
+                                                        <p class="text-xs text-muted mb-0">@service.Fields.Count field@(service.Fields.Count != 1 ? "s" : "")</p>
+                                                    </div>
+                                                </div>
+
+                                                @if (!string.IsNullOrEmpty(service.Description))
+                                                {
+                                                    <p class="text-sm mb-3">
+                                                        @(service.Description.Length > 100 ? service.Description.Substring(0, 100) + "..." : service.Description)
+                                                    </p>
+                                                }
+
+                                                <div class="alert alert-info mb-3" role="alert">
+                                                    <i class="fas fa-users me-2"></i>
+                                                    <small>Walk-in Customer Service</small>
+                                                </div>
+                                            </div>
+
+                                            <div class="card-footer bg-transparent">
+                                                <button class="btn btn-dark btn-sm w-100" @onclick="() => StartServiceAsync(service.Id)">
+                                                    <i class="fas fa-user-plus me-1"></i>
+                                                    Process for Customer
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            @if (CurrentView == "service-form" && ServiceFormModel != null)
+            {
+                <div class="card my-4">
+                    <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                        <div class="bg-black shadow-dark border-radius-lg pt-4 pb-3">
+                            <h4 class="text-white text-center mb-2">@ServiceFormModel.ServiceName</h4>
+                            <div class="ps-3 d-flex align-items-center justify-content-between">
+                                @if (!string.IsNullOrEmpty(ServiceFormModel.ServiceDescription))
+                                {
+                                    <p class="text-white mb-0">@ServiceFormModel.ServiceDescription</p>
+                                }
+                                else
+                                {
+                                    <div></div>
+                                }
+                                <div class="d-flex align-items-center gap-3">
+                                    <!-- Progress indicator -->
+                                    <div class="d-flex align-items-center text-white">
+                                        <span class="me-2">Progress:</span>
+                                        <div class="progress bg-dark" style="width: 120px; height: 6px;">
+                                            <div class="progress-bar bg-white"
+                                                 style="width: @(TotalPages > 0 ? ((double)(CurrentPage + 1) / TotalPages) * 100 : 0)%"></div>
+                                        </div>
+                                        <span class="ms-2 small">Page @(CurrentPage + 1) / @TotalPages</span>
+                                    </div>
+                                    <div class="text-white small">
+                                        <i class="fas fa-user-tie me-1"></i>
+                                        Processing for walk-in customer
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-light" @onclick='() => ShowView("services-list")'>
+                                        <i class="fas fa-arrow-left me-1"></i>
+                                        Back to Services
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Customer Information Section -->
+                        @if (CurrentPage == 0)
+                        {
+                            <div class="card mb-4 border-info">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-user me-2"></i>
+                                        Customer Information
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">Customer Name <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" @bind="CustomerName" placeholder="Enter customer's full name" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">Customer Email</label>
+                                            <input type="email" class="form-control" @bind="CustomerEmail" placeholder="Enter customer's email (optional)" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">Customer Phone</label>
+                                            <input type="tel" class="form-control" @bind="CustomerPhone" placeholder="Enter customer's phone number (optional)" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">ID Number</label>
+                                            <input type="text" class="form-control" @bind="CustomerIdNumber" placeholder="Enter customer's ID number (optional)" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <EditForm Model="ServiceFormModel" OnValidSubmit="SubmitServiceFormAsync">
+                            <DataAnnotationsValidator />
+
+                            @{
+                                var currentPageFields = ServiceFormModel.Fields.Skip(CurrentPage * FieldsPerPage).Take(FieldsPerPage).ToList();
+                            }
+
+                            <div class="row g-4">
+                                @for (int i = 0; i < currentPageFields.Count; i++)
+                                {
+                                    var field = currentPageFields[i];
+                                    <div class="col-md-6">
+                                        <div class="card h-100 border-light">
+                                            <div class="card-body">
+                                                <label class="form-label fw-bold">
+                                                    @field.Label
+                                                    @if (field.IsRequired)
+                                                    {
+                                                        <span class="text-danger">*</span>
+                                                    }
+                                                </label>
+
+                                                @if (!string.IsNullOrEmpty(field.Description))
+                                                {
+                                                    <p class="text-muted small mb-2">@field.Description</p>
+                                                }
+
+                                                @switch (field.Type)
+                                                {
+                                                    case ServiceModels.FieldType.TextArea:
+                                                        <InputTextArea class="form-control" @bind-Value="field.Value"
+                                                                       placeholder="@field.Placeholder" rows="4" />
+                                                        break;
+                                                    case ServiceModels.FieldType.Select:
+                                                        <InputSelect class="form-select" @bind-Value="field.Value">
+                                                            <option value="">-- Please select --</option>
+                                                            @foreach (var option in field.ParsedOptions)
+                                                            {
+                                                                <option value="@option">@option</option>
+                                                            }
+                                                        </InputSelect>
+                                                        break;
+                                                    case ServiceModels.FieldType.Radio:
+                                                        <InputRadioGroup @bind-Value="field.Value">
+                                                            @foreach (var option in field.ParsedOptions)
+                                                            {
+                                                                <div class="form-check mb-1">
+                                                                    <InputRadio class="form-check-input" Value="@option" id="@($"radio_{field.Id}_{option}")" />
+                                                                    <label class="form-check-label" for="@($"radio_{field.Id}_{option}")">@option</label>
+                                                                </div>
+                                                            }
+                                                        </InputRadioGroup>
+                                                        break;
+                                                    case ServiceModels.FieldType.Checkbox:
+                                                        @foreach (var option in field.ParsedOptions)
+                                                        {
+                                                            <div class="form-check mb-1">
+                                                                <input class="form-check-input" type="checkbox" id="@($"check_{field.Id}_{option}")"
+                                                                       @bind="field.CheckboxValues[option]" />
+                                                                <label class="form-check-label" for="@($"check_{field.Id}_{option}")">@option</label>
+                                                            </div>
+                                                        }
+                                                        break;
+                                                    case ServiceModels.FieldType.File:
+                                                        <InputFile class="form-control" OnChange="e => field.Files = e.GetMultipleFiles()" multiple />
+                                                        <small class="text-muted">You can select multiple files if needed</small>
+                                                        break;
+                                                    case ServiceModels.FieldType.Email:
+                                                        <InputText type="email" class="form-control" @bind-Value="field.Value" placeholder="@field.Placeholder" />
+                                                        break;
+                                                    case ServiceModels.FieldType.Date:
+                                                        <InputDate class="form-control" @bind-Value="DateValue"
+                                                                   @onchange="(e) => field.Value = e.Value?.ToString()" />
+                                                        break;
+                                                    case ServiceModels.FieldType.Number:
+                                                        <InputNumber class="form-control" @bind-Value="NumberValue"
+                                                                     @onchange="(e) => field.Value = e.Value?.ToString()" placeholder="@field.Placeholder" />
+                                                        break;
+                                                    default:
+                                                        <InputText type="text" class="form-control" @bind-Value="field.Value" placeholder="@field.Placeholder" />
+                                                        break;
+                                                }
+                                                <ValidationMessage For="@(() => field.Value)" class="text-danger small mt-1" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Navigation buttons -->
+                            <div class="d-flex justify-content-between align-items-center mt-4 pt-4 border-top">
+                                <div>
+                                    @if (CurrentPage > 0)
+                                    {
+                                        <button type="button" class="btn btn-outline-secondary btn-lg" @onclick="PreviousPage" disabled="@IsSubmitting">
+                                            <i class="fas fa-chevron-left me-2"></i>
+                                            Previous
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="btn btn-outline-secondary btn-lg" @onclick="@(() => ShowView("services-list"))" disabled="@IsSubmitting">
+                                            <i class="fas fa-times me-2"></i>
+                                            Cancel
+                                        </button>
+                                    }
+                                </div>
+
+                                <div class="text-center">
+                                    <small class="text-muted">
+                                        Page @(CurrentPage + 1) of @TotalPages
+                                    </small>
+                                </div>
+
+                                <div>
+                                    @if (CurrentPage < TotalPages - 1)
+                                    {
+                                        <button type="button" class="btn btn-dark btn-lg bg-black" @onclick="NextPage" disabled="@IsSubmitting">
+                                            Next
+                                            <i class="fas fa-chevron-right ms-2"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" class="btn btn-success btn-lg" disabled="@IsSubmitting">
+                                            @if (IsSubmitting)
+                                            {
+                                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                                <span>Submitting...</span>
+                                            }
+                                            else
+                                            {
+                                                <i class="fas fa-check me-2"></i>
+                                                <span>Submit for Customer</span>
+                                            }
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .alert {
+        position: relative;
+    }
+
+        .alert .btn-close {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            line-height: 1;
+            color: inherit;
+            opacity: 0.5;
+        }
+
+            .alert .btn-close:hover {
+                opacity: 0.75;
+            }
+
+    .icon {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .border-radius-md {
+        border-radius: 0.5rem;
+    }
+
+    .bg-gradient-dark {
+        background: linear-gradient(310deg, #212529 0%, #495057 100%);
+    }
+
+    .bg-black {
+        background-color: #000000 !important;
+    }
+
+    .shadow-dark {
+        box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.14), 0 7px 10px -5px rgba(33, 37, 41, 0.4);
+    }
+
+    .text-white-50 {
+        color: rgba(255, 255, 255, 0.5) !important;
+    }
+
+    .card-header {
+        border-bottom: none;
+    }
+
+    .form-check {
+        margin-bottom: 0.5rem;
+    }
+
+    .form-check-lg .form-check-input {
+        width: 1.5rem;
+        height: 1.5rem;
+        margin-top: 0.125rem;
+    }
+
+    .form-check-lg .form-check-label {
+        padding-left: 0.5rem;
+        line-height: 1.8;
+    }
+
+    .form-field-container {
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .progress {
+        border-radius: 3px;
+    }
+
+    .spinner-border-sm {
+        width: 1rem;
+        height: 1rem;
+    }
+
+    .btn-lg {
+        padding: 0.75rem 1.5rem;
+        font-size: 1.1rem;
+    }
+
+    .form-control-lg, .form-select-lg {
+        font-size: 1.1rem;
+        padding: 0.75rem 1rem;
+    }
+
+    /* Enhanced Dropdown Styling */
+    .select-wrapper {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .custom-select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        border: 2px solid #e9ecef;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        color: #495057;
+        cursor: pointer;
+        font-weight: 500;
+        padding: 1rem 3rem 1rem 1.5rem;
+        transition: all 0.3s ease;
+        position: relative;
+        z-index: 1;
+    }
+
+        .custom-select:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25), 0 8px 25px rgba(0, 0, 0, 0.15);
+            outline: none;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        }
+
+        .custom-select:hover {
+            border-color: #007bff;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+    .select-arrow {
+        position: absolute;
+        right: 1.5rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+        pointer-events: none;
+        transition: all 0.3s ease;
+        z-index: 2;
+    }
+
+    .select-wrapper:hover .select-arrow {
+        color: #007bff;
+        transform: translateY(-50%) rotate(180deg);
+    }
+
+    .custom-select:focus + .select-arrow {
+        color: #007bff;
+        transform: translateY(-50%) rotate(180deg);
+    }
+
+    .select-placeholder {
+        color: #6c757d !important;
+        font-style: italic;
+    }
+
+    /* Info color theme for staff services */
+    .alert-info {
+        background-color: rgba(13, 202, 240, 0.1);
+        border-color: rgba(13, 202, 240, 0.2);
+        color: #055160;
+    }
+
+    .btn-success {
+        background-color: #198754;
+        border-color: #198754;
+    }
+
+        .btn-success:hover {
+            background-color: #157347;
+            border-color: #146c43;
+        }
+
+        .btn-success:disabled {
+            background-color: #198754;
+            border-color: #198754;
+            opacity: 0.65;
+        }
+
+    .border-info {
+        border-color: #0dcaf0 !important;
+        border-width: 2px !important;
+    }
+
+    /* Add subtle animation to the dropdown */
+ 
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    }
+
+    .select-wrapper {
+        animation: fadeInUp 0.5s ease-out;
+    }
+
+  
+
+    .select-arrow {
+        right: 1rem;
+    }
+
+    }
+</style>
+
+@code
+{
+    private string CurrentView = "services-list";
+    private string? Feedback;
+    private Organization? StaffOrganization;
+    private List<ServiceModels.Service>? Services;
+    private UserServiceFormModel? ServiceFormModel;
+    private bool IsSubmitting = false;
+    private DateTime? DateValue;
+    private decimal? NumberValue;
+
+    // Customer Information
+    private string CustomerName = string.Empty;
+    private string CustomerEmail = string.Empty;
+    private string CustomerPhone = string.Empty;
+    private string CustomerIdNumber = string.Empty;
+
+    // Pagination for form fields
+    private int CurrentPage = 0;
+    private const int FieldsPerPage = 8; // 8 fields per page (4 left, 4 right)
+    private int TotalPages => ServiceFormModel?.Fields.Count > 0 ? (int)Math.Ceiling((double)ServiceFormModel.Fields.Count / FieldsPerPage) : 1;
+
+    private ClaimsPrincipal user;
+    private ApplicationUser appUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        user = authState.User;
+
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            appUser = await UserManager.GetUserAsync(user);
+            if (appUser != null)
+            {
+                await LoadStaffOrganizationAsync();
+                await LoadServicesForStaffOrganizationAsync();
+            }
+        }
+    }
+
+    private async Task LoadStaffOrganizationAsync()
+    {
+        try
+        {
+            // Get staff organization from user claims, user profile, or organization relationship
+            var organizationId = user.FindFirst("OrganizationId")?.Value;
+            if (string.IsNullOrEmpty(organizationId))
+            {
+                // Alternative: Get from UserRoles or a separate staff-organization table
+                // For now, we'll get the first organization as a fallback
+                var firstOrg = await _db.Organisations.FirstOrDefaultAsync();
+                if (firstOrg != null)
+                {
+                    StaffOrganization = new Organization { Id = firstOrg.Id, Name = firstOrg.Name };
+                }
+            }
+            else if (Guid.TryParse(organizationId, out var orgId))
+            {
+                var org = await _db.Organisations.FindAsync(orgId);
+                if (org != null)
+                {
+                    StaffOrganization = new Organization { Id = org.Id, Name = org.Name };
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading staff organization: {ex}");
+            Feedback = $"Error loading organization: {ex.Message}";
+        }
+    }
+
+    private async Task LoadServicesForStaffOrganizationAsync()
+    {
+        try
+        {
+            if (StaffOrganization == null) return;
+
+            Services = await _db.Services
+                .Where(s => s.OrganisationId == StaffOrganization.Id && s.IsActive)
+                .Include(s => s.Fields)
+                .Select(s => new ServiceModels.Service
+                {
+                    Id = s.Id,
+                    Name = s.Name,
+                    Description = s.Description ?? "",
+                    WorkflowTemplateId = s.WorkflowTemplateId,
+                    DocumentTemplateId = s.DocumentTemplateId,
+                    Fields = s.Fields.Select(f => new ServiceModels.ServiceField
+                    {
+                        Id = f.Id,
+                        Name = f.Name ?? "",
+                        Label = f.Label ?? "",
+                        Description = f.Description ?? "",
+                        FieldType = f.FieldType,
+                        IsRequired = f.IsRequired,
+                        Placeholder = f.Placeholder ?? "",
+                        DefaultValue = f.DefaultValue ?? "",
+                        DisplayOrder = f.DisplayOrder,
+                        Options = f.Options ?? new List<ServiceModels.FieldOption>()
+                    }).OrderBy(f => f.DisplayOrder).ToList()
+                })
+                .OrderBy(s => s.Name)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading services: {ex}");
+            Feedback = $"Error loading services: {ex.Message}";
+            Services = new List<ServiceModels.Service>();
+        }
+    }
+
+    private async Task StartServiceAsync(int serviceId)
+    {
+        try
+        {
+            var service = Services?.FirstOrDefault(s => s.Id == serviceId);
+            if (service == null)
+            {
+                try
+                {
+                    service = await ServiceService.GetServiceAsync(serviceId);
+                    if (service == null)
+                    {
+                        Feedback = $"Service not found (ID: {serviceId})";
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error loading service via ServiceService: {ex.Message}");
+                    Feedback = $"Service not found (ID: {serviceId})";
+                    return;
+                }
+            }
+
+            ServiceFormModel = new UserServiceFormModel
+            {
+                ServiceId = service.Id,
+                ServiceName = service.Name,
+                ServiceDescription = service.Description,
+                WorkflowTemplateId = service.WorkflowTemplateId,
+                DocumentTemplateId = service.DocumentTemplateId,
+                Fields = service.Fields?.Select(f => new UserFieldModel
+                {
+                    Id = f.Id,
+                    Name = f.Name,
+                    Label = f.Label,
+                    Description = f.Description,
+                    Type = f.FieldType,
+                    IsRequired = f.IsRequired,
+                    Placeholder = f.Placeholder,
+                    DefaultValue = f.DefaultValue,
+                    OptionsRaw = string.Join(Environment.NewLine, f.Options?.Select(o => o.Value) ?? new List<string>()),
+                    Value = f.DefaultValue ?? "",
+                    CheckboxValues = f.Options?.ToDictionary(o => o.Value, o => false) ?? new Dictionary<string, bool>()
+                }).ToList() ?? new List<UserFieldModel>()
+            };
+
+            // Reset form data
+            CustomerName = string.Empty;
+            CustomerEmail = string.Empty;
+            CustomerPhone = string.Empty;
+            CustomerIdNumber = string.Empty;
+            CurrentPage = 0;
+            ShowView("service-form");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in StartServiceAsync: {ex}");
+            Feedback = $"Error loading service form: {ex.Message}";
+        }
+    }
+
+    private void NextPage()
+    {
+        if (ServiceFormModel != null && CurrentPage < TotalPages - 1)
+        {
+            // Validate customer information on first page
+            if (CurrentPage == 0)
+            {
+                if (string.IsNullOrWhiteSpace(CustomerName))
+                {
+                    Feedback = "Customer name is required";
+                    return;
+                }
+            }
+
+            // Validate current page fields if required
+            var currentPageFields = ServiceFormModel.Fields.Skip(CurrentPage * FieldsPerPage).Take(FieldsPerPage);
+
+            foreach (var field in currentPageFields.Where(f => f.IsRequired))
+            {
+                if (field.Type == ServiceModels.FieldType.Checkbox)
+                {
+                    if (!field.CheckboxValues.Any(kv => kv.Value))
+                    {
+                        Feedback = $"Field '{field.Label}' is required";
+                        return;
+                    }
+                }
+                else if (string.IsNullOrWhiteSpace(field.Value))
+                {
+                    Feedback = $"Field '{field.Label}' is required";
+                    return;
+                }
+            }
+
+            CurrentPage++;
+            Feedback = null; // Clear any validation messages
+            StateHasChanged();
+        }
+    }
+
+    private void PreviousPage()
+    {
+        if (CurrentPage > 0)
+        {
+            CurrentPage--;
+            Feedback = null; // Clear any validation messages
+            StateHasChanged();
+        }
+    }
+
+    private async Task SubmitServiceFormAsync()
+    {
+        if (ServiceFormModel == null) return;
+
+        IsSubmitting = true;
+        try
+        {
+            // Validate customer information
+            if (string.IsNullOrWhiteSpace(CustomerName))
+            {
+                Feedback = "Customer name is required";
+                return;
+            }
+
+            // Validate all required fields
+            foreach (var field in ServiceFormModel.Fields.Where(f => f.IsRequired))
+            {
+                if (field.Type == ServiceModels.FieldType.Checkbox)
+                {
+                    if (!field.CheckboxValues.Any(kv => kv.Value))
+                    {
+                        Feedback = $"Field '{field.Label}' is required";
+                        return;
+                    }
+                }
+                else if (string.IsNullOrWhiteSpace(field.Value))
+                {
+                    Feedback = $"Field '{field.Label}' is required";
+                    return;
+                }
+            }
+
+            var values = new List<SubmissionValue>();
+
+            // Add customer information as special fields
+            values.Add(new SubmissionValue { FieldId = 0, Value = $"CUSTOMER_NAME:{CustomerName}" });
+            if (!string.IsNullOrWhiteSpace(CustomerEmail))
+                values.Add(new SubmissionValue { FieldId = 0, Value = $"CUSTOMER_EMAIL:{CustomerEmail}" });
+            if (!string.IsNullOrWhiteSpace(CustomerPhone))
+                values.Add(new SubmissionValue { FieldId = 0, Value = $"CUSTOMER_PHONE:{CustomerPhone}" });
+            if (!string.IsNullOrWhiteSpace(CustomerIdNumber))
+                values.Add(new SubmissionValue { FieldId = 0, Value = $"CUSTOMER_ID:{CustomerIdNumber}" });
+
+            foreach (var field in ServiceFormModel.Fields)
+            {
+                if (field.Type == ServiceModels.FieldType.Checkbox)
+                {
+                    foreach (var kv in field.CheckboxValues.Where(kv => kv.Value))
+                    {
+                        values.Add(new SubmissionValue
+                        {
+                            FieldId = field.Id,
+                            Value = kv.Key
+                        });
+                    }
+                }
+                else if (!string.IsNullOrEmpty(field.Value))
+                {
+                    values.Add(new SubmissionValue
+                    {
+                        FieldId = field.Id,
+                        Value = field.Value
+                    });
+                }
+            }
+
+            var submittedBy = $"STAFF:{appUser?.UserName ?? appUser?.Email ?? "Unknown"} | CUSTOMER:{CustomerName}";
+            var submission = await ServiceService.SubmitServiceAsync(ServiceFormModel.ServiceId, new SubmitServiceRequest
+            {
+                SubmittedBy = submittedBy,
+                IpAddress = "0.0.0.0",
+                UserAgent = "Staff Portal",
+                Values = values
+            });
+
+            // Start workflow if template is assigned
+            if (ServiceFormModel.WorkflowTemplateId.HasValue && appUser != null)
+            {
+                var workflow = await WorkflowFactory.CreateInstanceAsync(
+                    ServiceFormModel.WorkflowTemplateId.Value,
+                    appUser.Id,
+                    ServiceFormModel.ServiceId);
+
+                submission.WorkflowInstanceId = workflow.Id;
+                _db.Update(submission);
+                await _db.SaveChangesAsync();
+            }
+
+            // Show success message using SweetAlert
+            await JS.InvokeVoidAsync("Swal.fire", new
+            {
+                title = "Success!",
+                text = $"Application submitted successfully for {CustomerName}",
+                icon = "success",
+                confirmButtonText = "OK",
+                confirmButtonColor = "#198754"
+            });
+
+            // Reset form and return to services list
+            ServiceFormModel = null;
+            CustomerName = string.Empty;
+            CustomerEmail = string.Empty;
+            CustomerPhone = string.Empty;
+            CustomerIdNumber = string.Empty;
+            CurrentPage = 0;
+            ShowView("services-list");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("Swal.fire", new
+            {
+                title = "Error!",
+                text = $"Error submitting application: {ex.Message}",
+                icon = "error",
+                confirmButtonText = "OK",
+                confirmButtonColor = "#dc3545"
+            });
+        }
+        finally
+        {
+            IsSubmitting = false;
+        }
+    }
+
+    private void ShowView(string view)
+    {
+        CurrentView = view;
+        Feedback = null;
+        if (view != "service-form")
+        {
+            CurrentPage = 0; // Reset page index when leaving form
+        }
+        StateHasChanged();
+    }
+
+    public class Organization
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+    }
+
+    public class UserServiceFormModel
+    {
+        public int ServiceId { get; set; }
+        public string ServiceName { get; set; } = string.Empty;
+        public string ServiceDescription { get; set; } = string.Empty;
+        public Guid? WorkflowTemplateId { get; set; }
+        public Guid? DocumentTemplateId { get; set; }
+        public List<UserFieldModel> Fields { get; set; } = new();
+    }
+
+    public class UserFieldModel
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Label { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public ServiceModels.FieldType Type { get; set; }
+        public bool IsRequired { get; set; }
+        public string Placeholder { get; set; } = string.Empty;
+        public string? DefaultValue { get; set; }
+        public string? OptionsRaw { get; set; }
+
+        public List<string> ParsedOptions =>
+            OptionsRaw?.Split(Environment.NewLine,
+                StringSplitOptions.RemoveEmptyEntries |
+                StringSplitOptions.TrimEntries)
+            .ToList() ?? new();
+
+        [Required]
+        public string Value { get; set; } = string.Empty;
+        public Dictionary<string, bool> CheckboxValues { get; set; } = new();
+        public IReadOnlyList<IBrowserFile>? Files { get; set; }
+    }
+}

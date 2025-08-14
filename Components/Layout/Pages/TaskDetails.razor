@@ -185,6 +185,96 @@
         justify-content: flex-end;
         gap: 0.5rem;
     }
+
+    .fee-update-card {
+        border: 2px solid #e74c3c;
+        background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%);
+        border-radius: 0.75rem;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 15px rgba(231, 76, 60, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+
+        .fee-update-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        .fee-update-card h6 {
+            color: #c0392b;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+    .fee-input-group {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+        background: white;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .currency-symbol {
+        font-weight: 700;
+        color: #2c3e50;
+        font-size: 1.1rem;
+        background: #f8f9fa;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.375rem;
+        border: 1px solid #dee2e6;
+        min-width: 45px;
+        text-align: center;
+    }
+
+    .fee-input {
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 0.75rem;
+        font-size: 1rem;
+        font-weight: 500;
+        width: 200px;
+        transition: all 0.2s ease;
+    }
+
+        .fee-input:focus {
+            border-color: #e74c3c;
+            box-shadow: 0 0 0 0.2rem rgba(231, 76, 60, 0.15);
+            outline: none;
+        }
+
+    .update-fee-btn {
+        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        border: none;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.375rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(231, 76, 60, 0.2);
+    }
+
+        .update-fee-btn:hover {
+            background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+        }
+
+        .update-fee-btn:disabled {
+            background: #95a5a6;
+            transform: none;
+            box-shadow: none;
+        }
 </style>
 
 <div class="container-fluid py-2">
@@ -245,6 +335,27 @@
                     else
                     {
                         <span class="badge bg-secondary">@workflowInstance.Status</span>
+                    }
+                </div>
+            </div>
+            <div class="info-card">
+                <div class="info-label">Service Fee</div>
+                <div class="info-value">
+                    @if (workflowInstance.Service?.ServiceFee.HasValue == true)
+                    {
+                        <span>K@workflowInstance.Service.ServiceFee.Value.ToString("F2")</span>
+                        @if (workflowInstance.Service.FeeType == ServiceModels.FeeType.Variable)
+                        {
+                            <small class="text-muted d-block">Variable Fee</small>
+                        }
+                        else
+                        {
+                            <small class="text-muted d-block">Fixed Fee</small>
+                        }
+                    }
+                    else
+                    {
+                        <span class="text-muted">No fee</span>
                     }
                 </div>
             </div>
@@ -317,6 +428,43 @@
                             @if (step is ApprovalInstanceStep approvalStep)
                             {
                                 <div class="step-body">
+                                    <!-- Service Fee Update Section (only for first step with variable fees) -->
+                                    @if (step.Order == 1 &&
+                                                        workflowInstance.Service?.FeeType == ServiceModels.FeeType.Variable &&
+                                                        step.Status == StepStatus.InProgress &&
+                                                        CanApproveStep(approvalStep))
+                                    {
+                                        <div class="fee-update-card">
+                                            <h6 class="text-warning mb-3">
+                                                <i class=""></i>Service Fee Review Required
+                                            </h6>
+                                            <p class="mb-3">This service has no fixed fee. Please review and update the service fee as needed before approving.</p>
+
+                                            <div class="fee-input-group">
+                                                <span class="currency-symbol">K</span>
+                                                <input type="number"
+                                                       class="form-control"
+                                                       style="max-width: 200px;"
+                                                       step="0.01"
+                                                       min="0"
+                                                       @bind="updatedServiceFee"
+                                                       placeholder="Enter fee amount" />
+                                                <button class="btn btn-warning btn-sm" @onclick="UpdateServiceFee" disabled="@isUpdatingFee">
+                                                    @if (isUpdatingFee)
+                                                    {
+                                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                                    }
+                                                    Update Fee
+                                                </button>
+                                            </div>
+
+                                            @if (!string.IsNullOrEmpty(feeUpdateMessage))
+                                            {
+                                                <div class="alert alert-info mt-2 mb-0">@feeUpdateMessage</div>
+                                            }
+                                        </div>
+                                    }
+
                                     <div class="row">
                                         <div class="col-md-6">
                                             <strong>Required Approvers:</strong>
@@ -449,6 +597,11 @@
     private string approvalComments = string.Empty;
     private bool isSubmitting = false;
 
+    // Service fee update
+    private decimal? updatedServiceFee;
+    private bool isUpdatingFee = false;
+    private string feeUpdateMessage = string.Empty;
+
     private string statusMessage = string.Empty;
     private int uploadProgress = 0;
 
@@ -559,6 +712,12 @@
                 .Include(wi => wi.Steps)
                 .Include(wi => wi.InitiatedBy)
                 .FirstOrDefaultAsync(wi => wi.Id == WorkflowInstanceId);
+
+            // Initialize the updated service fee with current value
+            if (workflowInstance?.Service?.ServiceFee.HasValue == true)
+            {
+                updatedServiceFee = workflowInstance.Service.ServiceFee.Value;
+            }
         }
         catch (Exception ex)
         {
@@ -567,6 +726,50 @@
         finally
         {
             isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task UpdateServiceFee()
+    {
+        if (workflowInstance?.Service == null || !updatedServiceFee.HasValue || updatedServiceFee < 0)
+        {
+            feeUpdateMessage = "Please enter a valid fee amount.";
+            return;
+        }
+
+        isUpdatingFee = true;
+        feeUpdateMessage = string.Empty;
+        StateHasChanged();
+
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
+            var service = await context.Services.FirstOrDefaultAsync(s => s.Id == workflowInstance.Service.Id);
+
+            if (service != null)
+            {
+                service.ServiceFee = updatedServiceFee.Value;
+                await context.SaveChangesAsync();
+
+                // Update the local instance
+                workflowInstance.Service.ServiceFee = updatedServiceFee.Value;
+
+                feeUpdateMessage = $"Service fee updated successfully to ${updatedServiceFee.Value:F2}";
+            }
+            else
+            {
+                feeUpdateMessage = "Error: Service not found.";
+            }
+        }
+        catch (Exception ex)
+        {
+            feeUpdateMessage = $"Error updating fee: {ex.Message}";
+            Console.WriteLine($"Error updating service fee: {ex.Message}");
+        }
+        finally
+        {
+            isUpdatingFee = false;
             StateHasChanged();
         }
     }
@@ -648,7 +851,7 @@
 
                     var nextStep = context.WorkflowInstanceSteps.FirstOrDefault(wis => wis.Order == (step.Order + 1));
 
-                    if(nextStep != null)
+                    if (nextStep != null)
                     {
                         nextStep.Status = StepStatus.InProgress;
                     }

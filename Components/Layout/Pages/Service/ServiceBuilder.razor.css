@@ -1,0 +1,59 @@
+﻿.swal2-popup {
+    border-radius: 15px !important;
+    padding: 20px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+    max-width: 400px !important;
+    width: 90% !important;
+}
+
+.swal2-title {
+    font-size: 1.2em !important;
+    font-weight: 600 !important;
+    margin-bottom: 10px !important;
+}
+
+.swal2-html-container {
+    font-size: 0.9em !important;
+    line-height: 1.4 !important;
+    margin: 10px 0 !important;
+}
+
+.swal2-actions {
+    margin-top: 20px !important;
+    gap: 10px !important;
+}
+
+.swal2-confirm {
+    border-radius: 8px !important;
+    padding: 8px 20px !important;
+    font-size: 0.9em !important;
+    font-weight: 500 !important;
+}
+
+.swal2-cancel {
+    border-radius: 8px !important;
+    padding: 8px 20px !important;
+    font-size: 0.9em !important;
+    font-weight: 500 !important;
+}
+
+.swal2-icon {
+    width: 60px !important;
+    height: 60px !important;
+    margin: 10px auto 15px !important;
+}
+
+    .swal2-icon.swal2-warning {
+        border-color: #f8bb86 !important;
+        color: #f8bb86 !important;
+    }
+
+    .swal2-icon.swal2-success {
+        border-color: #a5dc86 !important;
+        color: #a5dc86 !important;
+    }
+
+    .swal2-icon.swal2-error {
+        border-color: #f27474 !important;
+        color: #f27474 !important;
+    }

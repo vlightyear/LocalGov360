@@ -127,8 +127,9 @@ using (var scope = app.Services.CreateScope())
     {
         org = new Organisation
         {
-            Id = Guid.NewGuid(),
-            Name = "Default Organisation"
+            Id = Guid.Parse("E30FB762-28A3-486D-8D3C-D696A4AE33C8"),
+     
+            Name = "Chongwe Municipal Council "
         };
         context.Organisations.Add(org);
         await context.SaveChangesAsync();
@@ -164,12 +165,11 @@ using (var scope = app.Services.CreateScope())
         await userManager.AddToRoleAsync(user, "customer");
 
 
+        using (var serviceScope = app.Services.CreateScope())
+        {
+            var db = serviceScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-       using (var serviceScope = app.Services.CreateScope())
-{
-    var db = serviceScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-            // Ensure DB exists (optional)
+            // Ensure DB exists
             db.Database.Migrate();
 
             var configId = Guid.Parse("94BEC6AE-3C27-4B92-A142-2211F8B245D8");
@@ -182,13 +182,12 @@ using (var scope = app.Services.CreateScope())
                     OrganisationId = Guid.Parse("E30FB762-28A3-486D-8D3C-D696A4AE33C8"),
                     //OrganisationId = Guid.Parse("2D5D70CD-0E60-4731-A169-341F6C03B427"),
                     ApiBaseUrl = "https://sandbox.tingg.africa",
-                    ApiKey = "ViR64sAFdAkvAoGaJqATWcW3tXREXGf",
+                    ApiKey = "AViR64sAFdAkvAoGaJqATWcW3tXREXGf",
                     AuthTokenRequestUrl = "https://api-approval.tingg.africa/v1/oauth/token/request",
-                     CallbackUrl = "https://fd68ef02f459.ngrok-free.app/api/tinggcallback",
-                    //CallbackUrl = "https://fd68ef02f459.ngrok-free.app/api/tinggcallback",
-                    CheckoutRequestUrl = "https://api-approval.tingg.africa/v3/checkout-api/checkout/request",
+                    CallbackUrl = "https://19d7bf4f4ed9.ngrok-free.app/callback",
+                    CheckoutRequestUrl = "https://online.sandbox.tingg.africa/approval/request-service/checkout-request/express-request",
                     ClientId = "c5549f4f-08da-4843-8dc4-32a567a1ef10",
-                    ClientSecret = "mrmTNUmwhahKnVYTbSmIGXLJgaTuejBfLrBJqzv",
+                    ClientSecret = "mrmTNUmwhahKnVYTbSmIGXLJgaTuejBfLrBJqzvC",
                     CountryCode = "ZMB",
                     CurrencyCode = "ZMW",
                     FailRedirectUrl = "https://fd68ef02f459.ngrok-free.app/your-fail-url",
@@ -203,7 +202,8 @@ using (var scope = app.Services.CreateScope())
 
 
 
-        }
+
+    }
 }
 // Apply migrations automatically
 using (var scope = app.Services.CreateScope())

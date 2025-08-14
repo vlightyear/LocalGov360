@@ -7,10 +7,12 @@
 @using System.Security.Claims
 @inject UserManager<ApplicationUser> UserManager
 @inject RoleManager<IdentityRole> RoleManager
+@inject SignInManager<ApplicationUser> SignInManager
 @inject NavigationManager NavigationManager
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject TinggPaymentService TinggPaymentService
+@attribute [Authorize]
 @rendermode InteractiveServer
 
 <style>

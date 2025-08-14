@@ -6,10 +6,11 @@
 @using Microsoft.EntityFrameworkCore
 @inject UserManager<ApplicationUser> UserManager
 @inject RoleManager<IdentityRole> RoleManager
+@inject SignInManager<ApplicationUser> SignInManager
 @inject NavigationManager NavigationManager
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @rendermode InteractiveServer
-@attribute [Authorize(Roles = "developer")]
+@attribute [Authorize(Roles = "developer, CouncilAdmin")]
 
 <style>
     .action-buttons {
