@@ -8,6 +8,7 @@
 @using System.Security.Claims
 @inject UserManager<ApplicationUser> UserManager
 @inject RoleManager<IdentityRole> RoleManager
+@inject SignInManager<ApplicationUser> SignInManager
 @inject NavigationManager NavigationManager
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject AuthenticationStateProvider AuthenticationStateProvider
@@ -17,20 +18,709 @@
 <PageTitle>Users Management</PageTitle>
 
 <style>
-    /* Enhanced Animations and Transitions */
-    * {
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
     }
+
+    .header-buttons {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .blazor-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .blazor-modal-content {
+        background: white;
+        border-radius: 0.5rem;
+        width: 90%;
+        max-width: 600px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .modal-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+
+    .btn-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #000;
+        opacity: 0.5;
+        cursor: pointer;
+        line-height: 1;
+    }
+
+        .btn-close:hover {
+            opacity: 0.75;
+        }
+
+    .btn-dark {
+        background-color: #343a40;
+        border-color: #343a40;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        border: none;
+        cursor: pointer;
+    }
+
+        .btn-dark:hover {
+            background-color: #23272b;
+            border-color: #1d2124;
+            color: white;
+        }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        border: none;
+        cursor: pointer;
+    }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+            border-color: #545b62;
+            color: white;
+        }
+
+    .roles-table-actions {
+        white-space: nowrap;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .form-full-width {
+        grid-column: 1 / -1;
+    }
+
+    .form-check-group {
+        grid-column: 1 / -1;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        padding: 1rem;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .role-badge {
+        display: inline-block;
+        padding: 0.25em 0.4em;
+        font-size: 75%;
+        font-weight: 700;
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 0.25rem;
+        margin-right: 0.25rem;
+    }
+
+    .system-role {
+        background-color: #6f42c1;
+        color: white;
+    }
+
+    .org-role {
+        background-color: #20c997;
+        color: white;
+    }
+
+    .alert {
+        padding: 0.75rem 1.25rem;
+        margin-bottom: 1rem;
+        border: 1px solid transparent;
+        border-radius: 0.25rem;
+    }
+
+    .alert-danger {
+        color: #721c24;
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+    }
+
+    .alert-success {
+        color: #155724;
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+    }
+</style>
+
+<div class="container-fluid py-2">
+    <div class="row">
+        <div class="col-12">
+            <div class="card my-4">
+                <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                    <div class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3">
+                        <h6 class="text-white text-capitalize ps-3">Users Management</h6>
+                        <div class="ps-3 pb-2 d-flex align-items-center header-buttons">
+                            <button class="btn btn-sm btn-outline-light" @onclick="LoadUsers">
+                                <i class="fas fa-sync-alt me-1"></i> Refresh
+                            </button>
+                            @if (CanCreateUser)
+                            {
+                                <button class="btn btn-sm btn-outline-light" @onclick="ShowCreateUserModal">
+                                    <i class="fas fa-user-plus me-1"></i> Add User
+                                </button>
+                            }
+                            @if (CanCreateRole)
+                            {
+                                <button class="btn btn-sm btn-outline-light" @onclick="ShowCreateRoleModal">
+                                    <i class="fas fa-plus-circle me-1"></i> Add Role
+                                </button>
+                            }
+                            <button class="btn btn-sm btn-outline-light" @onclick="ShowRolesListModal">
+                                <i class="fas fa-list me-1"></i> Manage Roles
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body px-0 pb-2">
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger mx-3" role="alert">
+                            @errorMessage
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(successMessage))
+                    {
+                        <div class="alert alert-success mx-3" role="alert">
+                            @successMessage
+                        </div>
+                    }
+                    @if (isLoading)
+                    {
+                        <div class="text-center p-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    }
+                    else if (users.Any())
+                    {
+                        <div class="table-responsive p-0">
+                            <table class="table align-items-center mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">User</th>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Roles</th>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Organization</th>
+                                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
+                                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Last Lockout</th>
+                                        <th class="text-secondary opacity-7">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var userInfo in users)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex px-2 py-1">
+                                                    <div>
+                                                        <div class="avatar avatar-sm me-3 border-radius-lg bg-gradient-@(GetAvatarColor(userInfo.User.Email)) d-flex align-items-center justify-content-center">
+                                                            <span class="text-white text-xs font-weight-bold">
+                                                                @GetUserInitials(userInfo.User.Email, userInfo.User.UserName)
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex flex-column justify-content-center">
+                                                        <h6 class="mb-0 text-sm">@(userInfo.User.UserName ?? "Unknown")</h6>
+                                                        <p class="text-xs text-secondary mb-0">@userInfo.User.Email</p>
+                                                        @if (!string.IsNullOrEmpty(userInfo.User.Firstname) || !string.IsNullOrEmpty(userInfo.User.Lastname))
+                                                        {
+                                                            <p class="text-xs text-secondary mb-0">
+                                                                @userInfo.User.Firstname @userInfo.User.Lastname
+                                                            </p>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                @if (userInfo.Roles.Any())
+                                                {
+                                                    <p class="text-xs font-weight-bold mb-0">
+                                                        @foreach (var role in userInfo.Roles.Take(3))
+                                                        {
+                                                            <span class="role-badge system-role">
+                                                                @role
+                                                            </span>
+                                                        }
+                                                    </p>
+                                                    @if (userInfo.Roles.Count > 3)
+                                                    {
+                                                        <p class="text-xs text-secondary mb-0">+@(userInfo.Roles.Count - 3) more</p>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <p class="text-xs text-secondary mb-0">No roles assigned</p>
+                                                }
+                                            </td>
+                                            <td>
+                                                <p class="text-xs text-secondary mb-0">@(userInfo.User.Organisation?.Name ?? "None")</p>
+                                            </td>
+                                            <td class="align-middle text-center text-sm">
+                                                @if (userInfo.User.EmailConfirmed)
+                                                {
+                                                    <span class="badge badge-sm bg-gradient-success">Verified</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge badge-sm bg-gradient-warning">Pending</span>
+                                                }
+                                                @if (userInfo.User.LockoutEnd.HasValue && userInfo.User.LockoutEnd > DateTimeOffset.UtcNow)
+                                                {
+                                                    <span class="badge badge-sm bg-gradient-danger ms-1">Locked</span>
+                                                }
+                                            </td>
+                                            <td class="align-middle text-center">
+                                                <span class="text-secondary text-xs font-weight-bold">
+                                                    @(userInfo.User.LockoutEnd.HasValue? userInfo.User.LockoutEnd.Value.ToString("dd/MM/yy") : "Never")
+                                                </span>
+                                            </td>
+                                            <td class="align-middle">
+                                                <div class="btn-group action-buttons">
+                                                    @if (CanEditUser(userInfo.User))
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => EditUser(userInfo.User.Id)">
+                                                            <i class="fas fa-edit"></i>
+                                                        </button>
+                                                    }
+                                                    @if (CanManageRoles(userInfo.User))
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-info" @onclick="() => ManageRoles(userInfo.User.Id)">
+                                                            <i class="fas fa-user-tag"></i>
+                                                        </button>
+                                                    }
+                                                    @if (CanLockUser(userInfo.User))
+                                                    {
+                                                        @if (userInfo.User.LockoutEnd.HasValue && userInfo.User.LockoutEnd > DateTimeOffset.UtcNow)
+                                                        {
+                                                            <button class="btn btn-sm btn-outline-success" @onclick="() => UnlockUser(userInfo.User.Id)">
+                                                                <i class="fas fa-unlock"></i>
+                                                            </button>
+                                                        }
+                                                        else
+                                                        {
+                                                            <button class="btn btn-sm btn-outline-warning" @onclick="() => LockUser(userInfo.User.Id)">
+                                                                <i class="fas fa-lock"></i>
+                                                            </button>
+                                                        }
+                                                    }
+                                                    @if (CanDeleteUser(userInfo.User))
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteUser(userInfo.User.Id)">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center p-4">
+                            <p class="text-muted">No users found.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Edit User Modal *@
+@if (showEditUserModal)
+{
+    <div class="blazor-modal" @onclick="CloseEditUserModal">
+        <div class="blazor-modal-content" @onclick:stopPropagation>
+            <div class="modal-header">
+                <h5 class="modal-title">Edit User</h5>
+                <button type="button" class="btn-close" @onclick="CloseEditUserModal">×</button>
+            </div>
+            <div class="modal-body">
+                <EditForm Model="@editUser" OnValidSubmit="UpdateUser">
+                    <DataAnnotationsValidator />
+                    <div class="form-grid">
+                        <div class="mb-3">
+                            <label for="editEmail" class="form-label">Email</label>
+                            <InputText id="editEmail" @bind-Value="editUser.Email" class="form-control" />
+                            <ValidationMessage For="@(() => editUser.Email)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="editUsername" class="form-label">Username</label>
+                            <InputText id="editUsername" @bind-Value="editUser.UserName" class="form-control" />
+                            <ValidationMessage For="@(() => editUser.UserName)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="editFirstname" class="form-label">First Name</label>
+                            <InputText id="editFirstname" @bind-Value="editUser.Firstname" class="form-control" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="editLastname" class="form-label">Last Name</label>
+                            <InputText id="editLastname" @bind-Value="editUser.Lastname" class="form-control" />
+                        </div>
+                        @if (isDeveloper)
+                        {
+                            <div class="mb-3 form-full-width">
+                                <label for="editOrganisation" class="form-label">Organization</label>
+                                <InputSelect id="editOrganisation" @bind-Value="editUser.OrganisationId" class="form-control">
+                                    <option value="">None</option>
+                                    @foreach (var org in organisations)
+                                    {
+                                        <option value="@org.Id">@org.Name</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseEditUserModal">Cancel</button>
+                        <button type="submit" class="btn btn-dark">Update</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@* Create User Modal *@
+@if (showCreateUserModal)
+{
+    <div class="blazor-modal" @onclick="CloseCreateUserModal">
+        <div class="blazor-modal-content" @onclick:stopPropagation>
+            <div class="modal-header">
+                <h5 class="modal-title">Create New User</h5>
+                <button type="button" class="btn-close" @onclick="CloseCreateUserModal">×</button>
+            </div>
+            <div class="modal-body">
+                <EditForm Model="@newUser" OnValidSubmit="CreateUser">
+                    <DataAnnotationsValidator />
+                    <div class="form-grid">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <InputText id="email" @bind-Value="newUser.Email" class="form-control" />
+                            <ValidationMessage For="@(() => newUser.Email)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <InputText id="username" @bind-Value="newUser.UserName" class="form-control" />
+                            <ValidationMessage For="@(() => newUser.UserName)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="firstname" class="form-label">First Name</label>
+                            <InputText id="firstname" @bind-Value="newUser.Firstname" class="form-control" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="lastname" class="form-label">Last Name</label>
+                            <InputText id="lastname" @bind-Value="newUser.Lastname" class="form-control" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <InputText id="password" type="password" @bind-Value="newUser.Password" class="form-control" />
+                            <ValidationMessage For="@(() => newUser.Password)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">Confirm Password</label>
+                            <InputText id="confirmPassword" type="password" @bind-Value="newUser.ConfirmPassword" class="form-control" />
+                            <ValidationMessage For="@(() => newUser.ConfirmPassword)" />
+                        </div>
+                        @if (isDeveloper)
+                        {
+                            <div class="mb-3 form-full-width">
+                                <label class="form-label">Organization</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="orgSelection" id="existingOrg"
+                                           checked="@(!newUser.UseNewOrganisation)"
+                                           @onchange="@(() => SetOrganisationSelection(false))" />
+                                    <label class="form-check-label" for="existingOrg">Select Existing Organization</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="orgSelection" id="newOrg"
+                                           checked="@newUser.UseNewOrganisation"
+                                           @onchange="@(() => SetOrganisationSelection(true))" />
+                                    <label class="form-check-label" for="newOrg">Create New Organization</label>
+                                </div>
+                                @if (newUser.UseNewOrganisation)
+                                {
+                                    <div class="mb-3">
+                                        <label for="newOrganisation" class="form-label">New Organization Name</label>
+                                        <InputText id="newOrganisation" @bind-Value="newUser.NewOrganisationName" class="form-control" />
+                                        <ValidationMessage For="@(() => newUser.NewOrganisationName)" />
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="mb-3">
+                                        <label for="organisation" class="form-label">Select Organization</label>
+                                        <InputSelect id="organisation" @bind-Value="newUser.OrganisationId" class="form-control">
+                                            <option value="">None</option>
+                                            @foreach (var org in organisations)
+                                            {
+                                                <option value="@org.Id">@org.Name</option>
+                                            }
+                                        </InputSelect>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="mb-3 form-full-width">
+                                <label for="organisation" class="form-label">Organization</label>
+                                <InputSelect id="organisation" @bind-Value="newUser.OrganisationId" class="form-control" disabled>
+                                    @if (currentUser?.OrganisationId != null)
+                                    {
+                                        <option value="@currentUser.OrganisationId">@currentUser.Organisation?.Name</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="">None</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                        }
+                        <div class="form-check-group">
+                            <label class="form-label mb-2">Roles</label>
+                            @if (availableRolesForAssignment.Any())
+                            {
+                                @foreach (var role in availableRolesForAssignment)
+                                {
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox"
+                                               id="@($"userRole-{role.Name}")"
+                                               checked="@(newUser.SelectedRoles.Contains(role.Name ?? ""))"
+                                               @onchange="@((e) => ToggleUserRoleSelection(role.Name ?? "", (bool)(e.Value ?? false)))" />
+                                        <label class="form-check-label" for="@($"userRole-{role.Name}")">
+                                            @role.Name
+                                            <span class="role-badge system-role">
+                                                System
+                                            </span>
+                                        </label>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <p class="text-muted">No roles available</p>
+                            }
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseCreateUserModal">Cancel</button>
+                        <button type="submit" class="btn btn-dark">Create</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@* Create Role Modal *@
+@if (showCreateRoleModal)
+{
+    <div class="blazor-modal" @onclick="CloseCreateRoleModal">
+        <div class="blazor-modal-content" @onclick:stopPropagation>
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Role</h5>
+                <button type="button" class="btn-close" @onclick="CloseCreateRoleModal">×</button>
+            </div>
+            <div class="modal-body">
+                <EditForm Model="@newRole" OnValidSubmit="CreateRole">
+                    <DataAnnotationsValidator />
+                    <div class="mb-3">
+                        <label for="roleName" class="form-label">Role Name</label>
+                        <InputText id="roleName" @bind-Value="newRole.Name" class="form-control" />
+                        <ValidationMessage For="@(() => newRole.Name)" />
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseCreateRoleModal">Cancel</button>
+                        <button type="submit" class="btn btn-dark">Create</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@* Edit Role Modal *@
+@if (showEditRoleModal)
+{
+    <div class="blazor-modal" @onclick="CloseEditRoleModal">
+        <div class="blazor-modal-content" @onclick:stopPropagation>
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Role</h5>
+                <button type="button" class="btn-close" @onclick="CloseEditRoleModal">×</button>
+            </div>
+            <div class="modal-body">
+                <EditForm Model="@editRole" OnValidSubmit="UpdateRole">
+                    <DataAnnotationsValidator />
+                    <div class="mb-3">
+                        <label for="editRoleName" class="form-label">Role Name</label>
+                        <InputText id="editRoleName" @bind-Value="editRole.Name" class="form-control" />
+                        <ValidationMessage For="@(() => editRole.Name)" />
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseEditRoleModal">Cancel</button>
+                        <button type="submit" class="btn btn-dark">Update</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@* Roles List Modal *@
+@if (showRolesListModal)
+{
+    <div class="blazor-modal" @onclick="CloseRolesListModal">
+        <div class="blazor-modal-content" @onclick:stopPropagation>
+            <div class="modal-header">
+                <h5 class="modal-title">Manage Roles</h5>
+                <button type="button" class="btn-close" @onclick="CloseRolesListModal">×</button>
+            </div>
+            <div class="modal-body">
+                @if (visibleRoles.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Role Name</th>
+                                    <th>Organization</th>
+                                    <th class="roles-table-actions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var role in visibleRoles)
+                                {
+                                    <tr>
+                                        <td>@role.Name</td>
+                                        <td>
+                                            <span class="role-badge system-role">System</span>
+                                        </td>
+                                        <td class="roles-table-actions">
+                                            <div class="btn-group action-buttons">
+                                                @if (CanEditRole(role))
+                                                {
+                                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEditRole(role)">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                }
+                                                @if (CanDeleteRole(role))
+                                                {
+                                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteRole(role.Id)">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">No roles available</p>
+                }
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-dark" @onclick="CloseRolesListModal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Manage User Roles Modal *@
+@if (showManageRolesModal)
+{
+    <div class="blazor-modal" @onclick="CloseManageRolesModal">
+        <div class="blazor-modal-content" @onclick:stopPropagation>
+            <div class="modal-header">
+                <h5 class="modal-title">Manage Roles for @(selectedUser?.Email ?? "User")</h5>
+                <button type="button" class="btn-close" @onclick="CloseManageRolesModal">×</button>
+            </div>
+            <div class="modal-body">
+                @if (availableRolesForAssignment != null && selectedUser != null)
+                {
+                    <div class="form-check-group">
+                        <label class="form-label mb-2">Roles</label>
+                        @foreach (var role in availableRolesForAssignment)
+                        {
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox"
+                                       id="@($"role-{role.Name}")"
+                                       checked="@(userRoles?.Contains(role.Name ?? "") ?? false)"
+                                       @onchange="@((e) => ToggleUserRole(role.Name ?? "", (bool)(e.Value ?? false)))" />
+                                <label class="form-check-label" for="@($"role-{role.Name}")">
+                                    @role.Name
+                                    <span class="role-badge system-role">
+                                        System
+                                    </span>
+                                </label>
+                            </div>
+                        }
+                    </div>
+                }
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-dark" @onclick="CloseManageRolesModal">Done</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     // Fields - State Variables
     private List<UserInfo> users = new();
-    private List<UserInfo> filteredUsers = new();
     private List<Organisation> organisations = new();
     private bool isLoading = true;
     private string? errorMessage = null;
     private string? successMessage = null;
-    private string searchFilter = string.Empty;
 
     // Modal State
     private bool showCreateUserModal = false;
@@ -57,7 +747,7 @@
     private EditUserModel editUser = new();
     private EditRoleModel editRole = new();
 
-    // Role Check Fields
+    // Role Check Fields (FIXED: No more .Result calls)
     private bool isDeveloper = false;
     private bool isCouncilAdmin = false;
     private bool isAdmin = false;
@@ -140,41 +830,6 @@
         }
     }
 
-    // Search and Filter Methods
-    private void OnSearchFilterChanged(ChangeEventArgs e)
-    {
-        searchFilter = e.Value?.ToString() ?? string.Empty;
-        FilterUsers();
-        StateHasChanged();
-    }
-
-    private void FilterUsers()
-    {
-        if (string.IsNullOrWhiteSpace(searchFilter))
-        {
-            filteredUsers = users.ToList();
-        }
-        else
-        {
-            var filter = searchFilter.ToLowerInvariant();
-            filteredUsers = users.Where(u =>
-                (u.User.Email?.ToLowerInvariant().Contains(filter) ?? false) ||
-                (u.User.UserName?.ToLowerInvariant().Contains(filter) ?? false) ||
-                (u.User.Firstname?.ToLowerInvariant().Contains(filter) ?? false) ||
-                (u.User.Lastname?.ToLowerInvariant().Contains(filter) ?? false) ||
-                u.Roles.Any(r => r.ToLowerInvariant().Contains(filter)) ||
-                (u.User.Organisation?.Name?.ToLowerInvariant().Contains(filter) ?? false)
-            ).ToList();
-        }
-    }
-
-    private void ClearSearch()
-    {
-        searchFilter = string.Empty;
-        FilterUsers();
-        StateHasChanged();
-    }
-
     // Helper Methods
     private void SetErrorMessage(string message)
     {
@@ -233,1261 +888,616 @@
     private bool CanManageRoles(ApplicationUser user)
     {
         if (isDeveloper) return true;
-
-    .fade-in {
-        animation: fadeIn 0.5s ease-in-out;
-    }
-
-    .slide-in {
-        animation: slideIn 0.4s ease-out;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes slideIn {
-        from { opacity: 0; transform: translateX(-20px); }
-        to { opacity: 1; transform: translateX(0); }
-    }
-
-    /* Enhanced Action Buttons */
-    .action-buttons {
-        display: flex;
-        gap: 0.375rem;
-        justify-content: flex-end;
-    }
-
-    .action-buttons .btn {
-        position: relative;
-        overflow: hidden;
-        transform: translateY(0);
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    .action-buttons .btn:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    }
-
-    .action-buttons .btn:active {
-        transform: translateY(0);
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    /* Enhanced Header Buttons */
-    .header-buttons {
-        display: flex;
-        gap: 0.75rem;
-        flex-wrap: wrap;
-    }
-
-    .header-buttons .btn {
-        position: relative;
-        overflow: hidden;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255,255,255,0.2);
-    }
-
-    .header-buttons .btn::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-        transition: left 0.5s;
-    }
-
-    .header-buttons .btn:hover::before {
-        left: 100%;
-    }
-
-    /* Enhanced Modal */
-    .blazor-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.6);
-        backdrop-filter: blur(5px);
-        z-index: 1050;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        opacity: 0;
-        animation: modalFadeIn 0.3s ease-out forwards;
-    }
-
-    @keyframes modalFadeIn {
-        to { opacity: 1; }
-    }
-
-    .blazor-modal-content {
-        background: white;
-        border-radius: 12px;
-        width: 90%;
-        max-width: 700px;
-        max-height: 90vh;
-        overflow: hidden;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-        transform: scale(0.9) translateY(20px);
-        animation: modalSlideIn 0.3s ease-out forwards;
-    }
-
-    @keyframes modalSlideIn {
-        to {
-            transform: scale(1) translateY(0);
-        }
-    }
-
-    .modal-header {
-        padding: 1.5rem 2rem;
-        border-bottom: 1px solid #e9ecef;
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border-radius: 12px 12px 0 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .modal-title {
-        margin: 0;
-        font-weight: 600;
-        color: #495057;
-        font-size: 1.25rem;
-    }
-
-    .modal-body {
-        padding: 2rem;
-        max-height: calc(90vh - 140px);
-        overflow-y: auto;
-    }
-
-    .modal-footer {
-        padding: 1rem 2rem 1.5rem;
-        border-top: 1px solid #e9ecef;
-        background: #f8f9fa;
-        display: flex;
-        justify-content: flex-end;
-        gap: 0.75rem;
-        border-radius: 0 0 12px 12px;
-    }
-
-    .btn-close {
-        background: none;
-        border: none;
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #6c757d;
-        opacity: 0.7;
-        cursor: pointer;
-        line-height: 1;
-        padding: 0.5rem;
-        border-radius: 50%;
-        width: 2.5rem;
-        height: 2.5rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .btn-close:hover {
-        opacity: 1;
-        background: rgba(108, 117, 125, 0.1);
-        transform: rotate(90deg);
-    }
-
-    /* Enhanced Button Styles */
-    .btn-dark, .btn-secondary, .btn-primary, .btn-success, .btn-warning, .btn-danger, .btn-info {
-        position: relative;
-        overflow: hidden;
-        font-weight: 500;
-        letter-spacing: 0.025em;
-        border-radius: 8px;
-        padding: 0.625rem 1.25rem;
-        border: none;
-        cursor: pointer;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    .btn-dark {
-        background: linear-gradient(135deg, #343a40 0%, #495057 100%);
-        color: white;
-    }
-
-    .btn-dark:hover {
-        background: linear-gradient(135deg, #23272b 0%, #343a40 100%);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    }
-
-    .btn-secondary {
-        background: linear-gradient(135deg, #6c757d 0%, #868e96 100%);
-        color: white;
-    }
-
-    .btn-secondary:hover {
-        background: linear-gradient(135deg, #5a6268 0%, #6c757d 100%);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    }
-
-    /* Enhanced Table */
-    .table-responsive {
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    }
-
-    .table {
-        margin-bottom: 0;
-    }
-
-    .table thead th {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border: none;
-        font-weight: 600;
-        font-size: 0.75rem;
-        letter-spacing: 0.05em;
-        padding: 1rem 0.75rem;
-    }
-
-    .table tbody tr {
-        border-bottom: 1px solid #f1f3f4;
-    }
-
-    .table tbody tr:hover {
-        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-        transform: scale(1.001);
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-
-    .table tbody td {
-        padding: 1rem 0.75rem;
-        vertical-align: middle;
-        border: none;
-    }
-
-    /* Enhanced User Avatar */
-    .avatar {
-        position: relative;
-        overflow: hidden;
-        box-shadow: 0 3px 6px rgba(0,0,0,0.15);
-        border: 2px solid rgba(255,255,255,0.8);
-    }
-
-    .avatar:hover {
-        transform: scale(1.05);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    }
-
-    /* Enhanced Role Badges */
-    .role-badge {
-        display: inline-block;
-        padding: 0.375em 0.75em;
-        font-size: 0.75rem;
-        font-weight: 600;
-        line-height: 1;
-        text-align: center;
-        white-space: nowrap;
-        vertical-align: baseline;
-        border-radius: 20px;
-        margin: 0.125rem 0.25rem 0.125rem 0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .role-badge::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-        transition: left 0.5s;
-    }
-
-    .role-badge:hover::before {
-        left: 100%;
-    }
-
-    .system-role {
-        background: linear-gradient(135deg, #6f42c1 0%, #8a63d2 100%);
-        color: white;
-    }
-
-    .org-role {
-        background: linear-gradient(135deg, #20c997 0%, #3dd5a7 100%);
-        color: white;
-    }
-
-    /* Enhanced Form Styles */
-    .form-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1.5rem;
-    }
-
-    .form-full-width {
-        grid-column: 1 / -1;
-    }
-
-    .form-control {
-        border: 2px solid #e9ecef;
-        border-radius: 8px;
-        padding: 0.75rem 1rem;
-        font-size: 0.875rem;
-        background: white;
-        box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
-    }
-
-    .form-control:focus {
-        border-color: #80bdff;
-        box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25), inset 0 1px 2px rgba(0,0,0,0.05);
-        outline: none;
-    }
-
-    .form-label {
-        font-weight: 600;
-        color: #495057;
-        margin-bottom: 0.5rem;
-        font-size: 0.875rem;
-    }
-
-    .form-check-group {
-        grid-column: 1 / -1;
-        border: 2px solid #e9ecef;
-        border-radius: 12px;
-        padding: 1.5rem;
-        max-height: 250px;
-        overflow-y: auto;
-        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-    }
-
-    .form-check {
-        margin-bottom: 0.75rem;
-        padding-left: 2rem;
-    }
-
-    .form-check-input {
-        margin-left: -2rem;
-        margin-top: 0.25rem;
-        transform: scale(1.1);
-    }
-
-    .form-check-input:checked {
-        background-color: #0d6efd;
-        border-color: #0d6efd;
-        box-shadow: 0 2px 4px rgba(13,110,253,0.3);
-    }
-
-    .form-check-label {
-        font-weight: 500;
-        color: #495057;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    /* Enhanced Status Badges */
-    .badge {
-        font-weight: 600;
-        font-size: 0.75rem;
-        padding: 0.375em 0.75em;
-        border-radius: 20px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    .bg-gradient-success {
-        background: linear-gradient(135deg, #28a745 0%, #34ce57 100%);
-    }
-
-    .bg-gradient-warning {
-        background: linear-gradient(135deg, #ffc107 0%, #ffcd39 100%);
-    }
-
-    .bg-gradient-danger {
-        background: linear-gradient(135deg, #dc3545 0%, #e85a67 100%);
-    }
-
-    /* Enhanced Alert Styles */
-    .alert {
-        padding: 1rem 1.5rem;
-        margin-bottom: 1.5rem;
-        border: none;
-        border-radius: 12px;
-        font-weight: 500;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .alert::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 4px;
-        background: currentColor;
-        opacity: 0.8;
-    }
-
-    .alert-danger {
-        color: #721c24;
-        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-    }
-
-    .alert-success {
-        color: #155724;
-        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-    }
-
-    /* Loading Spinner Enhancement */
-    .spinner-border {
-        width: 3rem;
-        height: 3rem;
-        border-width: 0.3em;
-        border-color: #007bff transparent #007bff transparent;
-        animation: spinner-grow 1s linear infinite;
-    }
-
-    @keyframes spinner-grow {
-        0% { transform: rotate(0deg) scale(0.8); }
-        50% { transform: rotate(180deg) scale(1.1); }
-        100% { transform: rotate(360deg) scale(0.8); }
-    }
-
-    /* Enhanced Card */
-    .card {
-        border: none;
-        border-radius: 16px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-        overflow: hidden;
-    }
-
-    .card-header {
-        border-radius: 16px 16px 0 0;
-        border: none;
-    }
-
-    .bg-gradient-dark {
-        background: linear-gradient(135deg, #343a40 0%, #495057 100%);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .bg-gradient-dark::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
-        animation: shimmer 3s infinite;
-    }
-
-    @keyframes shimmer {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
-    }
-
-    /* Responsive Enhancements */
-    @media (max-width: 768px) {
-        .header-buttons {
-            gap: 0.5rem;
-        }
-        
-        .header-buttons .btn {
-            font-size: 0.8rem;
-            padding: 0.4rem 0.8rem;
-        }
-        
-        .action-buttons {
-            flex-direction: column;
-            gap: 0.25rem;
-        }
-        
-        .modal-body {
-            padding: 1.5rem;
-        }
-        
-        .form-grid {
-            grid-template-columns: 1fr;
-            gap: 1rem;
-        }
-    }
-
-    /* Custom Scrollbar */
-    .modal-body::-webkit-scrollbar,
-    .form-check-group::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .modal-body::-webkit-scrollbar-track,
-    .form-check-group::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 3px;
-    }
-
-    .modal-body::-webkit-scrollbar-thumb,
-    .form-check-group::-webkit-scrollbar-thumb {
-        background: #c1c1c1;
-        border-radius: 3px;
-    }
-
-    .modal-body::-webkit-scrollbar-thumb:hover,
-    .form-check-group::-webkit-scrollbar-thumb:hover {
-        background: #a8a8a8;
-    }
-
-    /* Enhanced Button Icons */
-    .btn i {
-        margin-right: 0.375rem;
-        font-size: 0.875em;
-    }
-
-    /* Search and Filter Enhancement */
-    .search-container {
-        position: relative;
-        margin-bottom: 1.5rem;
-    }
-
-    .search-input {
-        width: 100%;
-        max-width: 400px;
-        padding: 0.75rem 1rem 0.75rem 2.5rem;
-        border: 2px solid #e9ecef;
-        border-radius: 25px;
-        font-size: 0.875rem;
-        background: white;
-        box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
-    }
-
-    .search-input:focus {
-        border-color: #80bdff;
-        box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25), inset 0 1px 2px rgba(0,0,0,0.05);
-        outline: none;
-    }
-
-    .search-icon {
-        position: absolute;
-        left: 0.875rem;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #6c757d;
-        font-size: 0.875rem;
-    }
-</style>
-
-<div class="container-fluid py-2 fade-in">
-    <div class="row">
-        <div class="col-12">
-            <div class="card my-4">
-                <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
-                    <div class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3">
-                        <h6 class="text-white text-capitalize ps-3 mb-3">
-                            <i class="fas fa-users me-2"></i>Users Management
-                        </h6>
-                        <div class="ps-3 pb-2 d-flex align-items-center header-buttons">
-                            <button class="btn btn-sm btn-outline-light" @onclick="LoadUsers">
-                                <i class="fas fa-sync-alt me-1"></i> Refresh
-                            </button>
-                            @if (CanCreateUser)
-                            {
-                                <button class="btn btn-sm btn-outline-light" @onclick="ShowCreateUserModal">
-                                    <i class="fas fa-user-plus me-1"></i> Add User
-                                </button>
-                            }
-                            @if (CanCreateRole)
-                            {
-                                <button class="btn btn-sm btn-outline-light" @onclick="ShowCreateRoleModal">
-                                    <i class="fas fa-plus-circle me-1"></i> Add Role
-                                </button>
-                            }
-                            <button class="btn btn-sm btn-outline-light" @onclick="ShowRolesListModal">
-                                <i class="fas fa-list me-1"></i> Manage Roles
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body px-0 pb-2">
-                    @if (!string.IsNullOrEmpty(errorMessage))
-                    {
-                        <div class="alert alert-danger mx-3 slide-in" role="alert">
-                            <i class="fas fa-exclamation-triangle me-2"></i>@errorMessage
-                        </div>
-                    }
-                    @if (!string.IsNullOrEmpty(successMessage))
-                    {
-                        <div class="alert alert-success mx-3 slide-in" role="alert">
-                            <i class="fas fa-check-circle me-2"></i>@successMessage
-                        </div>
-                    }
-
-                    <!-- Enhanced Search/Filter Section -->
-                    <div class="px-3 mb-3">
-                        <div class="search-container">
-                            <i class="fas fa-search search-icon"></i>
-                            <input type="text" class="form-control search-input" placeholder="Search users by name, email, or role..." 
-                                   @bind="searchFilter" @oninput="OnSearchFilterChanged" />
-                        </div>
-                    </div>
-
-                    @if (isLoading)
-                    {
-                        <div class="text-center p-5">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Loading...</span>
-                            </div>
-                            <p class="mt-3 text-muted">Loading users...</p>
-                        </div>
-                    }
-                    else if (filteredUsers.Any())
-                    {
-                        <div class="table-responsive p-0">
-                            <table class="table align-items-center mb-0">
-                                <thead>
-                                    <tr>
-                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                            <i class="fas fa-user me-1"></i>User
-                                        </th>
-                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">
-                                            <i class="fas fa-user-tag me-1"></i>Roles
-                                        </th>
-                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">
-                                            <i class="fas fa-building me-1"></i>Organization
-                                        </th>
-                                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                            <i class="fas fa-shield-alt me-1"></i>Status
-                                        </th>
-                                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                            <i class="fas fa-lock me-1"></i>Last Lockout
-                                        </th>
-                                        <th class="text-secondary opacity-7">
-                                            <i class="fas fa-cog me-1"></i>Actions
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var userInfo in filteredUsers)
-                                    {
-                                        <tr class="fade-in">
-                                            <td>
-                                                <div class="d-flex px-2 py-1">
-                                                    <div>
-                                                        <div class="avatar avatar-sm me-3 border-radius-lg bg-gradient-@(GetAvatarColor(userInfo.User.Email)) d-flex align-items-center justify-content-center">
-                                                            <span class="text-white text-xs font-weight-bold">
-                                                                @GetUserInitials(userInfo.User.Email, userInfo.User.UserName)
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="d-flex flex-column justify-content-center">
-                                                        <h6 class="mb-0 text-sm font-weight-bold">@(userInfo.User.UserName ?? "Unknown")</h6>
-                                                        <p class="text-xs text-secondary mb-0">
-                                                            <i class="fas fa-envelope me-1"></i>@userInfo.User.Email
-                                                        </p>
-                                                        @if (!string.IsNullOrEmpty(userInfo.User.Firstname) || !string.IsNullOrEmpty(userInfo.User.Lastname))
-                                                        {
-                                                            <p class="text-xs text-secondary mb-0">
-                                                                <i class="fas fa-user me-1"></i>@userInfo.User.Firstname @userInfo.User.Lastname
-                                                            </p>
-                                                        }
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                @if (userInfo.Roles.Any())
-                                                {
-                                                    <div class="d-flex flex-wrap">
-                                                        @foreach (var role in userInfo.Roles.Take(3))
-                                                        {
-                                                            <span class="role-badge system-role">
-                                                                @role
-                                                            </span>
-                                                        }
-                                                    </div>
-                                                    @if (userInfo.Roles.Count > 3)
-                                                    {
-                                                        <p class="text-xs text-secondary mb-0 mt-1">
-                                                            <i class="fas fa-plus-circle me-1"></i>@(userInfo.Roles.Count - 3) more roles
-                                                        </p>
-                                                    }
-                                                }
-                                                else
-                                                {
-                                                    <p class="text-xs text-secondary mb-0">
-                                                        <i class="fas fa-minus-circle me-1"></i>No roles assigned
-                                                    </p>
-                                                }
-                                            </td>
-                                            <td>
-                                                <p class="text-xs text-secondary mb-0">
-                                                    <i class="fas fa-building me-1"></i>@(userInfo.User.Organisation?.Name ?? "None")
-                                                </p>
-                                            </td>
-                                            <td class="align-middle text-center text-sm">
-                                                <div class="d-flex flex-column align-items-center gap-1">
-                                                    @if (userInfo.User.EmailConfirmed)
-                                                    {
-                                                        <span class="badge badge-sm bg-gradient-success">
-                                                            <i class="fas fa-check me-1"></i>Verified
-                                                        </span>
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="badge badge-sm bg-gradient-warning">
-                                                            <i class="fas fa-clock me-1"></i>Pending
-                                                        </span>
-                                                    }
-                                                    @if (userInfo.User.LockoutEnd.HasValue && userInfo.User.LockoutEnd > DateTimeOffset.UtcNow)
-                                                    {
-                                                        <span class="badge badge-sm bg-gradient-danger">
-                                                            <i class="fas fa-lock me-1"></i>Locked
-                                                        </span>
-                                                    }
-                                                </div>
-                                            </td>
-                                            <td class="align-middle text-center">
-                                                <span class="text-secondary text-xs font-weight-bold">
-                                                    @if (userInfo.User.LockoutEnd.HasValue)
-                                                    {
-                                                        <i class="fas fa-calendar me-1"></i>@userInfo.User.LockoutEnd.Value.ToString("dd/MM/yy")
-                                                    }
-                                                    else
-                                                    {
-                                                        <i class="fas fa-check me-1"></i>Never
-                                                    }
-                                                </span>
-                                            </td>
-                                            <td class="align-middle">
-                                                <div class="btn-group action-buttons">
-                                                    @if (CanEditUser(userInfo.User))
-                                                    {
-                                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => EditUser(userInfo.User.Id)" 
-                                                                title="Edit User">
-                                                            <i class="fas fa-edit"></i>
-                                                        </button>
-                                                    }
-                                                    @if (CanManageRoles(userInfo.User))
-                                                    {
-                                                        <button class="btn btn-sm btn-outline-info" @onclick="() => ManageRoles(userInfo.User.Id)"
-                                                                title="Manage Roles">
-                                                            <i class="fas fa-user-tag"></i>
-                                                        </button>
-                                                    }
-                                                    @if (CanLockUser(userInfo.User))
-                                                    {
-                                                        @if (userInfo.User.LockoutEnd.HasValue && userInfo.User.LockoutEnd > DateTimeOffset.UtcNow)
-                                                        {
-                                                            <button class="btn btn-sm btn-outline-success" @onclick="() => UnlockUser(userInfo.User.Id)"
-                                                                    title="Unlock User">
-                                                                <i class="fas fa-unlock"></i>
-                                                            </button>
-                                                        }
-                                                        else
-                                                        {
-                                                            <button class="btn btn-sm btn-outline-warning" @onclick="() => LockUser(userInfo.User.Id)"
-                                                                    title="Lock User">
-                                                                <i class="fas fa-lock"></i>
-                                                            </button>
-                                                        }
-                                                    }
-                                                    @if (CanDeleteUser(userInfo.User))
-                                                    {
-                                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteUser(userInfo.User.Id)"
-                                                                title="Delete User">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
-                                                    }
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="text-center p-5">
-                            <div class="mb-3">
-                                <i class="fas fa-users text-muted" style="font-size: 3rem;"></i>
-                            </div>
-                            <p class="text-muted mb-0">
-                                @if (!string.IsNullOrEmpty(searchFilter))
-                                {
-                                    <span>No users found matching "<strong>@searchFilter</strong>"</span>
-                                }
-                                else
-                                {
-                                    <span>No users found.</span>
-                                }
-                            </p>
-                            @if (!string.IsNullOrEmpty(searchFilter))
-                            {
-                                <button class="btn btn-sm btn-outline-secondary mt-2" @onclick="ClearSearch">
-                                    <i class="fas fa-times me-1"></i>Clear Search
-                                </button>
-                            }
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-@* Enhanced Edit User Modal *@
-@if (showEditUserModal)
-{
-    <div class="blazor-modal" @onclick="CloseEditUserModal">
-        <div class="blazor-modal-content" @onclick:stopPropagation>
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-user-edit me-2"></i>Edit User
-                </h5>
-                <button type="button" class="btn-close" @onclick="CloseEditUserModal">×</button>
-            </div>
-            <div class="modal-body">
-                <EditForm Model="@editUser" OnValidSubmit="UpdateUser">
-                    <DataAnnotationsValidator />
-                    <div class="form-grid">
-                        <div class="mb-3">
-                            <label for="editEmail" class="form-label">
-                                <i class="fas fa-envelope me-1"></i>Email Address
-                            </label>
-                            <InputText id="editEmail" @bind-Value="editUser.Email" class="form-control" placeholder="Enter email address" />
-                            <ValidationMessage For="@(() => editUser.Email)" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="editUsername" class="form-label">
-                                <i class="fas fa-user me-1"></i>Username
-                            </label>
-                            <InputText id="editUsername" @bind-Value="editUser.UserName" class="form-control" placeholder="Enter username" />
-                            <ValidationMessage For="@(() => editUser.UserName)" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="editFirstname" class="form-label">
-                                <i class="fas fa-user me-1"></i>First Name
-                            </label>
-                            <InputText id="editFirstname" @bind-Value="editUser.Firstname" class="form-control" placeholder="Enter first name" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="editLastname" class="form-label">
-                                <i class="fas fa-user me-1"></i>Last Name
-                            </label>
-                            <InputText id="editLastname" @bind-Value="editUser.Lastname" class="form-control" placeholder="Enter last name" />
-                        </div>
-                        @if (isDeveloper)
-                        {
-                            <div class="mb-3 form-full-width">
-                                <label for="editOrganisation" class="form-label">
-                                    <i class="fas fa-building me-1"></i>Organization
-                                </label>
-                                <InputSelect id="editOrganisation" @bind-Value="editUser.OrganisationId" class="form-control">
-                                    <option value="">Select Organization</option>
-                                    @foreach (var org in organisations)
-                                    {
-                                        <option value="@org.Id">@org.Name</option>
-                                    }
-                                </InputSelect>
-                            </div>
-                        }
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @onclick="CloseEditUserModal">
-                            <i class="fas fa-times me-1"></i>Cancel
-                        </button>
-                        <button type="submit" class="btn btn-dark">
-                            <i class="fas fa-save me-1"></i>Update User
-                        </button>
-                    </div>
-                </EditForm>
-            </div>
-        </div>
-    </div>
-}
-
-@* Enhanced Create User Modal *@
-@if (showCreateUserModal)
-{
-    <div class="blazor-modal" @onclick="CloseCreateUserModal">
-        <div class="blazor-modal-content" @onclick:stopPropagation>
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-user-plus me-2"></i>Create New User
-                </h5>
-                <button type="button" class="btn-close" @onclick="CloseCreateUserModal">×</button>
-            </div>
-            <div class="modal-body">
-                <EditForm Model="@newUser" OnValidSubmit="CreateUser">
-                    <DataAnnotationsValidator />
-                    <div class="form-grid">
-                        <div class="mb-3">
-                            <label for="email" class="form-label">
-                                <i class="fas fa-envelope me-1"></i>Email Address *
-                            </label>
-                            <InputText id="email" @bind-Value="newUser.Email" class="form-control" placeholder="user@example.com" />
-                            <ValidationMessage For="@(() => newUser.Email)" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="username" class="form-label">
-                                <i class="fas fa-user me-1"></i>Username *
-                            </label>
-                            <InputText id="username" @bind-Value="newUser.UserName" class="form-control" placeholder="Enter username" />
-                            <ValidationMessage For="@(() => newUser.UserName)" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="firstname" class="form-label">
-                                <i class="fas fa-user me-1"></i>First Name
-                            </label>
-                            <InputText id="firstname" @bind-Value="newUser.Firstname" class="form-control" placeholder="Enter first name" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="lastname" class="form-label">
-                                <i class="fas fa-user me-1"></i>Last Name
-                            </label>
-                            <InputText id="lastname" @bind-Value="newUser.Lastname" class="form-control" placeholder="Enter last name" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="password" class="form-label">
-                                <i class="fas fa-lock me-1"></i>Password *
-                            </label>
-                            <InputText id="password" type="password" @bind-Value="newUser.Password" class="form-control" placeholder="Enter secure password" />
-                            <ValidationMessage For="@(() => newUser.Password)" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="confirmPassword" class="form-label">
-                                <i class="fas fa-lock me-1"></i>Confirm Password *
-                            </label>
-                            <InputText id="confirmPassword" type="password" @bind-Value="newUser.ConfirmPassword" class="form-control" placeholder="Confirm password" />
-                            <ValidationMessage For="@(() => newUser.ConfirmPassword)" />
-                        </div>
-                        @if (isDeveloper)
-                        {
-                            <div class="mb-3 form-full-width">
-                                <label class="form-label">
-                                    <i class="fas fa-building me-1"></i>Organization
-                                </label>
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="radio" name="orgSelection" id="existingOrg"
-                                           checked="@(!newUser.UseNewOrganisation)"
-                                           @onchange="@(() => SetOrganisationSelection(false))" />
-                                    <label class="form-check-label" for="existingOrg">
-                                        <i class="fas fa-list me-1"></i>Select Existing Organization
-                                    </label>
-                                </div>
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="radio" name="orgSelection" id="newOrg"
-                                           checked="@newUser.UseNewOrganisation"
-                                           @onchange="@(() => SetOrganisationSelection(true))" />
-                                    <label class="form-check-label" for="newOrg">
-                                        <i class="fas fa-plus me-1"></i>Create New Organization
-                                    </label>
-                                </div>
-                                @if (newUser.UseNewOrganisation)
-                                {
-                                    <div class="mb-3">
-                                        <label for="newOrganisation" class="form-label">
-                                            <i class="fas fa-building me-1"></i>New Organization Name
-                                        </label>
-                                        <InputText id="newOrganisation" @bind-Value="newUser.NewOrganisationName" class="form-control" placeholder="Enter organization name" />
-                                        <ValidationMessage For="@(() => newUser.NewOrganisationName)" />
-                                    </div>
-                                }
-                                else
-                                {
-                                    <div class="mb-3">
-                                        <label for="organisation" class="form-label">
-                                            <i class="fas fa-building me-1"></i>Select Organization
-                                        </label>
-                                        <InputSelect id="organisation" @bind-Value="newUser.OrganisationId" class="form-control">
-                                            <option value="">Choose Organization...</option>
-                                            @foreach (var org in organisations)
-                                            {
-                                                <option value="@org.Id">@org.Name</option>
-                                            }
-                                        </InputSelect>
-                                    </div>
-                                }
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="mb-3 form-full-width">
-                                <label for="organisation" class="form-label">
-                                    <i class="fas fa-building me-1"></i>Organization
-                                </label>
-                                <InputSelect id="organisation" @bind-Value="newUser.OrganisationId" class="form-control" disabled>
-                                    @if (currentUser?.OrganisationId != null)
-                                    {
-                                        <option value="@currentUser.OrganisationId">@currentUser.Organisation?.Name</option>
-                                    }
-                                    else
-                                    {
-                                        <option value="">None</option>
-                                    }
-                                </InputSelect>
-                            </div>
-                        }
-                        <div class="form-check-group">
-                            <label class="form-label mb-3">
-                                <i class="fas fa-user-tag me-1"></i>Assign Roles
-                            </label>
-                            @if (availableRolesForAssignment.Any())
-                            {
-                                @foreach (var role in availableRolesForAssignment)
-                                {
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox"
-                                               id="@($"userRole-{role.Name}")"
-                                               checked="@(newUser.SelectedRoles.Contains(role.Name ?? ""))"
-                                               @onchange="@((e) => ToggleUserRoleSelection(role.Name ?? "", (bool)(e.Value ?? false)))" />
-                                        <label class="form-check-label" for="@($"userRole-{role.Name}")">
-                                            @role.Name
-                                            <span class="role-badge system-role">
-                                                <i class="fas fa-cog me-1"></i>System
-                                            </span>
-                                        </label>
-                                    </div>
-                                }
-                            }
-                            else
-                            {
-                                <p class="text-muted">
-                                    <i class="fas fa-info-circle me-1"></i>No roles available for assignment
-                                </p>
-                            }
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @onclick="CloseCreateUserModal">
-                            <i class="fas fa-times me-1"></i>Cancel
-                        </button>
-                        <button type="submit" class="btn btn-dark">
-                            <i class="fas fa-user-plus me-1"></i>Create User
-                        </button>
-                    </div>
-                </EditForm>
-            </div>
-        </div>
-    </div>
-}
-
-@* Enhanced Create Role Modal *@
-@if (showCreateRoleModal)
-{
-    <div class="blazor-modal" @onclick="CloseCreateRoleModal">
-        <div class="blazor-modal-content" @onclick:stopPropagation>
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-plus-circle me-2"></i>Create New Role
-                </h5>
-                <button type="button" class="btn-close" @onclick="CloseCreateRoleModal">×</button>
-            </div>
-            <div class="modal-body">
-                <EditForm Model="@newRole" OnValidSubmit="CreateRole">
-                    <DataAnnotationsValidator />
-                    <div class="mb-3">
-                        <label for="roleName" class="form-label">
-                            <i class="fas fa-tag me-1"></i>Role Name *
-                        </label>
-                        <InputText id="roleName" @bind-Value="newRole.Name" class="form-control" placeholder="Enter role name (e.g., Manager, Editor)" />
-                        <ValidationMessage For="@(() => newRole.Name)" />
-                        <div class="form-text">
-                            <i class="fas fa-info-circle me-1"></i>Choose a descriptive name for the role's purpose
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @onclick="CloseCreateRoleModal">
-                            <i class="fas fa-times me-1"></i>Cancel
-                        </button>
-                        <button type="submit" class="btn btn-dark">
-                            <i class="fas fa-plus-circle me-1"></i>Create Role
-                        </button>
-                    </div>
-                </EditForm>
-            </div>
-        </div>
-    </div>
-}
-
-@* Enhanced Edit Role Modal *@
-@if (showEditRoleModal)
-{
-    <div class="blazor-modal" @onclick="CloseEditRoleModal">
-        <div class="blazor-modal-content" @onclick:stopPropagation>
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-edit me-2"></i>Edit Role
-                </h5>
-                <button type="button" class="btn-close" @onclick="CloseEditRoleModal">×</button>
-            </div>
-            <div class="modal-body">
-                <EditForm Model="@editRole" OnValidSubmit="UpdateRole">
-                    <DataAnnotationsValidator />
-                    <div class="mb-3">
-                        <label for="editRoleName" class="form-label">
-                            <i class="fas fa-tag me-1"></i>Role Name *
-                        </label>
-                        <InputText id="editRoleName" @bind-Value="editRole.Name" class="form-control" placeholder="Enter role name" />
-                        <ValidationMessage For="@(() => editRole.Name)" />
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @onclick="CloseEditRoleModal">
-                            <i class="fas fa-times me-1"></i>Cancel
-                        </button>
-                        <button type="submit" class="btn btn-dark">
-                            <i class="fas fa-save me-1"></i>Update Role
-                        </button>
-                    </div>
-                </EditForm>
-            </div>
-        </div>
-    </div>
-}
-
-@* Enhanced Roles List Modal *@
-@if (showRolesListModal)
-{
-    <div class="blazor-modal" @onclick="CloseRolesListModal">
-        <div class="blazor-modal-content" @onclick:stopPropagation>
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-list me-2"></i>Manage Roles
-                </h5>
-                <button type="button" class="btn-close" @onclick="CloseRolesListModal">×</button>
-            </div>
-            <div class="modal-body">
-                @if (visibleRoles.Any())
+        if (currentUser == null) return false;
+        return user.OrganisationId == currentUser.OrganisationId;
+    }
+
+    private bool CanLockUser(ApplicationUser user)
+    {
+        if (isDeveloper) return true;
+        if (currentUser == null) return false;
+        return user.OrganisationId == currentUser.OrganisationId && user.Id != currentUser.Id;
+    }
+
+    private bool CanDeleteUser(ApplicationUser user)
+    {
+        if (isDeveloper) return true;
+        if (currentUser == null) return false;
+        return user.OrganisationId == currentUser.OrganisationId && user.Id != currentUser.Id;
+    }
+
+    private bool CanEditRole(IdentityRole role)
+    {
+        if (isDeveloper) return true;
+        if (currentUser == null) return false;
+        return true;
+    }
+
+    private bool CanDeleteRole(IdentityRole role)
+    {
+        if (isDeveloper) return true;
+        if (currentUser == null) return false;
+        var protectedRoles = new[] { "developer", "counciladmin", "admin" };
+        return !protectedRoles.Contains(role.Name?.ToLower());
+    }
+
+    // Data Loading Methods
+    private async Task LoadUsers()
+    {
+        isLoading = true;
+        users.Clear();
+        ClearMessages();
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
+            var query = context.Users.Include(u => u.Organisation).AsQueryable();
+
+            if (!isDeveloper && currentUser?.OrganisationId != null)
+            {
+                query = query.Where(u => u.OrganisationId == currentUser.OrganisationId);
+            }
+
+            var allUsers = await query.ToListAsync();
+
+            foreach (var user in allUsers)
+            {
+                var roles = await UserManager.GetRolesAsync(user);
+                users.Add(new UserInfo
                 {
-                    <div class="table-responsive">
-                        <table class="table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>
-                                        <i class="fas fa-tag me-1"></i>Role Name
-                                    </th>
-                                    <th>
-                                        <i class="fas fa-building me-1"></i>Type
-                                    </th>
-                                    <th class="roles-table-actions">
-                                        <i class="fas fa-cog me-1"></i>Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var role in visibleRoles)
-                                {
-                                    <tr>
-                                        <td class="font-weight-bold">@role.Name</td>
-                                        <td>
-                                            <span class="role-badge system-role">
-                                                <i class="fas fa-cog me-1"></i>System
-                                            </span>
-                                        </td>
-                                        <td class="roles-table-actions">
-                                            <div class="btn-group action-buttons">
-                                                @if (CanEditRole(role))
-                                                {
-                                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEditRole(role)"
-                                                            title="Edit Role">
-                                                        <i class="fas fa-edit"></i>
-                                                    </button>
-                                                }
-                                                @if (CanDeleteRole(role))
-                                                {
-                                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteRole(role.Id)"
-                                                            title="Delete Role">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                }
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+                    User = user,
+                    Roles = roles.ToList()
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            SetErrorMessage($"Error loading users: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task LoadAllRoles()
+    {
+        try
+        {
+            allRoles = await RoleManager.Roles.ToListAsync();
+            visibleRoles = allRoles.ToList();
+            availableRolesForAssignment = allRoles.ToList();
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            SetErrorMessage($"Error loading roles: {ex.Message}");
+        }
+    }
+
+    private async Task LoadAllOrganisations()
+    {
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
+            organisations = await context.Organisations.ToListAsync();
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            SetErrorMessage($"Error loading organisations: {ex.Message}");
+        }
+    }
+
+    // User Management Methods
+    private void ShowCreateUserModal()
+    {
+        newUser = new NewUserModel
+        {
+            OrganisationId = currentUser?.OrganisationId
+        };
+        showCreateUserModal = true;
+        ClearMessages();
+    }
+
+    private void CloseCreateUserModal()
+    {
+        showCreateUserModal = false;
+        newUser = new NewUserModel();
+        ClearMessages();
+    }
+
+    private async Task CreateUser()
+    {
+        try
+        {
+            ClearMessages();
+
+            if (newUser.Password != newUser.ConfirmPassword)
+            {
+                SetErrorMessage("Passwords do not match.");
+                return;
+            }
+
+            Guid? organisationId = newUser.OrganisationId;
+            if (newUser.UseNewOrganisation && !string.IsNullOrWhiteSpace(newUser.NewOrganisationName))
+            {
+                using var context = DbContextFactory.CreateDbContext();
+                var newOrg = new Organisation
+                {
+                    Id = Guid.NewGuid(),
+                    Name = newUser.NewOrganisationName.Trim()
+                };
+                context.Organisations.Add(newOrg);
+                await context.SaveChangesAsync();
+                organisationId = newOrg.Id;
+                await LoadAllOrganisations();
+            }
+
+            var user = new ApplicationUser
+            {
+                UserName = newUser.UserName,
+                Email = newUser.Email,
+                Firstname = newUser.Firstname,
+                Lastname = newUser.Lastname,
+                Othernames = newUser.Othernames,
+                OrganisationId = organisationId,
+                EmailConfirmed = true
+            };
+
+            var result = await UserManager.CreateAsync(user, newUser.Password);
+            if (result.Succeeded)
+            {
+                foreach (var role in newUser.SelectedRoles)
+                {
+                    await UserManager.AddToRoleAsync(user, role);
+                }
+
+                await LoadUsers();
+                CloseCreateUserModal();
+                SetSuccessMessage($"User '{newUser.UserName}' created successfully.");
+            }
+            else
+            {
+                SetErrorMessage($"Error creating user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+            }
+        }
+        catch (Exception ex)
+        {
+            SetErrorMessage($"Error creating user: {ex.Message}");
+        }
+    }
+
+    private async Task EditUser(string userId)
+    {
+        try
+        {
+            ClearMessages();
+            var user = await UserManager.FindByIdAsync(userId);
+            if (user != null)
+            {
+                editUser = new EditUserModel
+                {
+                    Id = user.Id,
+                    Email = user.Email ?? "",
+                    UserName = user.UserName ?? "",
+                    Firstname = user.Firstname,
+                    Lastname = user.Lastname,
+                    Othernames = user.Othernames,
+                    OrganisationId = user.OrganisationId
+                };
+                showEditUserModal = true;
+            }
+            else
+            {
+                SetErrorMessage("User not found.");
+            }
+        }
+        catch (Exception ex)
+        {
+            SetErrorMessage($"Error loading user for edit: {ex.Message}");
+        }
+    }
+
+    private void CloseEditUserModal()
+    {
+        showEditUserModal = false;
+        editUser = new EditUserModel();
+        ClearMessages();
+    }
+
+    private async Task UpdateUser()
+    {
+        try
+        {
+            ClearMessages();
+            var user = await UserManager.FindByIdAsync(editUser.Id);
+            if (user != null)
+            {
+                user.Email = editUser.Email;
+                user.UserName = editUser.UserName;
+                user.Firstname = editUser.Firstname;
+                user.Lastname = editUser.Lastname;
+                user.Othernames = editUser.Othernames;
+                user.OrganisationId = editUser.OrganisationId;
+
+                var result = await UserManager.UpdateAsync(user);
+                if (result.Succeeded)
+                {
+                    await LoadUsers();
+                    CloseEditUserModal();
+                    SetSuccessMessage($"User '{editUser.UserName}' updated successfully.");
                 }
                 else
                 {
-                    <div class="text-center p-4">
-                        <div class="mb-3">
-                            <i class="fas fa-user-tag text-muted" style="font-size: 2.5rem;"></i>
-                        </div>
-                        <p class="text-muted mb-0">
-                            <i class="fas fa-info-circle me-1"></i>No roles available
-                        </p>
-                    </div>
+                    SetErrorMessage($"Error updating user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
                 }
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-dark" @onclick="CloseRolesListModal">
-                        <i class="fas fa-check me-1"></i>Close
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-}
+            }
+            else
+            {
+                SetErrorMessage("User not found.");
+            }
+        }
+        catch (Exception ex)
+        {
+            SetErrorMessage($"Error updating user: {ex.Message}");
+        }
+    }
 
-@* Enhanced Manage User Roles Modal *@
-@if (showManageRolesModal)
-{
-    <div class="blazor-modal" @onclick="CloseManageRolesModal">
-        <div class="blazor-modal-content" @onclick:stopPropagation>
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-user-tag me-2"></i>Manage Roles for @(selectedUser?.Email ?? "User")
-                </h5>
-                <button type="button" class="btn-close" @onclick="CloseManageRolesModal">×</button>
-            </div>
-            <div class="modal-body">
-                @if (availableRolesForAssignment != null && selectedUser != null)
+    private async Task LockUser(string userId)
+    {
+        try
+        {
+            ClearMessages();
+            var user = await UserManager.FindByIdAsync(userId);
+            if (user != null)
+            {
+                if (!CanLockUser(user))
                 {
-                    <div class="mb-3">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            <strong>User:</strong> @selectedUser.Email<br/>
-                            <strong>Current Roles:</strong> @(userRoles?.Count ?? 0) assigned
-                        </div>
-                    </div>
-                    <div class="form-check-group">
-                        <label class="form-label mb-3">
-                            <i class="fas fa-user-tag me-1"></i>Available Roles
-                        </label>
-                        @foreach (var role in availableRolesForAssignment)
-                        {
-                            <div class="form-check form-switch mb-3">
-                                <input class="form-check-input" type="checkbox"
-                                       id="@($"role-{role.Name}")"
-                                       checked="@(userRoles?.Contains(role.Name ?? "") ?? false)"
-                                       @onchange="@((e) => ToggleUserRole(role.Name ?? "", (bool)(e.Value ?? false)))" />
-                                <label class="form-check-label" for="@($"role-{role.Name}")">
-                                    @role.Name
-                                    <span class="role-badge system-role">
-                                        <i class="fas fa-cog me-1"></i>System
-                                    </span>
-                                </label>
-                            </div>
-                        }
-                    </div>
+                    SetErrorMessage("You cannot lock this user.");
+                    return;
                 }
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-dark" @onclick="CloseManageRolesModal">
-                        <i class="fas fa-check me-1"></i>Done
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+
+                var result = await UserManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddYears(100));
+                if (result.Succeeded)
+                {
+                    await LoadUsers();
+                    SetSuccessMessage($"User '{user.UserName}' has been locked.");
+                }
+                else
+                {
+                    SetErrorMessage($"Error locking user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                }
+            }
+            else
+            {
+                SetErrorMessage("User not found.");
+            }
+        }
+        catch (Exception ex)
+        {
+            SetErrorMessage($"Error locking user: {ex.Message}");
+        }
+    }
+
+    private async Task UnlockUser(string userId)
+    {
+        try
+        {
+            ClearMessages();
+            var user = await UserManager.FindByIdAsync(userId);
+            if (user != null)
+            {
+                var result = await UserManager.SetLockoutEndDateAsync(user, null);
+                if (result.Succeeded)
+                {
+                    await LoadUsers();
+                    SetSuccessMessage($"User '{user.UserName}' has been unlocked.");
+                }
+                else
+                {
+                    SetErrorMessage($"Error unlocking user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                }
+            }
+            else
+            {
+                SetErrorMessage("User not found.");
+            }
+        }
+        catch (Exception ex)
+        {
+            SetErrorMessage($"Error unlocking user: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteUser(string userId)
+    {
+        try
+        {
+            ClearMessages();
+            var user = await UserManager.FindByIdAsync(userId);
+            if (user != null)
+            {
+                if (!CanDeleteUser(user))
+                {
+                    SetErrorMessage("You cannot delete this user.");
+                    return;
+                }
+
+                var result = await UserManager.DeleteAsync(user);
+                if (result.Succeeded)
+                {
+                    await LoadUsers();
+                    SetSuccessMessage($"User '{user.UserName}' has been deleted.");
+                }
+                else
+                {
+                    SetErrorMessage($"Error deleting user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                }
+            }
+            else
+            {
+                SetErrorMessage("User not found.");
+            }
+        }
+        catch (Exception ex)
+        {
+            SetErrorMessage($"Error deleting user: {ex.Message}");
+        }
+    }
+
+    // Role Management Methods
+    private void ShowCreateRoleModal()
+    {
+        newRole = new NewRoleModel();
+        showCreateRoleModal = true;
+        ClearMessages();
+    }
+
+    private void CloseCreateRoleModal()
+    {
+        showCreateRoleModal = false;
+        newRole = new NewRoleModel();
+        ClearMessages();
+    }
+
+    private async Task CreateRole()
+    {
+        try
+        {
+            ClearMessages();
+
+            if (string.IsNullOrWhiteSpace(newRole.Name))
+            {
+                SetErrorMessage("Role name is required.");
+                return;
+            }
+
+            var roleExists = await RoleManager.RoleExistsAsync(newRole.Name);
+            if (roleExists)
+            {
+                SetErrorMessage("Role already exists.");
+                return;
+            }
+
+            var role = new IdentityRole(newRole.Name.Trim());
+            var result = await RoleManager.CreateAsync(role);
+            if (result.Succeeded)
+            {
+                await LoadAllRoles();
+                CloseCreateRoleModal();
+                SetSuccessMessage($"Role '{newRole.Name}' created successfully.");
+            }
+            else
+            {
+                SetErrorMessage($"Error creating role: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+            }
+        }
+        catch (Exception ex)
+        {
+            SetErrorMessage($"Error creating role: {ex.Message}");
+        }
+    }
+
+    private void ShowRolesListModal()
+    {
+        showRolesListModal = true;
+        ClearMessages();
+    }
+
+    private void CloseRolesListModal()
+    {
+        showRolesListModal = false;
+        ClearMessages();
+    }
+
+    private void StartEditRole(IdentityRole role)
+    {
+        editRole = new EditRoleModel
+        {
+            Id = role.Id,
+            Name = role.Name ?? ""
+        };
+        showEditRoleModal = true;
+        showRolesListModal = false;
+        ClearMessages();
+    }
+
+    private void CloseEditRoleModal()
+    {
+        showEditRoleModal = false;
+        editRole = new EditRoleModel();
+        ClearMessages();
+    }
+
+    private async Task UpdateRole()
+    {
+        try
+        {
+            ClearMessages();
+            var role = await RoleManager.FindByIdAsync(editRole.Id);
+            if (role != null)
+            {
+                role.Name = editRole.Name;
+                var result = await RoleManager.UpdateAsync(role);
+                if (result.Succeeded)
+                {
+                    await LoadAllRoles();
+                    CloseEditRoleModal();
+                    SetSuccessMessage($"Role updated successfully.");
+                }
+                else
+                {
+                    SetErrorMessage($"Error updating role: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                }
+            }
+            else
+            {
+                SetErrorMessage("Role not found.");
+            }
+        }
+        catch (Exception ex)
+        {
+            SetErrorMessage($"Error updating role: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteRole(string roleId)
+    {
+        try
+        {
+            ClearMessages();
+            var role = await RoleManager.FindByIdAsync(roleId);
+            if (role != null)
+            {
+                if (!CanDeleteRole(role))
+                {
+                    SetErrorMessage("This role cannot be deleted as it is a protected system role.");
+                    return;
+                }
+
+                var result = await RoleManager.DeleteAsync(role);
+                if (result.Succeeded)
+                {
+                    await LoadAllRoles();
+                    SetSuccessMessage($"Role '{role.Name}' deleted successfully.");
+                }
+                else
+                {
+                    SetErrorMessage($"Error deleting role: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                }
+            }
+            else
+            {
+                SetErrorMessage("Role not found.");
+            }
+        }
+        catch (Exception ex)
+        {
+            SetErrorMessage($"Error deleting role: {ex.Message}");
+        }
+    }
+
+    // User-Role Management Methods
+    private async Task ManageRoles(string userId)
+    {
+        try
+        {
+            ClearMessages();
+            selectedUser = await UserManager.FindByIdAsync(userId);
+            if (selectedUser != null)
+            {
+                userRoles = (await UserManager.GetRolesAsync(selectedUser)).ToList();
+                showManageRolesModal = true;
+            }
+            else
+            {
+                SetErrorMessage("User not found.");
+            }
+        }
+        catch (Exception ex)
+        {
+            SetErrorMessage($"Error loading user roles: {ex.Message}");
+        }
+    }
+
+    private void CloseManageRolesModal()
+    {
+        showManageRolesModal = false;
+        selectedUser = null;
+        userRoles = new List<string>();
+        ClearMessages();
+    }
+
+    private async Task ToggleUserRole(string roleName, bool isChecked)
+    {
+        if (selectedUser == null) return;
+
+        try
+        {
+            if (isChecked)
+            {
+                if (!userRoles.Contains(roleName))
+                {
+                    var result = await UserManager.AddToRoleAsync(selectedUser, roleName);
+                    if (result.Succeeded)
+                    {
+                        userRoles.Add(roleName);
+                        SetSuccessMessage($"Role '{roleName}' added to user.");
+                    }
+                    else
+                    {
+                        SetErrorMessage($"Error adding role: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                    }
+                }
+            }
+            else
+            {
+                if (userRoles.Contains(roleName))
+                {
+                    var result = await UserManager.RemoveFromRoleAsync(selectedUser, roleName);
+                    if (result.Succeeded)
+                    {
+                        userRoles.Remove(roleName);
+                        SetSuccessMessage($"Role '{roleName}' removed from user.");
+                    }
+                    else
+                    {
+                        SetErrorMessage($"Error removing role: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                    }
+                }
+            }
+            await LoadUsers();
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            SetErrorMessage($"Error toggling role: {ex.Message}");
+        }
+    }
+
+    private void ToggleUserRoleSelection(string roleName, bool isChecked)
+    {
+        if (isChecked)
+        {
+            if (!newUser.SelectedRoles.Contains(roleName))
+            {
+                newUser.SelectedRoles.Add(roleName);
+            }
+        }
+        else
+        {
+            newUser.SelectedRoles.Remove(roleName);
+        }
+        StateHasChanged();
+    }
+
+    // Organization Management Methods
+    private void SetOrganisationSelection(bool useNew)
+    {
+        newUser.UseNewOrganisation = useNew;
+        StateHasChanged();
+    }
 }

@@ -1,6 +1,8 @@
-﻿@page "/service-list"
+﻿@page "/walkin"
 @rendermode InteractiveServer
 @using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Authorization
 @using LocalGov360.Data
 @using LocalGov360.Services
 @using LocalGov360.Data.Models
@@ -12,12 +14,14 @@
 @inject IServiceService ServiceService
 @inject IWorkflowFactory WorkflowFactory
 @inject IJSRuntime JS
-@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject SignInManager<ApplicationUser> SignInManager
+@inject NavigationManager NavigationManager
 @inject UserManager<ApplicationUser> UserManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject ApplicationDbContext _db
+@attribute [Authorize]
 
-<PageTitle>Available Services</PageTitle>
+<PageTitle>Staff Portal - Walk-in Customer Services</PageTitle>
 
 <div class="container-fluid py-2">
     <div class="row">
@@ -33,73 +37,27 @@
                 </div>
             }
 
-            @if (CurrentView == "select-organization")
-            {
-                <div class="card my-4">
-                    <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
-                        <div class="bg-black shadow-dark border-radius-lg pt-4 pb-3">
-                            <h4 class="text-white text-center mb-0">Local Government Services Portal</h4>
-                        </div>
-                    </div>
-                    <div class="card-body px-4 pb-4">
-                        @if (Organizations == null)
-                        {
-                            <div class="text-center p-4">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">Loading organizations...</span>
-                                </div>
-                                <p class="mt-2 text-muted">Loading organizations...</p>
-                            </div>
-                        }
-                        else if (!Organizations.Any())
-                        {
-                            <div class="text-center p-4">
-                                <i class="fas fa-building fa-3x text-muted mb-3"></i>
-                                <h4>No organizations available</h4>
-                                <p class="text-muted">Please contact your administrator.</p>
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="row">
-                                <div class="col-md-6 mx-auto">
-                                    <div class="form-group">
-                                        <label class="form-label"> </label>
-                                        <select class="form-select" @onchange="OnOrganizationSelected">
-                                            <option value=""> Select Local Council </option>
-                                            @foreach (var org in Organizations)
-                                            {
-                                                <option value="@org.Id">@org.Name</option>
-                                            }
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                    </div>
-                </div>
-            }
-
             @if (CurrentView == "services-list")
             {
                 <div class="card my-4">
                     <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
                         <div class="bg-black shadow-dark border-radius-lg pt-4 pb-3">
-                            <h4 class="text-white text-center mb-0">Local Government Services Portal</h4>
-                            <div class="ps-3 pb-2 d-flex align-items-center justify-content-end">
-                                <div class="d-flex align-items-center me-auto">
+                            <h4 class="text-white text-center mb-0">Staff Portal - Walk-in Customer Services</h4>
+                            <div class="ps-3 pb-2 d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center">
                                     <i class="fas fa-building text-white me-2"></i>
-                                    <span class="text-white">@SelectedOrganization?.Name</span>
+                                    <span class="text-white">@StaffOrganization?.Name</span>
                                 </div>
-                                <button class="btn btn-sm btn-outline-light me-3" @onclick='() => ShowView("select-organization")'>
-                                    <i class="fas fa-exchange-alt me-1"></i>
-                                    Change Council
-                                </button>
+                                <div class="d-flex align-items-center text-white">
+                                    <i class="fas fa-user-tie me-2"></i>
+                                    <span>Staff: @(appUser?.UserName ?? "Unknown")</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                     <div class="px-4 py-3">
-                        <h5 class="mb-0">Available Services</h5>
+                        <h5 class="mb-0">Available Services for Walk-in Customers</h5>
+                        <p class="text-muted mb-0">Process applications on behalf of walk-in customers</p>
                     </div>
                     <div class="card-body px-0 pb-2">
                         @if (Services == null)
@@ -116,7 +74,7 @@
                             <div class="text-center p-4">
                                 <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
                                 <h4>No services available</h4>
-                                <p class="text-muted">This local council has not published any services yet.</p>
+                                <p class="text-muted">Your organization has not published any services yet.</p>
                             </div>
                         }
                         else
@@ -124,9 +82,8 @@
                             <div class="row px-3">
                                 @foreach (var service in Services.OrderBy(s => s.Name))
                                 {
-                                    var hasSubmission = UserSubmissions?.Any(s => s.ServiceId == service.Id) ?? false;
                                     <div class="col-md-6 col-lg-4 mb-4">
-                                        <div class="card h-100 @(hasSubmission ? "border-dark" : "")">
+                                        <div class="card h-100">
                                             <div class="card-body">
                                                 <div class="d-flex align-items-center mb-3">
                                                     <div class="icon icon-sm border-radius-md bg-gradient-dark me-3">
@@ -145,30 +102,17 @@
                                                     </p>
                                                 }
 
-                                                @if (hasSubmission)
-                                                {
-                                                    <div class="alert alert-success mb-3" role="alert">
-                                                        <i class="fas fa-check-circle me-2"></i>
-                                                        <small>Already submitted</small>
-                                                    </div>
-                                                }
+                                                <div class="alert alert-info mb-3" role="alert">
+                                                    <i class="fas fa-users me-2"></i>
+                                                    <small>Walk-in Customer Service</small>
+                                                </div>
                                             </div>
 
                                             <div class="card-footer bg-transparent">
-                                                @if (hasSubmission)
-                                                {
-                                                    <button class="btn btn-success btn-sm w-100" disabled>
-                                                        <i class="fas fa-check me-1"></i>
-                                                        Application Submitted
-                                                    </button>
-                                                }
-                                                else
-                                                {
-                                                    <button class="btn btn-dark btn-sm w-100" @onclick="() => StartServiceAsync(service.Id)">
-                                                        <i class="fas fa-play me-1"></i>
-                                                        Start Application
-                                                    </button>
-                                                }
+                                                <button class="btn btn-dark btn-sm w-100" @onclick="() => StartServiceAsync(service.Id)">
+                                                    <i class="fas fa-user-plus me-1"></i>
+                                                    Process for Customer
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -204,6 +148,10 @@
                                         </div>
                                         <span class="ms-2 small">Page @(CurrentPage + 1) / @TotalPages</span>
                                     </div>
+                                    <div class="text-white small">
+                                        <i class="fas fa-user-tie me-1"></i>
+                                        Processing for walk-in customer
+                                    </div>
                                     <button class="btn btn-sm btn-outline-light" @onclick='() => ShowView("services-list")'>
                                         <i class="fas fa-arrow-left me-1"></i>
                                         Back to Services
@@ -213,6 +161,39 @@
                         </div>
                     </div>
                     <div class="card-body">
+                        <!-- Customer Information Section -->
+                        @if (CurrentPage == 0)
+                        {
+                            <div class="card mb-4 border-info">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-user me-2"></i>
+                                        Customer Information
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">Customer Name <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" @bind="CustomerName" placeholder="Enter customer's full name" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">Customer Email</label>
+                                            <input type="email" class="form-control" @bind="CustomerEmail" placeholder="Enter customer's email (optional)" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">Customer Phone</label>
+                                            <input type="tel" class="form-control" @bind="CustomerPhone" placeholder="Enter customer's phone number (optional)" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">ID Number</label>
+                                            <input type="text" class="form-control" @bind="CustomerIdNumber" placeholder="Enter customer's ID number (optional)" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
                         <EditForm Model="ServiceFormModel" OnValidSubmit="SubmitServiceFormAsync">
                             <DataAnnotationsValidator />
 
@@ -345,8 +326,8 @@
                                             }
                                             else
                                             {
-                                                <i class="fas fa-paper-plane me-2"></i>
-                                                <span>Submit Application</span>
+                                                <i class="fas fa-check me-2"></i>
+                                                <span>Submit for Customer</span>
                                             }
                                         </button>
                                     }
@@ -453,20 +434,136 @@
         font-size: 1.1rem;
         padding: 0.75rem 1rem;
     }
+
+    /* Enhanced Dropdown Styling */
+    .select-wrapper {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .custom-select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        border: 2px solid #e9ecef;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        color: #495057;
+        cursor: pointer;
+        font-weight: 500;
+        padding: 1rem 3rem 1rem 1.5rem;
+        transition: all 0.3s ease;
+        position: relative;
+        z-index: 1;
+    }
+
+        .custom-select:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25), 0 8px 25px rgba(0, 0, 0, 0.15);
+            outline: none;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        }
+
+        .custom-select:hover {
+            border-color: #007bff;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+    .select-arrow {
+        position: absolute;
+        right: 1.5rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+        pointer-events: none;
+        transition: all 0.3s ease;
+        z-index: 2;
+    }
+
+    .select-wrapper:hover .select-arrow {
+        color: #007bff;
+        transform: translateY(-50%) rotate(180deg);
+    }
+
+    .custom-select:focus + .select-arrow {
+        color: #007bff;
+        transform: translateY(-50%) rotate(180deg);
+    }
+
+    .select-placeholder {
+        color: #6c757d !important;
+        font-style: italic;
+    }
+
+    /* Info color theme for staff services */
+    .alert-info {
+        background-color: rgba(13, 202, 240, 0.1);
+        border-color: rgba(13, 202, 240, 0.2);
+        color: #055160;
+    }
+
+    .btn-success {
+        background-color: #198754;
+        border-color: #198754;
+    }
+
+        .btn-success:hover {
+            background-color: #157347;
+            border-color: #146c43;
+        }
+
+        .btn-success:disabled {
+            background-color: #198754;
+            border-color: #198754;
+            opacity: 0.65;
+        }
+
+    .border-info {
+        border-color: #0dcaf0 !important;
+        border-width: 2px !important;
+    }
+
+    /* Add subtle animation to the dropdown */
+ 
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    }
+
+    .select-wrapper {
+        animation: fadeInUp 0.5s ease-out;
+    }
+
+  
+
+    .select-arrow {
+        right: 1rem;
+    }
+
+    }
 </style>
 
 @code
 {
-    private string CurrentView = "select-organization";
+    private string CurrentView = "services-list";
     private string? Feedback;
-    private List<Organization>? Organizations;
-    private Organization? SelectedOrganization;
+    private Organization? StaffOrganization;
     private List<ServiceModels.Service>? Services;
-    private List<ServiceSubmission>? UserSubmissions;
     private UserServiceFormModel? ServiceFormModel;
     private bool IsSubmitting = false;
     private DateTime? DateValue;
     private decimal? NumberValue;
+
+    // Customer Information
+    private string CustomerName = string.Empty;
+    private string CustomerEmail = string.Empty;
+    private string CustomerPhone = string.Empty;
+    private string CustomerIdNumber = string.Empty;
 
     // Pagination for form fields
     private int CurrentPage = 0;
@@ -484,47 +581,54 @@
         if (user.Identity != null && user.Identity.IsAuthenticated)
         {
             appUser = await UserManager.GetUserAsync(user);
-        }
-
-        await LoadOrganizationsAsync();
-    }
-
-    private async Task LoadOrganizationsAsync()
-    {
-        try
-        {
-            Organizations = await _db.Organisations
-                .OrderBy(o => o.Name)
-                .Select(o => new Organization { Id = o.Id, Name = o.Name })
-                .ToListAsync();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading organizations: {ex}");
-            Feedback = $"Error loading organizations: {ex.Message}";
-        }
-    }
-
-    private async Task OnOrganizationSelected(ChangeEventArgs e)
-    {
-        if (Guid.TryParse(e.Value?.ToString(), out var orgId))
-        {
-            SelectedOrganization = Organizations?.FirstOrDefault(o => o.Id == orgId);
-            if (SelectedOrganization != null)
+            if (appUser != null)
             {
-                await LoadServicesForOrganizationAsync(orgId);
-                await LoadUserSubmissionsAsync();
-                ShowView("services-list");
+                await LoadStaffOrganizationAsync();
+                await LoadServicesForStaffOrganizationAsync();
             }
         }
     }
 
-    private async Task LoadServicesForOrganizationAsync(Guid organizationId)
+    private async Task LoadStaffOrganizationAsync()
     {
         try
         {
+            // Get staff organization from user claims, user profile, or organization relationship
+            var organizationId = user.FindFirst("OrganizationId")?.Value;
+            if (string.IsNullOrEmpty(organizationId))
+            {
+                // Alternative: Get from UserRoles or a separate staff-organization table
+                // For now, we'll get the first organization as a fallback
+                var firstOrg = await _db.Organisations.FirstOrDefaultAsync();
+                if (firstOrg != null)
+                {
+                    StaffOrganization = new Organization { Id = firstOrg.Id, Name = firstOrg.Name };
+                }
+            }
+            else if (Guid.TryParse(organizationId, out var orgId))
+            {
+                var org = await _db.Organisations.FindAsync(orgId);
+                if (org != null)
+                {
+                    StaffOrganization = new Organization { Id = org.Id, Name = org.Name };
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading staff organization: {ex}");
+            Feedback = $"Error loading organization: {ex.Message}";
+        }
+    }
+
+    private async Task LoadServicesForStaffOrganizationAsync()
+    {
+        try
+        {
+            if (StaffOrganization == null) return;
+
             Services = await _db.Services
-                .Where(s => s.OrganisationId == organizationId && s.IsActive)
+                .Where(s => s.OrganisationId == StaffOrganization.Id && s.IsActive)
                 .Include(s => s.Fields)
                 .Select(s => new ServiceModels.Service
                 {
@@ -558,35 +662,10 @@
         }
     }
 
-    private async Task LoadUserSubmissionsAsync()
-    {
-        try
-        {
-            if (appUser != null)
-            {
-                var submittedBy = appUser.UserName ?? appUser.Email ?? "";
-                UserSubmissions = await _db.ServiceSubmissions
-                    .Where(s => s.SubmittedBy == submittedBy)
-                    .ToListAsync();
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading user submissions: {ex}");
-        }
-    }
-
     private async Task StartServiceAsync(int serviceId)
     {
         try
         {
-            // Check if user has already submitted this service
-            if (UserSubmissions?.Any(s => s.ServiceId == serviceId) == true)
-            {
-                Feedback = "You have already submitted an application for this service.";
-                return;
-            }
-
             var service = Services?.FirstOrDefault(s => s.Id == serviceId);
             if (service == null)
             {
@@ -630,7 +709,11 @@
                 }).ToList() ?? new List<UserFieldModel>()
             };
 
-            // Reset to first page
+            // Reset form data
+            CustomerName = string.Empty;
+            CustomerEmail = string.Empty;
+            CustomerPhone = string.Empty;
+            CustomerIdNumber = string.Empty;
             CurrentPage = 0;
             ShowView("service-form");
         }
@@ -645,6 +728,16 @@
     {
         if (ServiceFormModel != null && CurrentPage < TotalPages - 1)
         {
+            // Validate customer information on first page
+            if (CurrentPage == 0)
+            {
+                if (string.IsNullOrWhiteSpace(CustomerName))
+                {
+                    Feedback = "Customer name is required";
+                    return;
+                }
+            }
+
             // Validate current page fields if required
             var currentPageFields = ServiceFormModel.Fields.Skip(CurrentPage * FieldsPerPage).Take(FieldsPerPage);
 
@@ -688,6 +781,13 @@
         IsSubmitting = true;
         try
         {
+            // Validate customer information
+            if (string.IsNullOrWhiteSpace(CustomerName))
+            {
+                Feedback = "Customer name is required";
+                return;
+            }
+
             // Validate all required fields
             foreach (var field in ServiceFormModel.Fields.Where(f => f.IsRequired))
             {
@@ -707,6 +807,15 @@
             }
 
             var values = new List<SubmissionValue>();
+
+            // Add customer information as special fields
+            values.Add(new SubmissionValue { FieldId = 0, Value = $"CUSTOMER_NAME:{CustomerName}" });
+            if (!string.IsNullOrWhiteSpace(CustomerEmail))
+                values.Add(new SubmissionValue { FieldId = 0, Value = $"CUSTOMER_EMAIL:{CustomerEmail}" });
+            if (!string.IsNullOrWhiteSpace(CustomerPhone))
+                values.Add(new SubmissionValue { FieldId = 0, Value = $"CUSTOMER_PHONE:{CustomerPhone}" });
+            if (!string.IsNullOrWhiteSpace(CustomerIdNumber))
+                values.Add(new SubmissionValue { FieldId = 0, Value = $"CUSTOMER_ID:{CustomerIdNumber}" });
 
             foreach (var field in ServiceFormModel.Fields)
             {
@@ -731,12 +840,12 @@
                 }
             }
 
-            var submittedBy = appUser?.UserName ?? appUser?.Email ?? "Anonymous";
+            var submittedBy = $"STAFF:{appUser?.UserName ?? appUser?.Email ?? "Unknown"} | CUSTOMER:{CustomerName}";
             var submission = await ServiceService.SubmitServiceAsync(ServiceFormModel.ServiceId, new SubmitServiceRequest
             {
                 SubmittedBy = submittedBy,
                 IpAddress = "0.0.0.0",
-                UserAgent = "User Portal",
+                UserAgent = "Staff Portal",
                 Values = values
             });
 
@@ -753,17 +862,35 @@
                 await _db.SaveChangesAsync();
             }
 
-            // Reload user submissions to reflect the new submission
-            await LoadUserSubmissionsAsync();
+            // Show success message using SweetAlert
+            await JS.InvokeVoidAsync("Swal.fire", new
+            {
+                title = "Success!",
+                text = $"Application submitted successfully for {CustomerName}",
+                icon = "success",
+                confirmButtonText = "OK",
+                confirmButtonColor = "#198754"
+            });
 
-            Feedback = "Thank you for your submission. Please check the task list to see the next step.";
+            // Reset form and return to services list
             ServiceFormModel = null;
+            CustomerName = string.Empty;
+            CustomerEmail = string.Empty;
+            CustomerPhone = string.Empty;
+            CustomerIdNumber = string.Empty;
             CurrentPage = 0;
             ShowView("services-list");
         }
         catch (Exception ex)
         {
-            Feedback = $"Error submitting application: {ex.Message}";
+            await JS.InvokeVoidAsync("Swal.fire", new
+            {
+                title = "Error!",
+                text = $"Error submitting application: {ex.Message}",
+                icon = "error",
+                confirmButtonText = "OK",
+                confirmButtonColor = "#dc3545"
+            });
         }
         finally
         {

@@ -1,10 +1,13 @@
 ﻿@page "/Workflows"
 @using LocalGov360.Data
 @using LocalGov360.Data.Models
+@using Microsoft.AspNetCore
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
+@inject SignInManager<ApplicationUser> SignInManager
 @using Newtonsoft.Json
 @inject ApplicationDbContext Db
 @inject NavigationManager Nav
@@ -12,7 +15,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @rendermode InteractiveServer
-
+@attribute [Authorize(Roles = "developer,CouncilAdmin,admin")]
 <PageTitle>Workflows</PageTitle>
 
 <div class="container-fluid py-4">

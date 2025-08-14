@@ -5,24 +5,25 @@
 @using LocalGov360.Services
 @using LocalGov360.Data.Models
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
 @inject IServiceService ServiceService
 @inject IWorkflowFactory WorkflowFactory
 @inject IJSRuntime JS
 @inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject ApplicationDbContext _db
- 
-<PageTitle>Service Builder</PageTitle>
+@attribute [Authorize]
 
 
-
-<div class="container-fluid py-4">
+ <div class="container-fluid py-3">
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded shadow-sm">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-3 rounded shadow-sm">
         <div class="container-fluid">
-            <span class="navbar-brand fw-bold">Service Builder</span>
+            <span class="navbar-brand fw-bold fs-5">Service Builder</span>
             <div>
                 <button class="btn btn-sm btn-outline-dark me-2" @onclick='() => ShowView("builder")'>
                     <i class="fas fa-plus-circle"></i> Create Service
@@ -44,78 +45,82 @@
 
     @if (CurrentView == "builder")
     {
-        <div class="row" style="height: calc(100vh - 200px);">
+        <div class="row" style="height: calc(100vh - 180px);">
             <div class="col-lg-6 d-flex flex-column">
-                <div class="card h-100 d-flex flex-column">
-                    <div class="card-header d-flex justify-content-between align-items-center flex-shrink-0">
-                        <h5><i class="fas fa-tools me-2"></i> Builder</h5>
+                <div class="card h-100 d-flex flex-column shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center flex-shrink-0 py-2">
+                        <h6 class="mb-0 text-dark"><i class="fas fa-tools me-2"></i> Builder</h6>
                         @if (EditServiceId != null)
                         {
-                            <button class="btn btn-sm btn-outline-danger" @onclick="DeleteServiceAsync">
-                                <i class="fas fa-trash"></i> Delete Service
+                            <button class="btn btn-sm btn-outline-danger py-1 px-2" @onclick="DeleteServiceAsync">
+                                <i class="fas fa-trash"></i> Delete
                             </button>
                         }
                     </div>
-                    <div class="card-body flex-grow-1 overflow-auto" style="max-height: calc(100vh - 350px);">
-                        <EditForm Model="BuilderModel" OnValidSubmit="SaveServiceAsync" class="h-100">
-                            <DataAnnotationsValidator />
-
+                    
+                    <EditForm Model="BuilderModel" OnValidSubmit="SaveServiceAsync" class="h-100 d-flex flex-column">
+                        <DataAnnotationsValidator />
+                        
+                        <div class="card-body flex-grow-1 overflow-auto p-3" style="max-height: calc(100vh - 280px);">
                             <div class="mb-3">
-                                <label class="form-label">Service Name *</label>
-                                <InputText class="form-control" @bind-Value="BuilderModel.Name" />
+                                <label class="form-label fw-semibold small">Service Name *</label>
+                                <InputText class="form-control form-control-sm" @bind-Value="BuilderModel.Name" />
                                 <ValidationMessage For="() => BuilderModel.Name" />
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label">Description</label>
-                                <InputTextArea class="form-control" rows="3" @bind-Value="BuilderModel.Description" />
+                                <label class="form-label fw-semibold small">Description</label>
+                                <InputTextArea class="form-control form-control-sm" rows="2" @bind-Value="BuilderModel.Description" />
                                 <ValidationMessage For="() => BuilderModel.Description" />
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label">Service Fee</label>
-                                <InputNumber class="form-control" @bind-Value="BuilderModel.ServiceFee" />
-                                <small class="text-muted">Leave empty if no fee is applicable</small>
-                                <ValidationMessage For="() => BuilderModel.ServiceFee" />
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold small">Service Fee</label>
+                                    <InputNumber class="form-control form-control-sm" @bind-Value="BuilderModel.ServiceFee" />
+                                    <small class="text-muted">Leave empty if no fee</small>
+                                    <ValidationMessage For="() => BuilderModel.ServiceFee" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold small">Fee Type</label>
+                                    <InputSelect class="form-select form-select-sm" @bind-Value="BuilderModel.FeeType">
+                                        @foreach (var feeType in Enum.GetValues<ServiceModels.FeeType>())
+                                        {
+                                            <option value="@feeType">@feeType</option>
+                                        }
+                                    </InputSelect>
+                                </div>
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label">Fee Type</label>
-                                <InputSelect class="form-select" @bind-Value="BuilderModel.FeeType">
-                                    @foreach (var feeType in Enum.GetValues<ServiceModels.FeeType>())
-                                    {
-                                        <option value="@feeType">@feeType</option>
-                                    }
-                                </InputSelect>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold small">Workflow Template</label>
+                                    <InputSelect class="form-select form-select-sm" @bind-Value="BuilderModel.WorkflowTemplateId">
+                                        <option value="">-- Select Template --</option>
+                                        @foreach (var template in WorkflowTemplates)
+                                        {
+                                            <option value="@template.Id">@template.Name</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold small">Document Template</label>
+                                    <InputSelect class="form-select form-select-sm" @bind-Value="BuilderModel.DocumentTemplateId">
+                                        <option value="">-- Select Template --</option>
+                                        @foreach (var template in DocumentTemplates)
+                                        {
+                                            <option value="@template.Id">@template.Name</option>
+                                        }
+                                    </InputSelect>
+                                </div>
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label">Workflow Template</label>
-                                <InputSelect class="form-select" @bind-Value="BuilderModel.WorkflowTemplateId">
-                                    <option value="">-- Select Workflow Template (Optional) --</option>
-                                    @foreach (var template in WorkflowTemplates)
-                                    {
-                                        <option value="@template.Id">@template.Name</option>
-                                    }
-                                </InputSelect>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">Document Template</label>
-                                <InputSelect class="form-select" @bind-Value="BuilderModel.DocumentTemplateId">
-                                    <option value="">-- Select Document Template (Optional) --</option>
-                                    @foreach (var template in DocumentTemplates)
-                                    {
-                                        <option value="@template.Id">@template.Name</option>
-                                    }
-                                </InputSelect>
-                            </div>
-
-                            <h6>Fields</h6>
+                            <h6 class="mb-2 text-dark">Fields</h6>
+                            
                             @if (!BuilderModel.Fields.Any())
                             {
-                                <div class="alert alert-info">
-                                    No fields added yet. Click "Add Field" below to get started.
+                                <div class="alert alert-info py-2">
+                                    <small>No fields added yet. Click "Add Field" to get started.</small>
                                 </div>
                             }
                             else
@@ -123,35 +128,35 @@
                                 @for (int i = 0; i < BuilderModel.Fields.Count; i++)
                                 {
                                     var idx = i;
-                                    <div class="card mb-2">
-                                        <div class="card-header bg-light d-flex justify-content-between">
-                                            <span>Field @(idx + 1): @BuilderModel.Fields[idx].Label</span>
-                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                    <div class="card mb-2 border">
+                                        <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                                            <small class="fw-semibold">Field @(idx + 1): @BuilderModel.Fields[idx].Label</small>
+                                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1"
                                                     @onclick="() => RemoveFieldFromBuilder(idx)">
                                                 <i class="fas fa-times"></i>
                                             </button>
                                         </div>
-                                        <div class="card-body">
+                                        <div class="card-body p-2">
                                             <div class="row g-2">
                                                 <div class="col-md-6">
-                                                    <label class="form-label">Name *</label>
+                                                    <label class="form-label small fw-semibold">Name *</label>
                                                     <InputText class="form-control form-control-sm"
                                                                @bind-Value="BuilderModel.Fields[idx].Name" />
                                                     <ValidationMessage For="() => BuilderModel.Fields[idx].Name" />
                                                 </div>
                                                 <div class="col-md-6">
-                                                    <label class="form-label">Label *</label>
+                                                    <label class="form-label small fw-semibold">Label *</label>
                                                     <InputText class="form-control form-control-sm"
                                                                @bind-Value="BuilderModel.Fields[idx].Label" />
                                                     <ValidationMessage For="() => BuilderModel.Fields[idx].Label" />
                                                 </div>
                                                 <div class="col-12">
-                                                    <label class="form-label">Description</label>
-                                                    <InputTextArea class="form-control form-control-sm"
+                                                    <label class="form-label small fw-semibold">Description</label>
+                                                    <InputTextArea class="form-control form-control-sm" rows="1"
                                                                    @bind-Value="BuilderModel.Fields[idx].Description" />
                                                 </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label">Type</label>
+                                                <div class="col-md-4">
+                                                    <label class="form-label small fw-semibold">Type</label>
                                                     <InputSelect class="form-select form-select-sm"
                                                                  @bind-Value="BuilderModel.Fields[idx].Type"
                                                                  @onchange="() => OnFieldTypeChanged(idx)">
@@ -161,22 +166,21 @@
                                                         }
                                                     </InputSelect>
                                                 </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label">Placeholder</label>
+                                                <div class="col-md-4">
+                                                    <label class="form-label small fw-semibold">Placeholder</label>
                                                     <InputText class="form-control form-control-sm"
                                                                @bind-Value="BuilderModel.Fields[idx].Placeholder" />
                                                 </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label">Default Value</label>
+                                                <div class="col-md-4">
+                                                    <label class="form-label small fw-semibold">Default Value</label>
                                                     <InputText class="form-control form-control-sm"
                                                                @bind-Value="BuilderModel.Fields[idx].DefaultValue" />
-                                                    <small class="text-muted">Leave empty for no default value</small>
                                                 </div>
-                                                <div class="col-md-6 d-flex align-items-end">
-                                                    <div class="form-check mb-0">
-                                                        <InputCheckbox class="form-check-input"
+                                                <div class="col-12 d-flex align-items-center">
+                                                    <div class="form-check">
+                                                        <InputCheckbox class="form-check-input form-check-input-sm"
                                                                        @bind-Value="BuilderModel.Fields[idx].IsRequired" />
-                                                        <label class="form-check-label">Required</label>
+                                                        <label class="form-check-label small">Required field</label>
                                                     </div>
                                                 </div>
                                                 @if (BuilderModel.Fields[idx].Type is ServiceModels.FieldType.Select or
@@ -185,24 +189,24 @@
                                                                                     ServiceModels.FieldType.MultiSelect)
                                                 {
                                                     <div class="col-12">
-                                                        <label class="form-label">Options (one per line) *</label>
-                                                        <InputTextArea class="form-control form-control-sm" rows="3"
+                                                        <label class="form-label small fw-semibold">Options (one per line) *</label>
+                                                        <InputTextArea class="form-control form-control-sm" rows="2"
                                                                        @bind-Value="BuilderModel.Fields[idx].OptionsRaw" 
                                                                        @onchange="() => OnFieldOptionsChanged(idx)" />
                                                         <small class="text-muted">Enter one option per line</small>
                                                         <ValidationMessage For="() => BuilderModel.Fields[idx].OptionsRaw" />
                                                         @if (!string.IsNullOrWhiteSpace(BuilderModel.Fields[idx].OptionsRaw))
                                                         {
-                                                            <div class="mt-2">
+                                                            <div class="mt-1">
                                                                 <small class="text-info">Preview: @BuilderModel.Fields[idx].ParsedOptions.Count option(s)</small>
                                                                 <div class="small text-muted">
                                                                     @foreach (var opt in BuilderModel.Fields[idx].ParsedOptions.Take(3))
                                                                     {
-                                                                        <span class="badge bg-light text-dark me-1">@opt</span>
+                                                                        <span class="badge bg-light text-dark me-1 small">@opt</span>
                                                                     }
                                                                     @if (BuilderModel.Fields[idx].ParsedOptions.Count > 3)
                                                                     {
-                                                                        <span class="text-muted">... and @(BuilderModel.Fields[idx].ParsedOptions.Count - 3) more</span>
+                                                                        <span class="text-muted small">... and @(BuilderModel.Fields[idx].ParsedOptions.Count - 3) more</span>
                                                                     }
                                                                 </div>
                                                             </div>
@@ -214,82 +218,83 @@
                                     </div>
                                 }
                             }
-                        </EditForm>
-                    </div>
-                    <div class="card-footer bg-white border-top">
-                        <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-outline-dark" @onclick="AddFieldToBuilder">
-                                <i class="fas fa-plus"></i> Add Field
-                            </button>
-                            <button type="submit" class="btn btn-success" @onclick="SaveServiceAsync">
-                                <i class="fas fa-save"></i> @(EditServiceId == null ? "Create Service" : "Update Service")
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary" @onclick='() => ShowView("list")'>
-                                <i class="fas fa-times"></i> Cancel
-                            </button>
                         </div>
-                    </div>
+                        
+                        <div class="card-footer bg-white border-top py-2">
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-dark btn-sm me-2" @onclick="AddFieldToBuilder">
+                                    <i class="fas fa-plus"></i> Add Field
+                                </button>
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    <i class="fas fa-save"></i> @(EditServiceId == null ? "Create Service" : "Update Service")
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" @onclick='() => ShowView("list")'>
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </EditForm>
                 </div>
             </div>
 
             <!-- Preview Section -->
             <div class="col-lg-6 d-flex flex-column">
-                <div class="card h-100 d-flex flex-column">
-                    <div class="card-header d-flex justify-content-between align-items-center flex-shrink-0">
-                        <h5><i class="fas fa-eye me-2"></i> Live Preview</h5>
+                <div class="card h-100 d-flex flex-column shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center flex-shrink-0 py-2">
+                        <h6 class="mb-0 text-dark"><i class="fas fa-eye me-2"></i> Live Preview</h6>
                         @if (BuilderModel.Fields.Any())
                         {
-                            <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-sm btn-outline-secondary" 
+                            <div class="d-flex gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2" 
                                         @onclick="PreviousPreviewPageAsync" disabled="@(PreviewPage == 0)">
                                     <i class="fas fa-chevron-left"></i>
                                 </button>
-                                <span class="small align-self-center text-muted">
+                                <span class="small align-self-center text-muted px-2">
                                     @(PreviewPage + 1) / @PreviewTotalPages
                                 </span>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2" 
                                         @onclick="NextPreviewPageAsync" disabled="@(PreviewPage >= PreviewTotalPages - 1)">
                                     <i class="fas fa-chevron-right"></i>
                                 </button>
                             </div>
                         }
                     </div>
-                    <div class="card-body flex-grow-1 overflow-auto" style="max-height: calc(100vh - 250px);">
+                    <div class="card-body flex-grow-1 overflow-auto p-3" style="max-height: calc(100vh - 220px);">
                         @if (BuilderModel.Fields.Any())
                         {
-                            <h4 class="mb-3">@BuilderModel.Name</h4>
-                            <p class="text-muted mb-3">@(string.IsNullOrEmpty(BuilderModel.Description) ? "No description provided" : BuilderModel.Description)</p>
+                            <h5 class="mb-2">@BuilderModel.Name</h5>
+                            <p class="text-muted mb-2 small">@(string.IsNullOrEmpty(BuilderModel.Description) ? "No description provided" : BuilderModel.Description)</p>
                             @if (BuilderModel.ServiceFee.HasValue)
                             {
-                                <p class="mb-3"><strong>Fee:</strong> K @BuilderModel.ServiceFee.Value.ToString("N2") (@BuilderModel.FeeType)</p>
+                                <p class="mb-2 small"><strong>Fee:</strong> K @BuilderModel.ServiceFee.Value.ToString("N2") (@BuilderModel.FeeType)</p>
                             }
 
                             <!-- Progress indicator for preview -->
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <div class="progress flex-grow-1 me-3" style="height: 8px;">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="progress flex-grow-1 me-2" style="height: 6px;">
                                     <div class="progress-bar bg-secondary" role="progressbar" 
                                          style="width: @(PreviewTotalPages > 0 ? ((double)(PreviewPage + 1) / PreviewTotalPages) * 100 : 0)%"
                                          aria-valuenow="@(PreviewPage + 1)" 
                                          aria-valuemin="0" 
                                          aria-valuemax="@PreviewTotalPages"></div>
                                 </div>
-                                <span class="text-muted small">Preview Page @(PreviewPage + 1) of @PreviewTotalPages</span>
+                                <span class="text-muted small">Page @(PreviewPage + 1) of @PreviewTotalPages</span>
                             </div>
 
-                            <div class="border rounded p-3">
+                            <div class="border rounded p-2">
                                 @{
                                     var previewPageFields = BuilderModel.Fields.Skip(PreviewPage * FieldsPerPage).Take(FieldsPerPage).ToList();
                                 }
 
                                 <!-- Fields in 2x2 grid layout for preview -->
-                                <div class="row g-4">
+                                <div class="row g-3">
                                     @for (int i = 0; i < previewPageFields.Count; i++)
                                     {
                                         var f = previewPageFields[i];
                                         <div class="col-md-6">
-                                            <div class="card h-100">
-                                                <div class="card-body">
-                                                    <label class="form-label fw-bold">
+                                            <div class="card h-100 border-light">
+                                                <div class="card-body p-2">
+                                                    <label class="form-label fw-semibold small">
                                                         @f.Label
                                                         @if (f.IsRequired)
                                                         {
@@ -305,10 +310,10 @@
                                                     @switch (f.Type)
                                                     {
                                                         case ServiceModels.FieldType.TextArea:
-                                                            <textarea class="form-control" placeholder="@f.Placeholder" rows="4">@f.DefaultValue</textarea>
+                                                            <textarea class="form-control form-control-sm" placeholder="@f.Placeholder" rows="3">@f.DefaultValue</textarea>
                                                             break;
                                                         case ServiceModels.FieldType.Select:
-                                                            <select class="form-select">
+                                                            <select class="form-select form-select-sm">
                                                                 <option value="">-- choose --</option>
                                                                 @foreach (var o in f.ParsedOptions)
                                                                 {
@@ -317,48 +322,48 @@
                                                             </select>
                                                             break;
                                                         case ServiceModels.FieldType.MultiSelect:
-                                                            <div class="border rounded p-2" style="max-height: 150px; overflow-y: auto;">
+                                                            <div class="border rounded p-2" style="max-height: 100px; overflow-y: auto;">
                                                                 @foreach (var o in f.ParsedOptions)
                                                                 {
-                                                                    <div class="form-check mb-1">
-                                                                        <input class="form-check-input" type="checkbox" />
+                                                                    <div class="form-check form-check-sm mb-1">
+                                                                        <input class="form-check-input form-check-input-sm" type="checkbox" />
                                                                         <label class="form-check-label small">@o</label>
                                                                     </div>
                                                                 }
                                                             </div>
-                                                            <small class="text-muted">Select multiple options</small>
+                                                            <small class="text-muted">Select multiple</small>
                                                             break;
                                                         case ServiceModels.FieldType.Radio:
                                                             @foreach (var o in f.ParsedOptions)
                                                             {
-                                                                <div class="form-check mb-1">
-                                                                    <input class="form-check-input" type="radio"
+                                                                <div class="form-check form-check-sm mb-1">
+                                                                    <input class="form-check-input form-check-input-sm" type="radio"
                                                                            name="@($"preview-radio-{f.Name}")"
                                                                            value="@o"
                                                                            checked="@(o == f.DefaultValue)" />
-                                                                    <label class="form-check-label">@o</label>
+                                                                    <label class="form-check-label small">@o</label>
                                                                 </div>
                                                             }
                                                             break;
                                                         case ServiceModels.FieldType.Checkbox:
                                                             @foreach (var o in f.ParsedOptions)
                                                             {
-                                                                <div class="form-check mb-1">
-                                                                    <input class="form-check-input" type="checkbox"
+                                                                <div class="form-check form-check-sm mb-1">
+                                                                    <input class="form-check-input form-check-input-sm" type="checkbox"
                                                                            name="@($"preview-checkbox-{f.Name}")"
                                                                            value="@o"
                                                                            checked="@(o == f.DefaultValue)" />
-                                                                    <label class="form-check-label">@o</label>
+                                                                    <label class="form-check-label small">@o</label>
                                                                 </div>
                                                             }
                                                             break;
                                                         case ServiceModels.FieldType.File:
-                                                            <input type="file" class="form-control" multiple />
-                                                            <small class="text-muted">You can select multiple files</small>
+                                                            <input type="file" class="form-control form-control-sm" multiple />
+                                                            <small class="text-muted">Multiple files allowed</small>
                                                             break;
                                                         default:
                                                             <input type="@f.Type.ToString().ToLower()"
-                                                                   class="form-control"
+                                                                   class="form-control form-control-sm"
                                                                    placeholder="@f.Placeholder"
                                                                    value="@f.DefaultValue" />
                                                             break;
@@ -370,39 +375,38 @@
                                 </div>
 
                                 <!-- Navigation buttons for preview -->
-                               <!-- Replace the bottom navigation section in your preview with this: -->
-<div class="d-flex justify-content-between align-items-center mt-4 pt-4 border-top">
-    <div>
-        @if (PreviewPage > 0)
-        {
-            <button type="button" class="btn btn-outline-secondary" @onclick="PreviousPreviewPageAsync">
-                <i class="fas fa-chevron-left"></i> Previous
-            </button>
-        }
-    </div>
-    
-    <div class="d-flex gap-2">
-        @if (PreviewPage < PreviewTotalPages - 1)
-        {
-            <button type="button" class="btn btn-secondary" @onclick="NextPreviewPageAsync">
-                Next <i class="fas fa-chevron-right"></i>
-            </button>
-        }
-        else
-        {
-            <button type="button" class="btn btn-success" disabled>
-                <i class="fas fa-paper-plane"></i> Submit Form
-            </button>
-        }
-    </div>
-</div>
+                                <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                                    <div>
+                                        @if (PreviewPage > 0)
+                                        {
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="PreviousPreviewPageAsync">
+                                                <i class="fas fa-chevron-left"></i> Previous
+                                            </button>
+                                        }
+                                    </div>
+                                    
+                                    <div class="d-flex gap-2">
+                                        @if (PreviewPage < PreviewTotalPages - 1)
+                                        {
+                                            <button type="button" class="btn btn-secondary btn-sm" @onclick="NextPreviewPageAsync">
+                                                Next <i class="fas fa-chevron-right"></i>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button type="button" class="btn btn-success btn-sm" disabled>
+                                                <i class="fas fa-paper-plane"></i> Submit Form
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
                             </div>
                         }
                         else
                         {
-                            <div class="text-center text-muted py-5">
-                                <i class="fas fa-plus-circle fa-3x mb-3"></i>
-                                <p>Add fields to see the preview</p>
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-plus-circle fa-2x mb-2"></i>
+                                <p class="small">Add fields to see the preview</p>
                             </div>
                         }
                     </div>
@@ -413,19 +417,19 @@
 
     @if (CurrentView == "list")
     {
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5><i class="fas fa-list me-2"></i> Available Services</h5>
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+                <h6 class="mb-0 text-dark"><i class="fas fa-list me-2"></i> Available Services</h6>
                 <div>
-                    <button class="btn btn-sm btn-outline-dark" @onclick='() => ShowView("builder")'>
+                    <button class="btn btn-sm btn-outline-dark py-1 px-2" @onclick='() => ShowView("builder")'>
                         <i class="fas fa-plus"></i> New Service
                     </button>
                 </div>
             </div>
-            <div class="card-body">
+            <div class="card-body p-3">
                 @if (Services == null)
                 {
-                    <div class="text-center py-5">
+                    <div class="text-center py-4">
                         <div class="spinner-border text-dark" role="status">
                             <span class="visually-hidden">Loading...</span>
                         </div>
@@ -433,10 +437,10 @@
                 }
                 else if (!Services.Any())
                 {
-                    <div class="text-center py-5 text-muted">
-                        <i class="fas fa-inbox fa-3x mb-3"></i>
-                        <h5>No services yet</h5>
-                        <button class="btn btn-dark" @onclick='() => ShowView("builder")'>
+                    <div class="text-center py-4 text-muted">
+                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                        <h6>No services yet</h6>
+                        <button class="btn btn-dark btn-sm" @onclick='() => ShowView("builder")'>
                             <i class="fas fa-plus"></i> Create the first one
                         </button>
                     </div>
@@ -446,7 +450,7 @@
                     <!-- Search and Info Bar -->
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <div class="input-group">
+                            <div class="input-group input-group-sm">
                                 <span class="input-group-text"><i class="fas fa-search"></i></span>
                                 <input type="text" class="form-control" placeholder="Search services..." 
                                        value="@SearchTerm" @onchange="OnSearchChanged" />
@@ -474,10 +478,10 @@
 
                     @if (!FilteredServices.Any())
                     {
-                        <div class="text-center py-4 text-muted">
-                            <i class="fas fa-search fa-2x mb-3"></i>
+                        <div class="text-center py-3 text-muted">
+                            <i class="fas fa-search fa-2x mb-2"></i>
                             <h6>No services found</h6>
-                            <p>Try adjusting your search terms</p>
+                            <p class="small">Try adjusting your search terms</p>
                             <button class="btn btn-sm btn-outline-dark" @onclick="ClearSearch">
                                 <i class="fas fa-times"></i> Clear search
                             </button>
@@ -496,11 +500,16 @@
                             td.date-cell {
                                 white-space: nowrap;
                             }
+                            
+                            .table-sm th, .table-sm td {
+                                padding: 0.5rem;
+                                font-size: 0.875rem;
+                            }
                         </style>
 
                         <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
+                            <table class="table table-hover table-sm">
+                                <thead class="table-light">
                                     <tr>
                                         <th>Name</th>
                                         <th>Description</th>
@@ -555,10 +564,10 @@
                                             <td class="date-cell">@svc.CreatedDate.ToLocalTime().ToString("g")</td>
                                             <td>
                                                 <div class="btn-group btn-group-sm">
-                                                    <button class="btn btn-dark" @onclick="() => FillServiceAsync(svc.Id)">
-                                                        <i class="fas fa-edit"></i> View Form
+                                                    <button class="btn btn-dark btn-sm py-1 px-2" @onclick="() => FillServiceAsync(svc.Id)">
+                                                        <i class="fas fa-edit"></i> View
                                                     </button>
-                                                    <button class="btn btn-secondary" @onclick="() => EditServiceAsync(svc.Id)">
+                                                    <button class="btn btn-secondary btn-sm py-1 px-2" @onclick="() => EditServiceAsync(svc.Id)">
                                                         <i class="fas fa-cog"></i> Edit
                                                     </button>
                                                 </div>
@@ -614,27 +623,27 @@
 
     @if (CurrentView == "fill" && FillModel != null)
     {
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
                 <div>
-                    <h5 class="mb-0">@FillModel.ServiceName</h5>
-                    <p class="mb-0 text-muted">@FillModel.ServiceDescription</p>
+                    <h6 class="mb-0">@FillModel.ServiceName</h6>
+                    <p class="mb-0 text-muted small">@FillModel.ServiceDescription</p>
                     @if (FillModel.ServiceFee.HasValue)
                     {
-                        <p class="mb-0 text-muted"><strong>Fee:</strong> K @FillModel.ServiceFee.Value.ToString("N2") (@FillModel.FeeType)</p>
+                        <p class="mb-0 text-muted small"><strong>Fee:</strong> K @FillModel.ServiceFee.Value.ToString("N2") (@FillModel.FeeType)</p>
                     }
                 </div>
-                <button class="btn btn-sm btn-outline-secondary" @onclick='() => ShowView("list")'>
+                <button class="btn btn-sm btn-outline-secondary py-1 px-2" @onclick='() => ShowView("list")'>
                     <i class="fas fa-arrow-left"></i> Back to List
                 </button>
             </div>
-            <div class="card-body">
+            <div class="card-body p-3">
                 <EditForm Model="FillModel" OnValidSubmit="SubmitFormAsync">
                     <DataAnnotationsValidator />
 
                     <!-- Progress indicator -->
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div class="progress flex-grow-1 me-3" style="height: 8px;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="progress flex-grow-1 me-2" style="height: 6px;">
                             <div class="progress-bar bg-dark" role="progressbar" 
                                  style="width: @(FillModel.Fields.Count > 0 ? ((double)(CurrentPage + 1) / TotalPages) * 100 : 0)%"
                                  aria-valuenow="@(CurrentPage + 1)" 
@@ -649,14 +658,14 @@
                         var currentPageFields = FillModel.Fields.Skip(CurrentPage * FieldsPerPage).Take(FieldsPerPage).ToList();
                     }
 
-                    <div class="row g-4">
+                    <div class="row g-3">
                         @for (int i = 0; i < currentPageFields.Count; i++)
                         {
                             var field = currentPageFields[i];
                             <div class="col-md-6">
-                                <div class="card h-100">
-                                    <div class="card-body">
-                                        <label class="form-label fw-bold">
+                                <div class="card h-100 border-light">
+                                    <div class="card-body p-3">
+                                        <label class="form-label fw-semibold small">
                                             @field.Label
                                             @if (field.IsRequired)
                                             {
@@ -672,11 +681,11 @@
                                         @switch (field.Type)
                                         {
                                             case ServiceModels.FieldType.TextArea:
-                                                <InputTextArea class="form-control" @bind-Value="field.Value"
-                                                               placeholder="@field.Placeholder" rows="4" />
+                                                <InputTextArea class="form-control form-control-sm" @bind-Value="field.Value"
+                                                               placeholder="@field.Placeholder" rows="3" />
                                                 break;
                                             case ServiceModels.FieldType.Select:
-                                                <InputSelect class="form-select" @bind-Value="field.Value">
+                                                <InputSelect class="form-select form-select-sm" @bind-Value="field.Value">
                                                     <option value="">-- choose --</option>
                                                     @foreach (var o in field.ParsedOptions)
                                                     {
@@ -685,11 +694,11 @@
                                                 </InputSelect>
                                                 break;
                                             case ServiceModels.FieldType.MultiSelect:
-                                                <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                                                <div class="border rounded p-2" style="max-height: 150px; overflow-y: auto;">
                                                     @foreach (var o in field.ParsedOptions)
                                                     {
-                                                        <div class="form-check mb-1">
-                                                            <input class="form-check-input" type="checkbox"
+                                                        <div class="form-check form-check-sm mb-1">
+                                                            <input class="form-check-input form-check-input-sm" type="checkbox"
                                                                    @bind="field.MultiSelectValues[o]" />
                                                             <label class="form-check-label small">@o</label>
                                                         </div>
@@ -701,9 +710,9 @@
                                                 <InputRadioGroup @bind-Value="field.Value">
                                                     @foreach (var o in field.ParsedOptions)
                                                     {
-                                                        <div class="form-check mb-1">
-                                                            <InputRadio class="form-check-input" Value="@o" />
-                                                            <label class="form-check-label">@o</label>
+                                                        <div class="form-check form-check-sm mb-1">
+                                                            <InputRadio class="form-check-input form-check-input-sm" Value="@o" />
+                                                            <label class="form-check-label small">@o</label>
                                                         </div>
                                                     }
                                                 </InputRadioGroup>
@@ -711,20 +720,20 @@
                                             case ServiceModels.FieldType.Checkbox:
                                                 @foreach (var o in field.ParsedOptions)
                                                 {
-                                                    <div class="form-check mb-1">
-                                                        <input class="form-check-input" type="checkbox"
+                                                    <div class="form-check form-check-sm mb-1">
+                                                        <input class="form-check-input form-check-input-sm" type="checkbox"
                                                                @bind="field.CheckboxValues[o]" />
-                                                        <label class="form-check-label">@o</label>
+                                                        <label class="form-check-label small">@o</label>
                                                     </div>
                                                 }
                                                 break;
                                             case ServiceModels.FieldType.File:
-                                                <InputFile class="form-control" OnChange="e => field.Files = e.GetMultipleFiles()" multiple />
+                                                <InputFile class="form-control form-control-sm" OnChange="e => field.Files = e.GetMultipleFiles()" multiple />
                                                 <small class="text-muted">You can select multiple files</small>
                                                 break;
                                             default:
                                                 <InputText type="@field.Type.ToString().ToLower()"
-                                                           class="form-control"
+                                                           class="form-control form-control-sm"
                                                            @bind-Value="field.Value"
                                                            placeholder="@field.Placeholder" />
                                                 break;
@@ -737,11 +746,11 @@
                     </div>
 
                     <!-- Navigation buttons -->
-                    <div class="d-flex justify-content-between align-items-center mt-4 pt-4 border-top">
+                    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
                         <div>
                             @if (CurrentPage > 0)
                             {
-                                <button type="button" class="btn btn-outline-dark" @onclick="PreviousPageAsync">
+                                <button type="button" class="btn btn-outline-dark btn-sm" @onclick="PreviousPageAsync">
                                     <i class="fas fa-chevron-left"></i> Previous
                                 </button>
                             }
@@ -750,17 +759,17 @@
                         <div class="d-flex gap-2">
                             @if (CurrentPage < TotalPages - 1)
                             {
-                                <button type="button" class="btn btn-dark" @onclick="NextPageAsync">
+                                <button type="button" class="btn btn-dark btn-sm" @onclick="NextPageAsync">
                                     Next <i class="fas fa-chevron-right"></i>
                                 </button>
                             }
                             else
                             {
-                                <button type="submit" class="btn btn-success">
+                                <button type="submit" class="btn btn-success btn-sm">
                                     <i class="fas fa-paper-plane"></i> Submit Form
                                 </button>
                             }
-                            <button type="button" class="btn btn-outline-secondary" @onclick='() => ShowView("list")'>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" @onclick='() => ShowView("list")'>
                                 <i class="fas fa-times"></i> Cancel
                             </button>
                         </div>
@@ -770,6 +779,7 @@
         </div>
     }
 </div>
+            
 
 @code
 {

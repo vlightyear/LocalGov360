@@ -9,6 +9,7 @@
 @attribute [Authorize(Roles = "developer,CouncilAdmin")]
 @rendermode InteractiveServer
 @inject ApplicationDbContext _db
+@inject SignInManager<ApplicationUser> SignInManager
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
