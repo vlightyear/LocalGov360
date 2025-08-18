@@ -38,6 +38,16 @@ builder.Services.AddScoped<IWorkflowFactory, WorkflowFactory>();
 builder.Services.AddScoped<IServiceService, ServiceService>();
 builder.Services.AddScoped<IFormValidator, FormValidator>();
 builder.Services.AddScoped<TinggCallbackService>();
+// Add this line with your other service registrations
+builder.Services.AddScoped<IValuationUploadService, ValuationUploadService>();
+builder.Services.AddRazorPages();
+builder.Services.AddServerSideBlazor();
+
+builder.Services.AddHttpClient<AccountingIntegrationService>();
+builder.Services.AddHostedService<AccountingIntegrationService>();
+
+builder.Services.AddScoped<IValuationUploadService, ValuationUploadService>();
+
 
 builder.Services.AddControllers()
     .AddNewtonsoftJson(options =>
@@ -85,6 +95,8 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.Migrate();
 }
+//
+
 
 // Warm up the database connection
 using (var scope = app.Services.CreateScope())
@@ -183,7 +195,7 @@ using (var scope = app.Services.CreateScope())
                     ApiBaseUrl = "https://sandbox.tingg.africa",
                     ApiKey = "AViR64sAFdAkvAoGaJqATWcW3tXREXGf",
                     AuthTokenRequestUrl = "https://api-approval.tingg.africa/v1/oauth/token/request",
-                    CallbackUrl = "https://19d7bf4f4ed9.ngrok-free.app/callback",
+                    CallbackUrl = "https://19d7bf4f4ed9.ngrok-free.app/tingcallback",
                     CheckoutRequestUrl = "https://online.sandbox.tingg.africa/approval/request-service/checkout-request/express-request",
                     ClientId = "c5549f4f-08da-4843-8dc4-32a567a1ef10",
                     ClientSecret = "mrmTNUmwhahKnVYTbSmIGXLJgaTuejBfLrBJqzvC",
@@ -210,7 +222,7 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.Migrate();
 }
-app.MapPost("/callback", async (HttpRequest request, TinggCallbackService callbackService) =>
+app.MapPost("/tingcallback", async (HttpRequest request, TinggCallbackService callbackService) =>
 {
     return await callbackService.ReceiveCallbackAsync(request);
 });

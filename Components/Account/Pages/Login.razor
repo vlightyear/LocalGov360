@@ -224,13 +224,14 @@
         if (result.Succeeded)
         {
             Logger.LogInformation("User logged in.");
-            RedirectManager.RedirectTo(ReturnUrl);
+            // Redirect to ReturnUrl if provided, otherwise go to /dashboard
+            RedirectManager.RedirectTo(ReturnUrl ?? "/dashboard");
         }
         else if (result.RequiresTwoFactor)
         {
             RedirectManager.RedirectTo(
                 "Account/LoginWith2fa",
-                new() { ["returnUrl"] = ReturnUrl, ["rememberMe"] = Input.RememberMe });
+                new() { ["returnUrl"] = ReturnUrl ?? "/dashboard", ["rememberMe"] = Input.RememberMe });
         }
         else if (result.IsLockedOut)
         {

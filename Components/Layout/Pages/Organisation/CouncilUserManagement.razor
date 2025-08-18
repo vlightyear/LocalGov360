@@ -28,119 +28,250 @@
         gap: 1rem;
     }
 
-    .blazor-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
+    /* Modern Form Styling */
+    .modern-form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-span-2 {
+        grid-column: 1 / -1;
+    }
+
+    .modern-label {
+        font-weight: 600;
+        color: #344767;
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.02em;
+    }
+
+    .input-wrapper {
+        position: relative;
+    }
+
+    .modern-input {
         width: 100%;
-        height: 100%;
-        background-color: rgba(0,0,0,0.5);
-        z-index: 1000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .blazor-modal-content {
-        background: white;
+        padding: 0.75rem 1rem;
+        border: 1px solid #d2d6da;
         border-radius: 0.5rem;
-        width: 90%;
-        max-width: 600px;
-        max-height: 90vh;
-        overflow-y: auto;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        font-size: 0.875rem;
+        transition: all 0.15s ease-in-out;
+        background-color: #fff;
+        color: #495057;
     }
 
-    .modal-header {
-        padding: 1.5rem;
-        border-bottom: 1px solid #dee2e6;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .modal-body {
-        padding: 1.5rem;
-    }
-
-    .modal-footer {
-        padding: 1rem 1.5rem;
-        border-top: 1px solid #dee2e6;
-        display: flex;
-        justify-content: flex-end;
-        gap: 0.5rem;
-    }
-
-    .btn-close {
-        background: none;
-        border: none;
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #000;
-        opacity: 0.5;
-        cursor: pointer;
-        line-height: 1;
-    }
-
-        .btn-close:hover {
-            opacity: 0.75;
+        .modern-input:focus {
+            outline: none;
+            border-color: #344767;
+            box-shadow: 0 0 0 0.2rem rgba(52, 71, 103, 0.1);
+            background-color: #fff;
         }
 
-    .btn-dark {
-        background-color: #343a40;
-        border-color: #343a40;
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 0.25rem;
-        border: none;
+        .modern-input::placeholder {
+            color: #adb5bd;
+            opacity: 1;
+        }
+
+    .organization-readonly {
+        background-color: #f8f9fa !important;
+        color: #6c757d !important;
+        cursor: not-allowed;
+    }
+
+    .validation-message {
+        color: #dc3545;
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+        font-weight: 500;
+    }
+
+    .form-helper-text {
+        color: #6c757d;
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+        font-style: italic;
+    }
+
+    /* Modern Checkbox Styling */
+    .checkbox-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 0.75rem;
+        max-height: 150px;
+        overflow-y: auto;
+    }
+
+    .modern-checkbox {
+        position: relative;
+    }
+
+    .checkbox-input {
+        position: absolute;
+        opacity: 0;
         cursor: pointer;
     }
 
-        .btn-dark:hover {
-            background-color: #23272b;
-            border-color: #1d2124;
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        font-size: 0.8rem;
+        color: #495057;
+        font-weight: 500;
+        padding: 0.4rem 0.6rem;
+        border-radius: 0.25rem;
+        transition: background-color 0.15s ease-in-out;
+    }
+
+        .checkbox-label:hover {
+            background-color: #f8f9fa;
+        }
+
+    .checkbox-custom {
+        width: 16px;
+        height: 16px;
+        border: 2px solid #d2d6da;
+        border-radius: 0.25rem;
+        margin-right: 0.6rem;
+        position: relative;
+        transition: all 0.15s ease-in-out;
+        background-color: #fff;
+        flex-shrink: 0;
+    }
+
+    .checkbox-input:checked + .checkbox-label .checkbox-custom {
+        background-color: #344767;
+        border-color: #344767;
+    }
+
+        .checkbox-input:checked + .checkbox-label .checkbox-custom::after {
+            content: '\2713';
+            position: absolute;
             color: white;
+            font-size: 10px;
+            font-weight: bold;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+    .checkbox-input:focus + .checkbox-label .checkbox-custom {
+        box-shadow: 0 0 0 0.2rem rgba(52, 71, 103, 0.1);
+    }
+
+    /* Modern Button Styling */
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid #dee2e6;
+    }
+
+    .btn-modern {
+        padding: 0.75rem 2rem;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.15s ease-in-out;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        letter-spacing: 0.02em;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #344767 0%, #2c3e50 100%);
+        color: white;
+        box-shadow: 0 4px 6px rgba(52, 71, 103, 0.3);
+    }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(52, 71, 103, 0.4);
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
         }
 
     .btn-secondary {
         background-color: #6c757d;
-        border-color: #6c757d;
         color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 0.25rem;
-        border: none;
-        cursor: pointer;
+        box-shadow: 0 4px 6px rgba(108, 117, 125, 0.3);
     }
 
         .btn-secondary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(108, 117, 125, 0.4);
             background-color: #5a6268;
-            border-color: #545b62;
-            color: white;
         }
 
-    .roles-table-actions {
-        white-space: nowrap;
-    }
-
-    .form-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
+    /* Modern Radio Button Styling */
+    .radio-group {
+        display: flex;
         gap: 1rem;
+        margin-bottom: 1rem;
     }
 
-    .form-full-width {
-        grid-column: 1 / -1;
+    .radio-option {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        font-size: 0.875rem;
+        color: #495057;
+        font-weight: 500;
     }
 
+    .radio-input {
+        width: 18px;
+        height: 18px;
+        border: 2px solid #d2d6da;
+        border-radius: 50%;
+        margin-right: 0.75rem;
+        position: relative;
+        transition: all 0.15s ease-in-out;
+        background-color: #fff;
+        cursor: pointer;
+    }
+
+        .radio-input:checked {
+            border-color: #344767;
+            background-color: #344767;
+        }
+
+            .radio-input:checked::after {
+                content: '';
+                position: absolute;
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background-color: white;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }
+
+    /* Form Check Group */
     .form-check-group {
-        grid-column: 1 / -1;
         border: 1px solid #dee2e6;
-        border-radius: 0.25rem;
-        padding: 1rem;
-        max-height: 200px;
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        max-height: 160px;
         overflow-y: auto;
+        background-color: #f8f9fa;
     }
 
+    /* Role Badge Styling */
     .role-badge {
         display: inline-block;
         padding: 0.25em 0.4em;
@@ -164,11 +295,13 @@
         color: white;
     }
 
+    /* Alert Styling */
     .alert {
         padding: 0.75rem 1.25rem;
         margin-bottom: 1rem;
         border: 1px solid transparent;
-        border-radius: 0.25rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
     }
 
     .alert-danger {
@@ -182,11 +315,417 @@
         background-color: #d4edda;
         border-color: #c3e6cb;
     }
+
+    .roles-table-actions {
+        white-space: nowrap;
+    }
+
+    /* Responsive Design */
+    @@media (max-width: 768px) {
+        .modern-form-grid
+
+    {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .form-span-2 {
+        grid-column: 1;
+    }
+
+    .checkbox-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .btn-modern {
+        width: 100%;
+    }
+
+    .radio-group {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    }
 </style>
 
 <div class="container-fluid py-2">
     <div class="row">
-        <div class="col-12">
+        <!-- Form Panel - Show on the left side when form is active -->
+        @if (showForm)
+        {
+            <div class="col-lg-4 order-1">
+                <div class="card my-4">
+                    <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                        <div class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3">
+                            <h6 class="text-white text-capitalize ps-3">
+                                @if (isEditing)
+                                {
+                                    <text>Edit User</text>
+                                }
+                                else if (isCreatingUser)
+                                {
+                                    <text>Add New User</text>
+                                }
+                                else if (isCreatingRole)
+                                {
+                                    <text>Add New Role</text>
+                                }
+                                else if (isEditingRole)
+                                {
+                                    <text>Edit Role</text>
+                                }
+                                else if (isManagingRoles)
+                                {
+                                    <text>Manage User Roles</text>
+                                }
+                                else if (isViewingRoles)
+                                {
+                                    <text>Manage Roles</text>
+                                }
+                            </h6>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        @if (isCreatingUser)
+                        {
+                            <EditForm Model="@newUser" OnValidSubmit="CreateUser">
+                                <DataAnnotationsValidator />
+                                <div class="modern-form-grid">
+                                    <div class="form-group">
+                                        <label for="email" class="modern-label">Email</label>
+                                        <div class="input-wrapper">
+                                            <InputText id="email" @bind-Value="newUser.Email" class="modern-input" placeholder="Enter email" />
+                                            <ValidationMessage For="@(() => newUser.Email)" class="validation-message" />
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="username" class="modern-label">Username</label>
+                                        <div class="input-wrapper">
+                                            <InputText id="username" @bind-Value="newUser.UserName" class="modern-input" placeholder="Enter username" />
+                                            <ValidationMessage For="@(() => newUser.UserName)" class="validation-message" />
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="firstname" class="modern-label">First Name</label>
+                                        <div class="input-wrapper">
+                                            <InputText id="firstname" @bind-Value="newUser.Firstname" class="modern-input" placeholder="Enter first name" />
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="lastname" class="modern-label">Last Name</label>
+                                        <div class="input-wrapper">
+                                            <InputText id="lastname" @bind-Value="newUser.Lastname" class="modern-input" placeholder="Enter last name" />
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="password" class="modern-label">Password</label>
+                                        <div class="input-wrapper">
+                                            <InputText id="password" type="password" @bind-Value="newUser.Password" class="modern-input" placeholder="Enter password" />
+                                            <ValidationMessage For="@(() => newUser.Password)" class="validation-message" />
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="confirmPassword" class="modern-label">Confirm Password</label>
+                                        <div class="input-wrapper">
+                                            <InputText id="confirmPassword" type="password" @bind-Value="newUser.ConfirmPassword" class="modern-input" placeholder="Confirm password" />
+                                            <ValidationMessage For="@(() => newUser.ConfirmPassword)" class="validation-message" />
+                                        </div>
+                                    </div>
+
+                                    @if (isDeveloper)
+                                    {
+                                        <div class="form-group form-span-2">
+                                            <label class="modern-label">Organization</label>
+                                            <div class="radio-group">
+                                                <label class="radio-option">
+                                                    <input type="radio" name="orgSelection" class="radio-input"
+                                                           checked="@(!newUser.UseNewOrganisation)"
+                                                           @onchange="@(() => SetOrganisationSelection(false))" />
+                                                    Select Existing Organization
+                                                </label>
+                                                <label class="radio-option">
+                                                    <input type="radio" name="orgSelection" class="radio-input"
+                                                           checked="@newUser.UseNewOrganisation"
+                                                           @onchange="@(() => SetOrganisationSelection(true))" />
+                                                    Create New Organization
+                                                </label>
+                                            </div>
+                                            @if (newUser.UseNewOrganisation)
+                                            {
+                                                <div class="input-wrapper">
+                                                    <InputText id="newOrganisation" @bind-Value="newUser.NewOrganisationName" class="modern-input" placeholder="Enter new organization name" />
+                                                    <ValidationMessage For="@(() => newUser.NewOrganisationName)" class="validation-message" />
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="input-wrapper">
+                                                    <InputSelect id="organisation" @bind-Value="newUser.OrganisationId" class="modern-input">
+                                                        <option value="">Select Organization</option>
+                                                        @foreach (var org in organisations)
+                                                        {
+                                                            <option value="@org.Id">@org.Name</option>
+                                                        }
+                                                    </InputSelect>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+
+                                    <div class="form-group form-span-2">
+                                        <label class="modern-label">Roles</label>
+                                        <div class="form-check-group">
+                                            @if (availableRolesForAssignment.Any())
+                                            {
+                                                <div class="checkbox-grid">
+                                                    @foreach (var role in availableRolesForAssignment)
+                                                    {
+                                                        <div class="modern-checkbox">
+                                                            <input type="checkbox" id="@($"userRole-{role.Name}")" class="checkbox-input"
+                                                                   checked="@(newUser.SelectedRoles.Contains(role.Name ?? ""))"
+                                                                   @onchange="@((e) => ToggleUserRoleSelection(role.Name ?? "", (bool)(e.Value ?? false)))" />
+                                                            <label for="@($"userRole-{role.Name}")" class="checkbox-label">
+                                                                <span class="checkbox-custom"></span>
+                                                                <span>@role.Name</span>
+                                                            </label>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <p class="text-muted small">No roles available</p>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="submit" class="btn-modern btn-primary">
+                                        <i class="fas fa-user-plus me-2"></i>
+                                        Create User
+                                    </button>
+                                    <button type="button" class="btn-modern btn-secondary" @onclick="CancelForm">
+                                        <i class="fas fa-times me-2"></i>
+                                        Cancel
+                                    </button>
+                                </div>
+                            </EditForm>
+                        }
+                        else if (isEditing)
+                        {
+                            <EditForm Model="@editUser" OnValidSubmit="UpdateUser">
+                                <DataAnnotationsValidator />
+                                <div class="modern-form-grid">
+                                    <div class="form-group">
+                                        <label for="editEmail" class="modern-label">Email</label>
+                                        <div class="input-wrapper">
+                                            <InputText id="editEmail" @bind-Value="editUser.Email" class="modern-input" placeholder="Enter email" />
+                                            <ValidationMessage For="@(() => editUser.Email)" class="validation-message" />
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="editUsername" class="modern-label">Username</label>
+                                        <div class="input-wrapper">
+                                            <InputText id="editUsername" @bind-Value="editUser.UserName" class="modern-input" placeholder="Enter username" />
+                                            <ValidationMessage For="@(() => editUser.UserName)" class="validation-message" />
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="editFirstname" class="modern-label">First Name</label>
+                                        <div class="input-wrapper">
+                                            <InputText id="editFirstname" @bind-Value="editUser.Firstname" class="modern-input" placeholder="Enter first name" />
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="editLastname" class="modern-label">Last Name</label>
+                                        <div class="input-wrapper">
+                                            <InputText id="editLastname" @bind-Value="editUser.Lastname" class="modern-input" placeholder="Enter last name" />
+                                        </div>
+                                    </div>
+
+                                    @if (isDeveloper)
+                                    {
+                                        <div class="form-group form-span-2">
+                                            <label for="editOrganisation" class="modern-label">Organization</label>
+                                            <div class="input-wrapper">
+                                                <InputSelect id="editOrganisation" @bind-Value="editUser.OrganisationId" class="modern-input">
+                                                    <option value="">None</option>
+                                                    @foreach (var org in organisations)
+                                                    {
+                                                        <option value="@org.Id">@org.Name</option>
+                                                    }
+                                                </InputSelect>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="submit" class="btn-modern btn-primary">
+                                        <i class="fas fa-save me-2"></i>
+                                        Update User
+                                    </button>
+                                    <button type="button" class="btn-modern btn-secondary" @onclick="CancelForm">
+                                        <i class="fas fa-times me-2"></i>
+                                        Cancel
+                                    </button>
+                                </div>
+                            </EditForm>
+                        }
+                        else if (isCreatingRole)
+                        {
+                            <EditForm Model="@newRole" OnValidSubmit="CreateRole">
+                                <DataAnnotationsValidator />
+                                <div class="form-group">
+                                    <label for="roleName" class="modern-label">Role Name</label>
+                                    <div class="input-wrapper">
+                                        <InputText id="roleName" @bind-Value="newRole.Name" class="modern-input" placeholder="Enter role name" />
+                                        <ValidationMessage For="@(() => newRole.Name)" class="validation-message" />
+                                    </div>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="submit" class="btn-modern btn-primary">
+                                        <i class="fas fa-plus me-2"></i>
+                                        Create Role
+                                    </button>
+                                    <button type="button" class="btn-modern btn-secondary" @onclick="CancelForm">
+                                        <i class="fas fa-times me-2"></i>
+                                        Cancel
+                                    </button>
+                                </div>
+                            </EditForm>
+                        }
+                        else if (isEditingRole)
+                        {
+                            <EditForm Model="@editRole" OnValidSubmit="UpdateRole">
+                                <DataAnnotationsValidator />
+                                <div class="form-group">
+                                    <label for="editRoleName" class="modern-label">Role Name</label>
+                                    <div class="input-wrapper">
+                                        <InputText id="editRoleName" @bind-Value="editRole.Name" class="modern-input" placeholder="Enter role name" />
+                                        <ValidationMessage For="@(() => editRole.Name)" class="validation-message" />
+                                    </div>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="submit" class="btn-modern btn-primary">
+                                        <i class="fas fa-save me-2"></i>
+                                        Update Role
+                                    </button>
+                                    <button type="button" class="btn-modern btn-secondary" @onclick="CancelForm">
+                                        <i class="fas fa-times me-2"></i>
+                                        Cancel
+                                    </button>
+                                </div>
+                            </EditForm>
+                        }
+                        else if (isManagingRoles && selectedUser != null)
+                        {
+                            <div class="form-group">
+                                <label class="modern-label mb-3">Manage Roles for @selectedUser.Email</label>
+                                <div class="form-check-group">
+                                    <div class="checkbox-grid">
+                                        @foreach (var role in availableRolesForAssignment)
+                                        {
+                                            <div class="modern-checkbox">
+                                                <input type="checkbox" id="@($"role-{role.Name}")" class="checkbox-input"
+                                                       checked="@(userRoles?.Contains(role.Name ?? "") ?? false)"
+                                                       @onchange="@((e) => ToggleUserRole(role.Name ?? "", (bool)(e.Value ?? false)))" />
+                                                <label for="@($"role-{role.Name}")" class="checkbox-label">
+                                                    <span class="checkbox-custom"></span>
+                                                    @role.Name
+                                                    <span class="role-badge system-role">System</span>
+                                                </label>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" class="btn-modern btn-primary" @onclick="CancelForm">
+                                    <i class="fas fa-check me-2"></i>
+                                    Done
+                                </button>
+                            </div>
+                        }
+                        else if (isViewingRoles)
+                        {
+                            @if (visibleRoles.Any())
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th class="modern-label">Role Name</th>
+                                                <th class="modern-label">Organization</th>
+                                                <th class="modern-label text-end">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var role in visibleRoles)
+                                            {
+                                                <tr>
+                                                    <td>@role.Name</td>
+                                                    <td>
+                                                        <span class="role-badge system-role">System</span>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <div class="btn-group action-buttons">
+                                                            @if (CanEditRole(role))
+                                                            {
+                                                                <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEditRole(role)">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </button>
+                                                            }
+                                                            @if (CanDeleteRole(role))
+                                                            {
+                                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteRole(role.Id)">
+                                                                    <i class="fas fa-trash"></i>
+                                                                </button>
+                                                            }
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="text-muted text-center">No roles available</p>
+                            }
+
+                            <div class="form-actions">
+                                <button type="button" class="btn-modern btn-primary" @onclick="CancelForm">
+                                    <i class="fas fa-check me-2"></i>
+                                    Close
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Users List -->
+        <div class="@(showForm ? "col-lg-8 order-2" : "col-12")">
             <div class="card my-4">
                 <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3">
@@ -197,17 +736,17 @@
                             </button>
                             @if (CanCreateUser)
                             {
-                                <button class="btn btn-sm btn-outline-light" @onclick="ShowCreateUserModal">
+                                <button class="btn btn-sm btn-outline-light" @onclick="ShowCreateUserForm">
                                     <i class="fas fa-user-plus me-1"></i> Add User
                                 </button>
                             }
                             @if (CanCreateRole)
                             {
-                                <button class="btn btn-sm btn-outline-light" @onclick="ShowCreateRoleModal">
+                                <button class="btn btn-sm btn-outline-light" @onclick="ShowCreateRoleForm">
                                     <i class="fas fa-plus-circle me-1"></i> Add Role
                                 </button>
                             }
-                            <button class="btn btn-sm btn-outline-light" @onclick="ShowRolesListModal">
+                            <button class="btn btn-sm btn-outline-light" @onclick="ShowRolesListForm">
                                 <i class="fas fa-list me-1"></i> Manage Roles
                             </button>
                         </div>
@@ -371,349 +910,6 @@
     </div>
 </div>
 
-@* Edit User Modal *@
-@if (showEditUserModal)
-{
-    <div class="blazor-modal" @onclick="CloseEditUserModal">
-        <div class="blazor-modal-content" @onclick:stopPropagation>
-            <div class="modal-header">
-                <h5 class="modal-title">Edit User</h5>
-                <button type="button" class="btn-close" @onclick="CloseEditUserModal">×</button>
-            </div>
-            <div class="modal-body">
-                <EditForm Model="@editUser" OnValidSubmit="UpdateUser">
-                    <DataAnnotationsValidator />
-                    <div class="form-grid">
-                        <div class="mb-3">
-                            <label for="editEmail" class="form-label">Email</label>
-                            <InputText id="editEmail" @bind-Value="editUser.Email" class="form-control" />
-                            <ValidationMessage For="@(() => editUser.Email)" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="editUsername" class="form-label">Username</label>
-                            <InputText id="editUsername" @bind-Value="editUser.UserName" class="form-control" />
-                            <ValidationMessage For="@(() => editUser.UserName)" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="editFirstname" class="form-label">First Name</label>
-                            <InputText id="editFirstname" @bind-Value="editUser.Firstname" class="form-control" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="editLastname" class="form-label">Last Name</label>
-                            <InputText id="editLastname" @bind-Value="editUser.Lastname" class="form-control" />
-                        </div>
-                        @if (isDeveloper)
-                        {
-                            <div class="mb-3 form-full-width">
-                                <label for="editOrganisation" class="form-label">Organization</label>
-                                <InputSelect id="editOrganisation" @bind-Value="editUser.OrganisationId" class="form-control">
-                                    <option value="">None</option>
-                                    @foreach (var org in organisations)
-                                    {
-                                        <option value="@org.Id">@org.Name</option>
-                                    }
-                                </InputSelect>
-                            </div>
-                        }
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @onclick="CloseEditUserModal">Cancel</button>
-                        <button type="submit" class="btn btn-dark">Update</button>
-                    </div>
-                </EditForm>
-            </div>
-        </div>
-    </div>
-}
-
-@* Create User Modal *@
-@if (showCreateUserModal)
-{
-    <div class="blazor-modal" @onclick="CloseCreateUserModal">
-        <div class="blazor-modal-content" @onclick:stopPropagation>
-            <div class="modal-header">
-                <h5 class="modal-title">Create New User</h5>
-                <button type="button" class="btn-close" @onclick="CloseCreateUserModal">×</button>
-            </div>
-            <div class="modal-body">
-                <EditForm Model="@newUser" OnValidSubmit="CreateUser">
-                    <DataAnnotationsValidator />
-                    <div class="form-grid">
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <InputText id="email" @bind-Value="newUser.Email" class="form-control" />
-                            <ValidationMessage For="@(() => newUser.Email)" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="username" class="form-label">Username</label>
-                            <InputText id="username" @bind-Value="newUser.UserName" class="form-control" />
-                            <ValidationMessage For="@(() => newUser.UserName)" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="firstname" class="form-label">First Name</label>
-                            <InputText id="firstname" @bind-Value="newUser.Firstname" class="form-control" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="lastname" class="form-label">Last Name</label>
-                            <InputText id="lastname" @bind-Value="newUser.Lastname" class="form-control" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <InputText id="password" type="password" @bind-Value="newUser.Password" class="form-control" />
-                            <ValidationMessage For="@(() => newUser.Password)" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="confirmPassword" class="form-label">Confirm Password</label>
-                            <InputText id="confirmPassword" type="password" @bind-Value="newUser.ConfirmPassword" class="form-control" />
-                            <ValidationMessage For="@(() => newUser.ConfirmPassword)" />
-                        </div>
-                        @if (isDeveloper)
-                        {
-                            <div class="mb-3 form-full-width">
-                                <label class="form-label">Organization</label>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="orgSelection" id="existingOrg"
-                                           checked="@(!newUser.UseNewOrganisation)"
-                                           @onchange="@(() => SetOrganisationSelection(false))" />
-                                    <label class="form-check-label" for="existingOrg">Select Existing Organization</label>
-                                </div>
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="radio" name="orgSelection" id="newOrg"
-                                           checked="@newUser.UseNewOrganisation"
-                                           @onchange="@(() => SetOrganisationSelection(true))" />
-                                    <label class="form-check-label" for="newOrg">Create New Organization</label>
-                                </div>
-                                @if (newUser.UseNewOrganisation)
-                                {
-                                    <div class="mb-3">
-                                        <label for="newOrganisation" class="form-label">New Organization Name</label>
-                                        <InputText id="newOrganisation" @bind-Value="newUser.NewOrganisationName" class="form-control" />
-                                        <ValidationMessage For="@(() => newUser.NewOrganisationName)" />
-                                    </div>
-                                }
-                                else
-                                {
-                                    <div class="mb-3">
-                                        <label for="organisation" class="form-label">Select Organization</label>
-                                        <InputSelect id="organisation" @bind-Value="newUser.OrganisationId" class="form-control">
-                                            <option value="">None</option>
-                                            @foreach (var org in organisations)
-                                            {
-                                                <option value="@org.Id">@org.Name</option>
-                                            }
-                                        </InputSelect>
-                                    </div>
-                                }
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="mb-3 form-full-width">
-                                <label for="organisation" class="form-label">Organization</label>
-                                <InputSelect id="organisation" @bind-Value="newUser.OrganisationId" class="form-control" disabled>
-                                    @if (currentUser?.OrganisationId != null)
-                                    {
-                                        <option value="@currentUser.OrganisationId">@currentUser.Organisation?.Name</option>
-                                    }
-                                    else
-                                    {
-                                        <option value="">None</option>
-                                    }
-                                </InputSelect>
-                            </div>
-                        }
-                        <div class="form-check-group">
-                            <label class="form-label mb-2">Roles</label>
-                            @if (availableRolesForAssignment.Any())
-                            {
-                                @foreach (var role in availableRolesForAssignment)
-                                {
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox"
-                                               id="@($"userRole-{role.Name}")"
-                                               checked="@(newUser.SelectedRoles.Contains(role.Name ?? ""))"
-                                               @onchange="@((e) => ToggleUserRoleSelection(role.Name ?? "", (bool)(e.Value ?? false)))" />
-                                        <label class="form-check-label" for="@($"userRole-{role.Name}")">
-                                            @role.Name
-                                            <span class="role-badge system-role">
-                                                System
-                                            </span>
-                                        </label>
-                                    </div>
-                                }
-                            }
-                            else
-                            {
-                                <p class="text-muted">No roles available</p>
-                            }
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @onclick="CloseCreateUserModal">Cancel</button>
-                        <button type="submit" class="btn btn-dark">Create</button>
-                    </div>
-                </EditForm>
-            </div>
-        </div>
-    </div>
-}
-
-@* Create Role Modal *@
-@if (showCreateRoleModal)
-{
-    <div class="blazor-modal" @onclick="CloseCreateRoleModal">
-        <div class="blazor-modal-content" @onclick:stopPropagation>
-            <div class="modal-header">
-                <h5 class="modal-title">Create New Role</h5>
-                <button type="button" class="btn-close" @onclick="CloseCreateRoleModal">×</button>
-            </div>
-            <div class="modal-body">
-                <EditForm Model="@newRole" OnValidSubmit="CreateRole">
-                    <DataAnnotationsValidator />
-                    <div class="mb-3">
-                        <label for="roleName" class="form-label">Role Name</label>
-                        <InputText id="roleName" @bind-Value="newRole.Name" class="form-control" />
-                        <ValidationMessage For="@(() => newRole.Name)" />
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @onclick="CloseCreateRoleModal">Cancel</button>
-                        <button type="submit" class="btn btn-dark">Create</button>
-                    </div>
-                </EditForm>
-            </div>
-        </div>
-    </div>
-}
-
-@* Edit Role Modal *@
-@if (showEditRoleModal)
-{
-    <div class="blazor-modal" @onclick="CloseEditRoleModal">
-        <div class="blazor-modal-content" @onclick:stopPropagation>
-            <div class="modal-header">
-                <h5 class="modal-title">Edit Role</h5>
-                <button type="button" class="btn-close" @onclick="CloseEditRoleModal">×</button>
-            </div>
-            <div class="modal-body">
-                <EditForm Model="@editRole" OnValidSubmit="UpdateRole">
-                    <DataAnnotationsValidator />
-                    <div class="mb-3">
-                        <label for="editRoleName" class="form-label">Role Name</label>
-                        <InputText id="editRoleName" @bind-Value="editRole.Name" class="form-control" />
-                        <ValidationMessage For="@(() => editRole.Name)" />
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @onclick="CloseEditRoleModal">Cancel</button>
-                        <button type="submit" class="btn btn-dark">Update</button>
-                    </div>
-                </EditForm>
-            </div>
-        </div>
-    </div>
-}
-
-@* Roles List Modal *@
-@if (showRolesListModal)
-{
-    <div class="blazor-modal" @onclick="CloseRolesListModal">
-        <div class="blazor-modal-content" @onclick:stopPropagation>
-            <div class="modal-header">
-                <h5 class="modal-title">Manage Roles</h5>
-                <button type="button" class="btn-close" @onclick="CloseRolesListModal">×</button>
-            </div>
-            <div class="modal-body">
-                @if (visibleRoles.Any())
-                {
-                    <div class="table-responsive">
-                        <table class="table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>Role Name</th>
-                                    <th>Organization</th>
-                                    <th class="roles-table-actions">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var role in visibleRoles)
-                                {
-                                    <tr>
-                                        <td>@role.Name</td>
-                                        <td>
-                                            <span class="role-badge system-role">System</span>
-                                        </td>
-                                        <td class="roles-table-actions">
-                                            <div class="btn-group action-buttons">
-                                                @if (CanEditRole(role))
-                                                {
-                                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEditRole(role)">
-                                                        <i class="fas fa-edit"></i>
-                                                    </button>
-                                                }
-                                                @if (CanDeleteRole(role))
-                                                {
-                                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteRole(role.Id)">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                }
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-                else
-                {
-                    <p class="text-muted">No roles available</p>
-                }
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-dark" @onclick="CloseRolesListModal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-}
-
-@* Manage User Roles Modal *@
-@if (showManageRolesModal)
-{
-    <div class="blazor-modal" @onclick="CloseManageRolesModal">
-        <div class="blazor-modal-content" @onclick:stopPropagation>
-            <div class="modal-header">
-                <h5 class="modal-title">Manage Roles for @(selectedUser?.Email ?? "User")</h5>
-                <button type="button" class="btn-close" @onclick="CloseManageRolesModal">×</button>
-            </div>
-            <div class="modal-body">
-                @if (availableRolesForAssignment != null && selectedUser != null)
-                {
-                    <div class="form-check-group">
-                        <label class="form-label mb-2">Roles</label>
-                        @foreach (var role in availableRolesForAssignment)
-                        {
-                            <div class="form-check form-switch mb-2">
-                                <input class="form-check-input" type="checkbox"
-                                       id="@($"role-{role.Name}")"
-                                       checked="@(userRoles?.Contains(role.Name ?? "") ?? false)"
-                                       @onchange="@((e) => ToggleUserRole(role.Name ?? "", (bool)(e.Value ?? false)))" />
-                                <label class="form-check-label" for="@($"role-{role.Name}")">
-                                    @role.Name
-                                    <span class="role-badge system-role">
-                                        System
-                                    </span>
-                                </label>
-                            </div>
-                        }
-                    </div>
-                }
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-dark" @onclick="CloseManageRolesModal">Done</button>
-                </div>
-            </div>
-        </div>
-    </div>
-}
-
 @code {
     // Fields - State Variables
     private List<UserInfo> users = new();
@@ -722,13 +918,14 @@
     private string? errorMessage = null;
     private string? successMessage = null;
 
-    // Modal State
-    private bool showCreateUserModal = false;
-    private bool showCreateRoleModal = false;
-    private bool showManageRolesModal = false;
-    private bool showEditUserModal = false;
-    private bool showEditRoleModal = false;
-    private bool showRolesListModal = false;
+    // Form State
+    private bool showForm = false;
+    private bool isEditing = false;
+    private bool isCreatingUser = false;
+    private bool isCreatingRole = false;
+    private bool isEditingRole = false;
+    private bool isManagingRoles = false;
+    private bool isViewingRoles = false;
 
     // Data Collections
     private List<IdentityRole> allRoles = new();
@@ -747,7 +944,7 @@
     private EditUserModel editUser = new();
     private EditRoleModel editRole = new();
 
-    // Role Check Fields (FIXED: No more .Result calls)
+    // Role Check Fields
     private bool isDeveloper = false;
     private bool isCouncilAdmin = false;
     private bool isAdmin = false;
@@ -991,24 +1188,77 @@
         }
     }
 
-    // User Management Methods
-    private void ShowCreateUserModal()
+    // Form Management Methods
+    private void ShowCreateUserForm()
     {
         newUser = new NewUserModel
         {
             OrganisationId = currentUser?.OrganisationId
         };
-        showCreateUserModal = true;
+        // For non-developers, automatically set the organization to current user's org
+        if (!isDeveloper && currentUser?.OrganisationId != null)
+        {
+            newUser.OrganisationId = currentUser.OrganisationId;
+            newUser.UseNewOrganisation = false;
+        }
+        isCreatingUser = true;
+        isEditing = false;
+        isCreatingRole = false;
+        isEditingRole = false;
+        isManagingRoles = false;
+        isViewingRoles = false;
+        showForm = true;
         ClearMessages();
+        StateHasChanged();
     }
 
-    private void CloseCreateUserModal()
+    private void ShowCreateRoleForm()
     {
-        showCreateUserModal = false;
-        newUser = new NewUserModel();
+        newRole = new NewRoleModel();
+        isCreatingRole = true;
+        isCreatingUser = false;
+        isEditing = false;
+        isEditingRole = false;
+        isManagingRoles = false;
+        isViewingRoles = false;
+        showForm = true;
         ClearMessages();
+        StateHasChanged();
     }
 
+    private void ShowRolesListForm()
+    {
+        isViewingRoles = true;
+        isCreatingUser = false;
+        isEditing = false;
+        isCreatingRole = false;
+        isEditingRole = false;
+        isManagingRoles = false;
+        showForm = true;
+        ClearMessages();
+        StateHasChanged();
+    }
+
+    private void CancelForm()
+    {
+        showForm = false;
+        isEditing = false;
+        isCreatingUser = false;
+        isCreatingRole = false;
+        isEditingRole = false;
+        isManagingRoles = false;
+        isViewingRoles = false;
+        newUser = new NewUserModel();
+        newRole = new NewRoleModel();
+        editUser = new EditUserModel();
+        editRole = new EditRoleModel();
+        selectedUser = null;
+        userRoles = new List<string>();
+        ClearMessages();
+        StateHasChanged();
+    }
+
+    // User Management Methods
     private async Task CreateUser()
     {
         try
@@ -1056,7 +1306,7 @@
                 }
 
                 await LoadUsers();
-                CloseCreateUserModal();
+                CancelForm();
                 SetSuccessMessage($"User '{newUser.UserName}' created successfully.");
             }
             else
@@ -1088,7 +1338,14 @@
                     Othernames = user.Othernames,
                     OrganisationId = user.OrganisationId
                 };
-                showEditUserModal = true;
+                isEditing = true;
+                isCreatingUser = false;
+                isCreatingRole = false;
+                isEditingRole = false;
+                isManagingRoles = false;
+                isViewingRoles = false;
+                showForm = true;
+                StateHasChanged();
             }
             else
             {
@@ -1099,13 +1356,6 @@
         {
             SetErrorMessage($"Error loading user for edit: {ex.Message}");
         }
-    }
-
-    private void CloseEditUserModal()
-    {
-        showEditUserModal = false;
-        editUser = new EditUserModel();
-        ClearMessages();
     }
 
     private async Task UpdateUser()
@@ -1127,7 +1377,7 @@
                 if (result.Succeeded)
                 {
                     await LoadUsers();
-                    CloseEditUserModal();
+                    CancelForm();
                     SetSuccessMessage($"User '{editUser.UserName}' updated successfully.");
                 }
                 else
@@ -1249,20 +1499,6 @@
     }
 
     // Role Management Methods
-    private void ShowCreateRoleModal()
-    {
-        newRole = new NewRoleModel();
-        showCreateRoleModal = true;
-        ClearMessages();
-    }
-
-    private void CloseCreateRoleModal()
-    {
-        showCreateRoleModal = false;
-        newRole = new NewRoleModel();
-        ClearMessages();
-    }
-
     private async Task CreateRole()
     {
         try
@@ -1287,7 +1523,7 @@
             if (result.Succeeded)
             {
                 await LoadAllRoles();
-                CloseCreateRoleModal();
+                CancelForm();
                 SetSuccessMessage($"Role '{newRole.Name}' created successfully.");
             }
             else
@@ -1301,18 +1537,6 @@
         }
     }
 
-    private void ShowRolesListModal()
-    {
-        showRolesListModal = true;
-        ClearMessages();
-    }
-
-    private void CloseRolesListModal()
-    {
-        showRolesListModal = false;
-        ClearMessages();
-    }
-
     private void StartEditRole(IdentityRole role)
     {
         editRole = new EditRoleModel
@@ -1320,16 +1544,15 @@
             Id = role.Id,
             Name = role.Name ?? ""
         };
-        showEditRoleModal = true;
-        showRolesListModal = false;
+        isEditingRole = true;
+        isCreatingUser = false;
+        isEditing = false;
+        isCreatingRole = false;
+        isManagingRoles = false;
+        isViewingRoles = false;
+        showForm = true;
         ClearMessages();
-    }
-
-    private void CloseEditRoleModal()
-    {
-        showEditRoleModal = false;
-        editRole = new EditRoleModel();
-        ClearMessages();
+        StateHasChanged();
     }
 
     private async Task UpdateRole()
@@ -1345,7 +1568,7 @@
                 if (result.Succeeded)
                 {
                     await LoadAllRoles();
-                    CloseEditRoleModal();
+                    CancelForm();
                     SetSuccessMessage($"Role updated successfully.");
                 }
                 else
@@ -1410,7 +1633,14 @@
             if (selectedUser != null)
             {
                 userRoles = (await UserManager.GetRolesAsync(selectedUser)).ToList();
-                showManageRolesModal = true;
+                isManagingRoles = true;
+                isCreatingUser = false;
+                isEditing = false;
+                isCreatingRole = false;
+                isEditingRole = false;
+                isViewingRoles = false;
+                showForm = true;
+                StateHasChanged();
             }
             else
             {
@@ -1421,14 +1651,6 @@
         {
             SetErrorMessage($"Error loading user roles: {ex.Message}");
         }
-    }
-
-    private void CloseManageRolesModal()
-    {
-        showManageRolesModal = false;
-        selectedUser = null;
-        userRoles = new List<string>();
-        ClearMessages();
     }
 
     private async Task ToggleUserRole(string roleName, bool isChecked)

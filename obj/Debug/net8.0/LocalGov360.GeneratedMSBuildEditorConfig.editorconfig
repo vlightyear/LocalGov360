@@ -9,277 +9,289 @@ build_property.EnforceExtendedAnalyzerRules =
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = LocalGov360
 build_property.RootNamespace = LocalGov360
-build_property.ProjectDir = C:\Users\Administrator\Source\Repos\LocalGov360\
+build_property.ProjectDir = C:\Users\Administrator\source\repos\LocalGov360\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.RazorLangVersion = 8.0
 build_property.SupportLocalizedComponentNames = 
 build_property.GenerateRazorMetadataSourceChecksumAttributes = 
-build_property.MSBuildProjectDirectory = C:\Users\Administrator\Source\Repos\LocalGov360
+build_property.MSBuildProjectDirectory = C:\Users\Administrator\source\repos\LocalGov360
 build_property._RazorSourceGeneratorDebug = 
 build_property.EffectiveAnalysisLevelStyle = 8.0
 build_property.EnableCodeStyleSeverity = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/AccessDenied.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/AccessDenied.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXEFjY2Vzc0RlbmllZC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/ConfirmEmail.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/ConfirmEmail.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXENvbmZpcm1FbWFpbC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/ConfirmEmailChange.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/ConfirmEmailChange.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXENvbmZpcm1FbWFpbENoYW5nZS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/ExternalLogin.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/ExternalLogin.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXEV4dGVybmFsTG9naW4ucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/ForgotPassword.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/ForgotPassword.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXEZvcmdvdFBhc3N3b3JkLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/ForgotPasswordConfirmation.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/ForgotPasswordConfirmation.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXEZvcmdvdFBhc3N3b3JkQ29uZmlybWF0aW9uLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/InvalidPasswordReset.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/InvalidPasswordReset.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXEludmFsaWRQYXNzd29yZFJlc2V0LnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/InvalidUser.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/InvalidUser.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXEludmFsaWRVc2VyLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/Lockout.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/Lockout.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXExvY2tvdXQucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/Login.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/Login.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXExvZ2luLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/LoginWith2fa.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/LoginWith2fa.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXExvZ2luV2l0aDJmYS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/LoginWithRecoveryCode.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/LoginWithRecoveryCode.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXExvZ2luV2l0aFJlY292ZXJ5Q29kZS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/Manage/ChangePassword.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/Manage/ChangePassword.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXE1hbmFnZVxDaGFuZ2VQYXNzd29yZC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/Manage/DeletePersonalData.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/Manage/DeletePersonalData.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXE1hbmFnZVxEZWxldGVQZXJzb25hbERhdGEucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/Manage/Disable2fa.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/Manage/Disable2fa.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXE1hbmFnZVxEaXNhYmxlMmZhLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/Manage/Email.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/Manage/Email.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXE1hbmFnZVxFbWFpbC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/Manage/EnableAuthenticator.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/Manage/EnableAuthenticator.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXE1hbmFnZVxFbmFibGVBdXRoZW50aWNhdG9yLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/Manage/ExternalLogins.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/Manage/ExternalLogins.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXE1hbmFnZVxFeHRlcm5hbExvZ2lucy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/Manage/GenerateRecoveryCodes.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/Manage/GenerateRecoveryCodes.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXE1hbmFnZVxHZW5lcmF0ZVJlY292ZXJ5Q29kZXMucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/Manage/Index.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/Manage/Index.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXE1hbmFnZVxJbmRleC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/Manage/PersonalData.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/Manage/PersonalData.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXE1hbmFnZVxQZXJzb25hbERhdGEucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/Manage/ResetAuthenticator.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/Manage/ResetAuthenticator.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXE1hbmFnZVxSZXNldEF1dGhlbnRpY2F0b3IucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/Manage/SetPassword.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/Manage/SetPassword.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXE1hbmFnZVxTZXRQYXNzd29yZC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/Manage/TwoFactorAuthentication.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/Manage/TwoFactorAuthentication.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXE1hbmFnZVxUd29GYWN0b3JBdXRoZW50aWNhdGlvbi5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/Manage/_Imports.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/Manage/_Imports.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXE1hbmFnZVxfSW1wb3J0cy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/Register.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/Register.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXFJlZ2lzdGVyLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/RegisterConfirmation.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/RegisterConfirmation.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXFJlZ2lzdGVyQ29uZmlybWF0aW9uLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/ResendEmailConfirmation.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/ResendEmailConfirmation.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXFJlc2VuZEVtYWlsQ29uZmlybWF0aW9uLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/ResetPassword.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/ResetPassword.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXFJlc2V0UGFzc3dvcmQucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/ResetPasswordConfirmation.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/ResetPasswordConfirmation.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXFJlc2V0UGFzc3dvcmRDb25maXJtYXRpb24ucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Pages/_Imports.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Pages/_Imports.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFBhZ2VzXF9JbXBvcnRzLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Shared/AccountLayout.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Shared/AccountLayout.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFNoYXJlZFxBY2NvdW50TGF5b3V0LnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Shared/ExternalLoginPicker.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Shared/ExternalLoginPicker.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFNoYXJlZFxFeHRlcm5hbExvZ2luUGlja2VyLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Shared/ManageLayout.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Shared/ManageLayout.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFNoYXJlZFxNYW5hZ2VMYXlvdXQucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Shared/ManageNavMenu.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Shared/ManageNavMenu.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFNoYXJlZFxNYW5hZ2VOYXZNZW51LnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Shared/RedirectToLogin.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Shared/RedirectToLogin.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFNoYXJlZFxSZWRpcmVjdFRvTG9naW4ucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Shared/ShowRecoveryCodes.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Shared/ShowRecoveryCodes.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFNoYXJlZFxTaG93UmVjb3ZlcnlDb2Rlcy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Account/Shared/StatusMessage.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Account/Shared/StatusMessage.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBY2NvdW50XFNoYXJlZFxTdGF0dXNNZXNzYWdlLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/App.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/App.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBcHAucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/AuthenticationLayout.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/AuthenticationLayout.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcQXV0aGVudGljYXRpb25MYXlvdXQucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Footer.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Footer.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcRm9vdGVyLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/Administration/Component.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Pages/Administration/Component.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcQWRtaW5pc3RyYXRpb25cQ29tcG9uZW50LnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/Administration/UserManagement.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Pages/Administration/UserManagement.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcQWRtaW5pc3RyYXRpb25cVXNlck1hbmFnZW1lbnQucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/Auth.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Pages/Auth.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcQXV0aC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/Component.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Pages/Component.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcQ29tcG9uZW50LnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/Counter.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Pages/Counter.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcQ291bnRlci5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/Documents/Documents.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Pages/Documents/Documents.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcRG9jdW1lbnRzXERvY3VtZW50cy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/Error.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Pages/Error.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcRXJyb3IucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/Home.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Pages/Home.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcSG9tZS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/Organisation/CouncilUserManagement.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Pages/Organisation/CouncilUserManagement.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcT3JnYW5pc2F0aW9uXENvdW5jaWxVc2VyTWFuYWdlbWVudC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/Payments/PaymentServiceConfig.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Pages/Payments/PaymentServiceConfig.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcUGF5bWVudHNcUGF5bWVudFNlcnZpY2VDb25maWcucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/Service/SelfService.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Pages/Service/SelfService.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcU2VydmljZVxTZWxmU2VydmljZS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/Service/ServiceDashboard.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Pages/Service/ServiceDashboard.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcU2VydmljZVxTZXJ2aWNlRGFzaGJvYXJkLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/Service/ServicePayments.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Pages/Service/ServicePayments.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcU2VydmljZVxTZXJ2aWNlUGF5bWVudHMucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/Service/WalkInCustomer.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Pages/Service/ServiceRevenueClass.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcU2VydmljZVxTZXJ2aWNlUmV2ZW51ZUNsYXNzLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Pages/Service/WalkInCustomer.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcU2VydmljZVxXYWxrSW5DdXN0b21lci5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/TaskDetails.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Pages/TaskDetails.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcVGFza0RldGFpbHMucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/Tasks.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Pages/Tasks.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcVGFza3MucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/UserProfile/UserProfile.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Pages/UserProfile/UserProfile.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcVXNlclByb2ZpbGVcVXNlclByb2ZpbGUucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/Workflow/WorkflowManager.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Pages/ValuationRoll/InvoiceGenerator.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcVmFsdWF0aW9uUm9sbFxJbnZvaWNlR2VuZXJhdG9yLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Pages/ValuationRoll/ValuationRoll.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcVmFsdWF0aW9uUm9sbFxWYWx1YXRpb25Sb2xsLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Pages/Workflow/WorkflowManager.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcV29ya2Zsb3dcV29ya2Zsb3dNYW5hZ2VyLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/_Imports.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Pages/_Imports.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcX0ltcG9ydHMucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/SideBar.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/SideBar.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcU2lkZUJhci5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Routes.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Routes.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xSb3V0ZXMucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/_Imports.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/_Imports.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xfSW1wb3J0cy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/MainLayout.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/MainLayout.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcTWFpbkxheW91dC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = b-d4xqkhwqh7
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/NavMenu.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/NavMenu.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcTmF2TWVudS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = b-0pgx3hofy7
 
-[C:/Users/Administrator/Source/Repos/LocalGov360/Components/Layout/Pages/Service/ServiceBuilder.razor]
+[C:/Users/Administrator/source/repos/LocalGov360/Components/Layout/Pages/Service/ServiceBuilder.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUGFnZXNcU2VydmljZVxTZXJ2aWNlQnVpbGRlci5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = b-knh3d89jow

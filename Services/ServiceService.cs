@@ -37,6 +37,8 @@ namespace LocalGov360.Services
                 Description = request.Description,
                 CreatedBy = request.CreatedBy,
                 CreatedDate = DateTime.UtcNow,
+                Requirements  = request.Requirements,
+                ServiceRevenueClassId = request.ServiceRevenueClassId,
                 OrganisationId = request.OrganisationId,
                 WorkflowTemplateId = request.WorkflowTemplateId,
                 DocumentTemplateId = request.DocumentTemplateId,
@@ -98,6 +100,8 @@ namespace LocalGov360.Services
 
             service.Name = request.Name;
             service.Description = request.Description;
+            service.Requirements = request.Requirements;
+            service.ServiceRevenueClassId = request.ServiceRevenueClassId;
             service.ModifiedBy = request.ModifiedBy;
             service.ModifiedDate = DateTime.UtcNow;
             service.WorkflowTemplateId = request.WorkflowTemplateId;
@@ -320,6 +324,9 @@ namespace LocalGov360.Services
         public string Name { get; set; }
         public Guid? OrganisationId { get; set; }
         public string Description { get; set; }
+
+        public string Requirements { get; set; }  // or a suitable type
+        public Guid? ServiceRevenueClassId { get; set; }  // or int/other
         public string CreatedBy { get; set; }
         public Guid? WorkflowTemplateId { get; set; }
         public Guid? DocumentTemplateId { get; set; }
@@ -335,6 +342,7 @@ namespace LocalGov360.Services
         public string Name { get; set; }
         public string Label { get; set; }
         public string Description { get; set; }
+
         public ServiceModels.FieldType FieldType { get; set; }
         public bool IsRequired { get; set; }
         public string DefaultValue { get; set; }
@@ -349,6 +357,9 @@ namespace LocalGov360.Services
         public string Name { get; set; }
         public Guid? OrganisationId { get; set; }
         public string Description { get; set; }
+
+        public string Requirements { get; set; }  // or a suitable type
+        public Guid? ServiceRevenueClassId { get; set; }  // or int/other
         public string ModifiedBy { get; set; }
         public Guid? WorkflowTemplateId { get; set; }
         public Guid? DocumentTemplateId { get; set; }

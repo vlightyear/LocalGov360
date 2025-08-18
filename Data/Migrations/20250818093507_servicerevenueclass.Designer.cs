@@ -4,6 +4,7 @@ using LocalGov360.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LocalGov360.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250818093507_servicerevenueclass")]
+    partial class servicerevenueclass
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -160,9 +163,7 @@ namespace LocalGov360.Migrations
                         .HasColumnType("nvarchar(200)");
 
                     b.Property<DateTime>("CreatedDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("EffectiveFrom")
                         .HasColumnType("datetime2");
@@ -171,9 +172,7 @@ namespace LocalGov360.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<bool>("IsCurrent")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
+                        .HasColumnType("bit");
 
                     b.Property<string>("ModifiedBy")
                         .HasMaxLength(200)
@@ -200,85 +199,11 @@ namespace LocalGov360.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IsCurrent");
+                    b.HasIndex("PropertyTypeId");
 
                     b.HasIndex("ValuationRollId");
 
-                    b.HasIndex("PropertyTypeId", "EffectiveFrom");
-
                     b.ToTable("CouncilPoundageRates");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CreatedDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            EffectiveFrom = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsCurrent = true,
-                            Notes = "Approved rate for Residential",
-                            PropertyTypeId = 1,
-                            Rate = 0.001m
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CreatedDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            EffectiveFrom = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsCurrent = true,
-                            Notes = "Approved rate for Commercial",
-                            PropertyTypeId = 2,
-                            Rate = 0.002m
-                        },
-                        new
-                        {
-                            Id = 3,
-                            CreatedDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            EffectiveFrom = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsCurrent = true,
-                            Notes = "Approved rate for Industrial",
-                            PropertyTypeId = 3,
-                            Rate = 0.002m
-                        },
-                        new
-                        {
-                            Id = 4,
-                            CreatedDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            EffectiveFrom = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsCurrent = true,
-                            Notes = "Approved rate for Hospitality",
-                            PropertyTypeId = 4,
-                            Rate = 0.002m
-                        },
-                        new
-                        {
-                            Id = 5,
-                            CreatedDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            EffectiveFrom = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsCurrent = true,
-                            Notes = "Approved rate for Institutional",
-                            PropertyTypeId = 5,
-                            Rate = 0.002m
-                        },
-                        new
-                        {
-                            Id = 6,
-                            CreatedDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            EffectiveFrom = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsCurrent = true,
-                            Notes = "Approved rate for Power Transmission",
-                            PropertyTypeId = 6,
-                            Rate = 0.0015m
-                        },
-                        new
-                        {
-                            Id = 7,
-                            CreatedDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            EffectiveFrom = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsCurrent = true,
-                            Notes = "Approved rate for Airport",
-                            PropertyTypeId = 7,
-                            Rate = 0.0015m
-                        });
                 });
 
             modelBuilder.Entity("LocalGov360.Data.Models.Property", b =>
@@ -290,9 +215,7 @@ namespace LocalGov360.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -354,13 +277,7 @@ namespace LocalGov360.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PropertyNumber");
-
                     b.HasIndex("PropertyTypeId");
-
-                    b.HasIndex("TotalRateableValue");
-
-                    b.HasIndex("Use");
 
                     b.HasIndex("ValuationRollId", "PropertyNumber")
                         .IsUnique();
@@ -387,9 +304,7 @@ namespace LocalGov360.Migrations
                         .HasColumnType("nvarchar(200)");
 
                     b.Property<DateTime>("CreatedDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
+                        .HasColumnType("datetime2");
 
                     b.Property<decimal>("EvaluationAmount")
                         .HasColumnType("decimal(18,2)");
@@ -402,9 +317,7 @@ namespace LocalGov360.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<bool>("IsPaid")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
+                        .HasColumnType("bit");
 
                     b.Property<string>("ModifiedBy")
                         .HasMaxLength(200)
@@ -436,18 +349,12 @@ namespace LocalGov360.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("InvoiceNumber");
-
-                    b.HasIndex("IsPaid");
-
                     b.HasIndex("ValuationRollId");
-
-                    b.HasIndex("Year", "Period");
 
                     b.HasIndex("PropertyId", "Year", "Period")
                         .IsUnique();
 
-                    b.ToTable("CouncilPropertyEvaluations");
+                    b.ToTable("PropertyEvaluations");
                 });
 
             modelBuilder.Entity("LocalGov360.Data.Models.PropertyType", b =>
@@ -459,18 +366,14 @@ namespace LocalGov360.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
+                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -487,77 +390,10 @@ namespace LocalGov360.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IsActive");
-
                     b.HasIndex("ShortName")
                         .IsUnique();
 
                     b.ToTable("CouncilPropertyTypes");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CreatedDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Residential",
-                            ShortName = "RES",
-                            SortOrder = 1
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CreatedDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Commercial",
-                            ShortName = "COM",
-                            SortOrder = 2
-                        },
-                        new
-                        {
-                            Id = 3,
-                            CreatedDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Industrial",
-                            ShortName = "IND",
-                            SortOrder = 3
-                        },
-                        new
-                        {
-                            Id = 4,
-                            CreatedDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Hospitality",
-                            ShortName = "HOS",
-                            SortOrder = 4
-                        },
-                        new
-                        {
-                            Id = 5,
-                            CreatedDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Institutional",
-                            ShortName = "INS",
-                            SortOrder = 5
-                        },
-                        new
-                        {
-                            Id = 6,
-                            CreatedDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Power Transmission",
-                            ShortName = "PWR",
-                            SortOrder = 6
-                        },
-                        new
-                        {
-                            Id = 7,
-                            CreatedDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Properties Owned by Zambia Airport Corporation Limited",
-                            ShortName = "APT",
-                            SortOrder = 7
-                        });
                 });
 
             modelBuilder.Entity("LocalGov360.Data.Models.RevenueClass", b =>
@@ -762,14 +598,8 @@ namespace LocalGov360.Migrations
                     b.Property<Guid?>("OrganisationId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Requirements")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<decimal?>("ServiceFee")
                         .HasColumnType("decimal(18,2)");
-
-                    b.Property<Guid?>("ServiceRevenueClassId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("StartDate")
                         .HasColumnType("datetime2");
@@ -1076,9 +906,7 @@ namespace LocalGov360.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime>("CreatedDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
+                        .HasColumnType("datetime2");
 
                     b.Property<Guid?>("OrganisationId")
                         .HasColumnType("uniqueidentifier");
@@ -1095,11 +923,10 @@ namespace LocalGov360.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("RollNumber");
+                    b.HasIndex("Council", "Year")
+                        .IsUnique();
 
-                    b.HasIndex("Council", "Year");
-
-                    b.ToTable("CouncilValuationRolls");
+                    b.ToTable("CouncilValuationRoll");
                 });
 
             modelBuilder.Entity("LocalGov360.Data.Models.WorkflowInstance", b =>
@@ -1557,7 +1384,7 @@ namespace LocalGov360.Migrations
                     b.HasOne("LocalGov360.Data.Models.PropertyType", "PropertyType")
                         .WithMany("PoundageRates")
                         .HasForeignKey("PropertyTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("LocalGov360.Data.Models.ValuationRoll", "ValuationRoll")
@@ -1573,7 +1400,7 @@ namespace LocalGov360.Migrations
             modelBuilder.Entity("LocalGov360.Data.Models.Property", b =>
                 {
                     b.HasOne("LocalGov360.Data.Models.PropertyType", "PropertyType")
-                        .WithMany("Properties")
+                        .WithMany()
                         .HasForeignKey("PropertyTypeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -1600,7 +1427,7 @@ namespace LocalGov360.Migrations
                     b.HasOne("LocalGov360.Data.Models.ValuationRoll", "ValuationRoll")
                         .WithMany("PropertyEvaluations")
                         .HasForeignKey("ValuationRollId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Property");
@@ -1775,8 +1602,6 @@ namespace LocalGov360.Migrations
             modelBuilder.Entity("LocalGov360.Data.Models.PropertyType", b =>
                 {
                     b.Navigation("PoundageRates");
-
-                    b.Navigation("Properties");
                 });
 
             modelBuilder.Entity("LocalGov360.Data.Models.ServiceInvoice", b =>

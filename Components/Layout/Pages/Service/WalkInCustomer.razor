@@ -173,13 +173,21 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="row g-3">
-                                        <div class="col-md-6">
-                                            <label class="form-label fw-bold">Customer Name <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control" @bind="CustomerName" placeholder="Enter customer's full name" />
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-bold">First Name <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" @bind="CustomerFirstName" placeholder="Enter customer's first name" />
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-bold">Last Name <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" @bind="CustomerLastName" placeholder="Enter customer's last name" />
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-bold">Other Names</label>
+                                            <input type="text" class="form-control" @bind="CustomerOtherNames" placeholder="Enter other names (optional)" />
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label fw-bold">Customer Email</label>
-                                            <input type="email" class="form-control" @bind="CustomerEmail" placeholder="Enter customer's email (optional)" />
+                                            <label class="form-label fw-bold">Customer Email <span class="text-danger">*</span></label>
+                                            <input type="email" class="form-control" @bind="CustomerEmail" placeholder="Enter customer's email" />
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-bold">Customer Phone</label>
@@ -188,6 +196,17 @@
                                         <div class="col-md-6">
                                             <label class="form-label fw-bold">ID Number</label>
                                             <input type="text" class="form-control" @bind="CustomerIdNumber" placeholder="Enter customer's ID number (optional)" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check mt-4">
+                                                <input class="form-check-input" type="checkbox" @bind="CreateUserAccount" id="createUserAccount">
+                                                <label class="form-check-label fw-bold" for="createUserAccount">
+                                                    Create user account for customer
+                                                </label>
+                                                <small class="form-text text-muted d-block">
+                                                    If checked, a user account will be created for the customer to track their applications
+                                                </small>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -525,26 +544,12 @@
         border-width: 2px !important;
     }
 
-    /* Add subtle animation to the dropdown */
- 
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-
-    }
-
     .select-wrapper {
         animation: fadeInUp 0.5s ease-out;
     }
 
-  
-
     .select-arrow {
         right: 1rem;
-    }
-
     }
 </style>
 
@@ -560,10 +565,13 @@
     private decimal? NumberValue;
 
     // Customer Information
-    private string CustomerName = string.Empty;
+    private string CustomerFirstName = string.Empty;
+    private string CustomerLastName = string.Empty;
+    private string CustomerOtherNames = string.Empty;
     private string CustomerEmail = string.Empty;
     private string CustomerPhone = string.Empty;
     private string CustomerIdNumber = string.Empty;
+    private bool CreateUserAccount = true; // Default to creating user account
 
     // Pagination for form fields
     private int CurrentPage = 0;
@@ -580,12 +588,35 @@
 
         if (user.Identity != null && user.Identity.IsAuthenticated)
         {
-            appUser = await UserManager.GetUserAsync(user);
-            if (appUser != null)
+            // Load user with organization included in a single query
+            var userId = UserManager.GetUserId(user);
+            if (!string.IsNullOrEmpty(userId))
             {
-                await LoadStaffOrganizationAsync();
-                await LoadServicesForStaffOrganizationAsync();
+                appUser = await _db.Users
+                    .Include(u => u.Organisation)
+                    .FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (appUser != null)
+                {
+                    await LoadStaffOrganizationAsync();
+                    if (StaffOrganization != null)
+                    {
+                        await LoadServicesForStaffOrganizationAsync();
+                    }
+                }
+                else
+                {
+                    Feedback = "User profile not found.";
+                }
             }
+            else
+            {
+                Feedback = "Unable to identify user.";
+            }
+        }
+        else
+        {
+            Feedback = "Please log in to access services.";
         }
     }
 
@@ -593,31 +624,61 @@
     {
         try
         {
-            // Get staff organization from user claims, user profile, or organization relationship
-            var organizationId = user.FindFirst("OrganizationId")?.Value;
-            if (string.IsNullOrEmpty(organizationId))
+            if (appUser == null)
             {
-                // Alternative: Get from UserRoles or a separate staff-organization table
-                // For now, we'll get the first organization as a fallback
-                var firstOrg = await _db.Organisations.FirstOrDefaultAsync();
-                if (firstOrg != null)
-                {
-                    StaffOrganization = new Organization { Id = firstOrg.Id, Name = firstOrg.Name };
-                }
+                Feedback = "User not authenticated.";
+                return;
             }
-            else if (Guid.TryParse(organizationId, out var orgId))
+
+            // Debug logging
+            Console.WriteLine($"Loading organization for user: {appUser.UserName}");
+            Console.WriteLine($"User ID: {appUser.Id}");
+            Console.WriteLine($"Organization ID from user: {appUser.OrganisationId}");
+
+            // First check if organization was loaded with Include
+            if (appUser.Organisation != null)
             {
-                var org = await _db.Organisations.FindAsync(orgId);
+                StaffOrganization = new Organization
+                {
+                    Id = appUser.Organisation.Id,
+                    Name = appUser.Organisation.Name
+                };
+                Console.WriteLine($"Loaded organization via Include: {appUser.Organisation.Name}");
+                return;
+            }
+
+            // Fallback: Load organization separately if user has OrganisationId
+            if (appUser.OrganisationId.HasValue)
+            {
+                var org = await _db.Organisations
+                    .Where(o => o.Id == appUser.OrganisationId.Value)
+                    .FirstOrDefaultAsync();
+
                 if (org != null)
                 {
                     StaffOrganization = new Organization { Id = org.Id, Name = org.Name };
+                    Console.WriteLine($"Loaded organization via separate query: {org.Name}");
+                    return;
+                }
+                else
+                {
+                    Console.WriteLine($"Organization with ID {appUser.OrganisationId.Value} not found in database");
+                    Feedback = $"Organization with ID {appUser.OrganisationId.Value} not found. Please contact your administrator.";
                 }
             }
+            else
+            {
+                Console.WriteLine($"User {appUser.UserName} has no OrganisationId assigned");
+                Feedback = "No organization assigned to your account. Please contact your administrator.";
+            }
+
+            StaffOrganization = null;
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading staff organization: {ex}");
             Feedback = $"Error loading organization: {ex.Message}";
+            StaffOrganization = null;
         }
     }
 
@@ -625,7 +686,14 @@
     {
         try
         {
-            if (StaffOrganization == null) return;
+            if (StaffOrganization == null)
+            {
+                Console.WriteLine("No organization available to load services");
+                Services = new List<ServiceModels.Service>();
+                return;
+            }
+
+            Console.WriteLine($"Loading services for organization: {StaffOrganization.Name} (ID: {StaffOrganization.Id})");
 
             Services = await _db.Services
                 .Where(s => s.OrganisationId == StaffOrganization.Id && s.IsActive)
@@ -653,6 +721,13 @@
                 })
                 .OrderBy(s => s.Name)
                 .ToListAsync();
+
+            Console.WriteLine($"Loaded {Services?.Count ?? 0} services for organization {StaffOrganization.Name}");
+
+            if (Services?.Count == 0)
+            {
+                Feedback = $"No active services found for {StaffOrganization.Name}. Please contact your administrator.";
+            }
         }
         catch (Exception ex)
         {
@@ -710,10 +785,13 @@
             };
 
             // Reset form data
-            CustomerName = string.Empty;
+            CustomerFirstName = string.Empty;
+            CustomerLastName = string.Empty;
+            CustomerOtherNames = string.Empty;
             CustomerEmail = string.Empty;
             CustomerPhone = string.Empty;
             CustomerIdNumber = string.Empty;
+            CreateUserAccount = true;
             CurrentPage = 0;
             ShowView("service-form");
         }
@@ -731,9 +809,24 @@
             // Validate customer information on first page
             if (CurrentPage == 0)
             {
-                if (string.IsNullOrWhiteSpace(CustomerName))
+                if (string.IsNullOrWhiteSpace(CustomerFirstName))
                 {
-                    Feedback = "Customer name is required";
+                    Feedback = "Customer first name is required";
+                    return;
+                }
+                if (string.IsNullOrWhiteSpace(CustomerLastName))
+                {
+                    Feedback = "Customer last name is required";
+                    return;
+                }
+                if (string.IsNullOrWhiteSpace(CustomerEmail))
+                {
+                    Feedback = "Customer email is required";
+                    return;
+                }
+                if (!IsValidEmail(CustomerEmail))
+                {
+                    Feedback = "Please enter a valid email address";
                     return;
                 }
             }
@@ -774,60 +867,278 @@
         }
     }
 
-    private async Task SubmitServiceFormAsync()
+    private bool IsValidEmail(string email)
     {
-        if (ServiceFormModel == null) return;
-
-        IsSubmitting = true;
         try
         {
-            // Validate customer information
-            if (string.IsNullOrWhiteSpace(CustomerName))
+            var addr = new System.Net.Mail.MailAddress(email);
+            return addr.Address == email;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private async Task<ApplicationUser?> CreateOrGetCustomerUserAsync()
+    {
+        try
+        {
+            if (!CreateUserAccount)
             {
-                Feedback = "Customer name is required";
+                return null; // Don't create user if checkbox is unchecked
+            }
+
+            if (string.IsNullOrWhiteSpace(CustomerEmail))
+            {
+                Console.WriteLine("Cannot create user: Email is required");
+                return null;
+            }
+
+            // Check if user already exists by email
+            var existingUser = await UserManager.FindByEmailAsync(CustomerEmail);
+            if (existingUser != null)
+            {
+                Console.WriteLine($"User already exists with email: {CustomerEmail}");
+
+                // Update user information if provided and different
+                bool userUpdated = false;
+                if (!string.IsNullOrWhiteSpace(CustomerFirstName) && existingUser.Firstname != CustomerFirstName)
+                {
+                    existingUser.Firstname = CustomerFirstName;
+                    userUpdated = true;
+                }
+                if (!string.IsNullOrWhiteSpace(CustomerLastName) && existingUser.Lastname != CustomerLastName)
+                {
+                    existingUser.Lastname = CustomerLastName;
+                    userUpdated = true;
+                }
+                if (!string.IsNullOrWhiteSpace(CustomerOtherNames) && existingUser.Othernames != CustomerOtherNames)
+                {
+                    existingUser.Othernames = CustomerOtherNames;
+                    userUpdated = true;
+                }
+                if (!string.IsNullOrWhiteSpace(CustomerPhone) && existingUser.PhoneNumber != CustomerPhone)
+                {
+                    existingUser.PhoneNumber = CustomerPhone;
+                    userUpdated = true;
+                }
+
+                if (userUpdated)
+                {
+                    var updateResult = await UserManager.UpdateAsync(existingUser);
+                    if (!updateResult.Succeeded)
+                    {
+                        Console.WriteLine($"Failed to update existing user: {string.Join(", ", updateResult.Errors.Select(e => e.Description))}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Updated existing user information");
+                    }
+                }
+
+                return existingUser;
+            }
+
+            // Create new user
+            var customerUser = new ApplicationUser
+            {
+                UserName = CustomerEmail,
+                Email = CustomerEmail,
+                EmailConfirmed = true, // Auto-confirm email for walk-in customers
+                Firstname = CustomerFirstName?.Trim(),
+                Lastname = CustomerLastName?.Trim(),
+                Othernames = string.IsNullOrWhiteSpace(CustomerOtherNames) ? null : CustomerOtherNames.Trim(),
+                PhoneNumber = string.IsNullOrWhiteSpace(CustomerPhone) ? null : CustomerPhone.Trim(),
+                OrganisationId = null // Walk-in customers are not associated with an organization
+            };
+
+            // Generate a random password for the customer
+            var tempPassword = GenerateRandomPassword();
+
+            var result = await UserManager.CreateAsync(customerUser, tempPassword);
+
+            if (result.Succeeded)
+            {
+                Console.WriteLine($"Successfully created user account for customer: {CustomerEmail}");
+
+                // Optionally, you could send an email to the customer with their login details
+                // or provide them with a way to reset their password
+
+                return customerUser;
+            }
+            else
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                Console.WriteLine($"Failed to create user account: {errors}");
+                Feedback = $"Warning: Could not create customer account: {errors}";
+                return null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating/getting customer user: {ex}");
+            Feedback = $"Warning: Error with customer account: {ex.Message}";
+            return null;
+        }
+    }
+
+    private string GenerateRandomPassword()
+    {
+        // Generate a random password that meets typical requirements
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+        const string numbers = "0123456789";
+        const string symbols = "!@#$%^&*";
+        const string upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const string lowerCase = "abcdefghijklmnopqrstuvwxyz";
+
+        var random = new Random();
+
+        // Ensure at least one character from each required category
+        var password = new char[12];
+        password[0] = upperCase[random.Next(upperCase.Length)];
+        password[1] = lowerCase[random.Next(lowerCase.Length)];
+        password[2] = numbers[random.Next(numbers.Length)];
+        password[3] = symbols[random.Next(symbols.Length)];
+
+        // Fill the rest with random characters
+        for (int i = 4; i < password.Length; i++)
+        {
+            password[i] = chars[random.Next(chars.Length)];
+        }
+
+        // Shuffle the password
+        for (int i = password.Length - 1; i > 0; i--)
+        {
+            int j = random.Next(i + 1);
+            (password[i], password[j]) = (password[j], password[i]);
+        }
+
+        return new string(password);
+    }
+
+    private async Task SubmitServiceFormAsync()
+    {
+        Console.WriteLine("SubmitServiceFormAsync called");
+
+        if (ServiceFormModel == null)
+        {
+            Console.WriteLine("ServiceFormModel is null");
+            Feedback = "Form data is missing";
+            StateHasChanged();
+            return;
+        }
+
+        IsSubmitting = true;
+        StateHasChanged(); // Force UI update
+
+        ApplicationUser? customerUser = null;
+
+        try
+        {
+            Console.WriteLine("Starting form validation");
+
+            // Validate customer information
+            if (string.IsNullOrWhiteSpace(CustomerFirstName))
+            {
+                Console.WriteLine("Customer first name validation failed");
+                Feedback = "Customer first name is required";
+                IsSubmitting = false;
+                StateHasChanged();
                 return;
             }
+            if (string.IsNullOrWhiteSpace(CustomerLastName))
+            {
+                Console.WriteLine("Customer last name validation failed");
+                Feedback = "Customer last name is required";
+                IsSubmitting = false;
+                StateHasChanged();
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(CustomerEmail))
+            {
+                Console.WriteLine("Customer email validation failed");
+                Feedback = "Customer email is required";
+                IsSubmitting = false;
+                StateHasChanged();
+                return;
+            }
+            if (!IsValidEmail(CustomerEmail))
+            {
+                Console.WriteLine("Customer email format validation failed");
+                Feedback = "Please enter a valid email address";
+                IsSubmitting = false;
+                StateHasChanged();
+                return;
+            }
+
+            Console.WriteLine("Customer info validation passed");
 
             // Validate all required fields
             foreach (var field in ServiceFormModel.Fields.Where(f => f.IsRequired))
             {
+                Console.WriteLine($"Validating required field: {field.Label}");
+
                 if (field.Type == ServiceModels.FieldType.Checkbox)
                 {
                     if (!field.CheckboxValues.Any(kv => kv.Value))
                     {
+                        Console.WriteLine($"Checkbox field '{field.Label}' validation failed");
                         Feedback = $"Field '{field.Label}' is required";
+                        IsSubmitting = false;
+                        StateHasChanged();
                         return;
                     }
                 }
                 else if (string.IsNullOrWhiteSpace(field.Value))
                 {
+                    Console.WriteLine($"Field '{field.Label}' validation failed - value is empty");
                     Feedback = $"Field '{field.Label}' is required";
+                    IsSubmitting = false;
+                    StateHasChanged();
                     return;
                 }
             }
 
+            Console.WriteLine("All field validation passed");
+
+            // Create or get customer user account - this is where ALL customer data is stored
+            Console.WriteLine("Creating/getting customer user account");
+            customerUser = await CreateOrGetCustomerUserAsync();
+
+            if (customerUser == null && CreateUserAccount)
+            {
+                Feedback = "Failed to create customer account. Please try again.";
+                IsSubmitting = false;
+                StateHasChanged();
+                return;
+            }
+
+            Console.WriteLine($"Customer user result: {(customerUser != null ? customerUser.Email : "No user created")}");
+
             var values = new List<SubmissionValue>();
 
-            // Add customer information as special fields
-            values.Add(new SubmissionValue { FieldId = 0, Value = $"CUSTOMER_NAME:{CustomerName}" });
-            if (!string.IsNullOrWhiteSpace(CustomerEmail))
-                values.Add(new SubmissionValue { FieldId = 0, Value = $"CUSTOMER_EMAIL:{CustomerEmail}" });
-            if (!string.IsNullOrWhiteSpace(CustomerPhone))
-                values.Add(new SubmissionValue { FieldId = 0, Value = $"CUSTOMER_PHONE:{CustomerPhone}" });
-            if (!string.IsNullOrWhiteSpace(CustomerIdNumber))
-                values.Add(new SubmissionValue { FieldId = 0, Value = $"CUSTOMER_ID:{CustomerIdNumber}" });
+            Console.WriteLine($"Processing {ServiceFormModel.Fields.Count} form fields");
 
+            // Process ONLY form fields - no customer data here
             foreach (var field in ServiceFormModel.Fields)
             {
+                Console.WriteLine($"Processing field {field.Id}: {field.Label} (Type: {field.Type})");
+
                 if (field.Type == ServiceModels.FieldType.Checkbox)
                 {
-                    foreach (var kv in field.CheckboxValues.Where(kv => kv.Value))
+                    // Handle checkboxes - create separate submission values for each selected option
+                    var selectedOptions = field.CheckboxValues.Where(kv => kv.Value).ToList();
+                    Console.WriteLine($"Checkbox field has {selectedOptions.Count} selected options");
+
+                    foreach (var kv in selectedOptions)
                     {
                         values.Add(new SubmissionValue
                         {
                             FieldId = field.Id,
                             Value = kv.Key
                         });
+                        Console.WriteLine($"Added checkbox value: {kv.Key}");
                     }
                 }
                 else if (!string.IsNullOrEmpty(field.Value))
@@ -837,21 +1148,70 @@
                         FieldId = field.Id,
                         Value = field.Value
                     });
+                    Console.WriteLine($"Added field value: {field.Value}");
+                }
+                else if (field.IsRequired)
+                {
+                    Console.WriteLine($"Required field '{field.Label}' has no value");
+                    Feedback = $"Field '{field.Label}' is required";
+                    IsSubmitting = false;
+                    StateHasChanged();
+                    return;
                 }
             }
 
-            var submittedBy = $"STAFF:{appUser?.UserName ?? appUser?.Email ?? "Unknown"} | CUSTOMER:{CustomerName}";
+            Console.WriteLine($"Total submission values: {values.Count}");
+
+            // Clean, simple SubmittedBy - just the staff member who processed it
+            var submittedBy = appUser?.UserName ?? appUser?.Email ?? "Unknown Staff";
+
+            Console.WriteLine($"Submitting service with SubmittedBy: {submittedBy}");
+
             var submission = await ServiceService.SubmitServiceAsync(ServiceFormModel.ServiceId, new SubmitServiceRequest
             {
                 SubmittedBy = submittedBy,
                 IpAddress = "0.0.0.0",
-                UserAgent = "Staff Portal",
+                UserAgent = "Staff Portal - Walk-in Customer",
                 Values = values
             });
 
-            // Start workflow if template is assigned
+            Console.WriteLine($"Submission created with ID: {submission?.Id}");
+
+            // Link the submission to the customer user (if one was created)
+            if (customerUser != null && submission != null)
+            {
+                try
+                {
+                    // Update the submission record to link it with the customer user
+                    var submissionEntity = await _db.ServiceSubmissions
+                        .FirstOrDefaultAsync(s => s.Id == submission.Id);
+
+                    if (submissionEntity != null)
+                    {
+                        // If your ServiceSubmission entity has a UserId property, set it here
+                        // This creates a proper foreign key relationship to the Users table
+                        // submissionEntity.UserId = customerUser.Id;
+
+                        // Temporarily store user ID in SubmittedBy until you add UserId column
+                        // You can remove this when you add the proper UserId foreign key
+                        submissionEntity.SubmittedBy = $"{submittedBy} (for UserId: {customerUser.Id})";
+
+                        await _db.SaveChangesAsync();
+                        Console.WriteLine($"Submission {submission.Id} linked to customer user {customerUser.Id}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Warning: Could not link submission to customer user: {ex.Message}");
+                    // Don't fail the entire operation if this fails
+                }
+            }
+
+            // Start workflow if template is assigned (following the same pattern as sample code)
             if (ServiceFormModel.WorkflowTemplateId.HasValue && appUser != null)
             {
+                Console.WriteLine($"Creating workflow for template: {ServiceFormModel.WorkflowTemplateId.Value}");
+
                 var workflow = await WorkflowFactory.CreateInstanceAsync(
                     ServiceFormModel.WorkflowTemplateId.Value,
                     appUser.Id,
@@ -860,41 +1220,71 @@
                 submission.WorkflowInstanceId = workflow.Id;
                 _db.Update(submission);
                 await _db.SaveChangesAsync();
+
+                Console.WriteLine($"Workflow created with ID: {workflow.Id}");
             }
 
-            // Show success message using SweetAlert
+            // Prepare success message
+            var customerName = $"{CustomerFirstName} {CustomerLastName}".Trim();
+            if (!string.IsNullOrWhiteSpace(CustomerOtherNames))
+            {
+                customerName = $"{CustomerFirstName} {CustomerOtherNames} {CustomerLastName}".Trim();
+            }
+
+            var successMessage = $"Application submitted successfully for {customerName}";
+            if (customerUser != null && CreateUserAccount)
+            {
+                successMessage += $"\\n\\nCustomer account created with email: {CustomerEmail}";
+                successMessage += "\\nThe customer can use this email to log in and track their applications.";
+            }
+
+            Console.WriteLine("Showing success message");
+
+            // Show success message using SweetAlert (following the same pattern as sample code)
             await JS.InvokeVoidAsync("Swal.fire", new
             {
                 title = "Success!",
-                text = $"Application submitted successfully for {CustomerName}",
+                text = successMessage,
                 icon = "success",
-                confirmButtonText = "OK",
-                confirmButtonColor = "#198754"
+                timer = 2000,
+                showConfirmButton = false,
+                customClass = new { popup = "swal2-popup" }
             });
+
+            Console.WriteLine("Resetting form and returning to services list");
 
             // Reset form and return to services list
             ServiceFormModel = null;
-            CustomerName = string.Empty;
+            CustomerFirstName = string.Empty;
+            CustomerLastName = string.Empty;
+            CustomerOtherNames = string.Empty;
             CustomerEmail = string.Empty;
             CustomerPhone = string.Empty;
             CustomerIdNumber = string.Empty;
+            CreateUserAccount = true;
             CurrentPage = 0;
             ShowView("services-list");
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"Exception in SubmitServiceFormAsync: {ex}");
+
             await JS.InvokeVoidAsync("Swal.fire", new
             {
                 title = "Error!",
-                text = $"Error submitting application: {ex.Message}",
+                text = ex.Message,
                 icon = "error",
-                confirmButtonText = "OK",
-                confirmButtonColor = "#dc3545"
+                timer = 4000,
+                showConfirmButton = false,
+                customClass = new { popup = "swal2-popup" }
             });
+            Feedback = $"Error submitting form: {ex.Message}";
         }
         finally
         {
+            Console.WriteLine("Setting IsSubmitting = false");
             IsSubmitting = false;
+            StateHasChanged();
         }
     }
 
@@ -907,6 +1297,25 @@
             CurrentPage = 0; // Reset page index when leaving form
         }
         StateHasChanged();
+    }
+
+    // Helper method to refresh data if needed
+    private async Task RefreshDataAsync()
+    {
+        try
+        {
+            await LoadStaffOrganizationAsync();
+            if (StaffOrganization != null)
+            {
+                await LoadServicesForStaffOrganizationAsync();
+            }
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error refreshing data: {ex}");
+            Feedback = $"Error refreshing data: {ex.Message}";
+        }
     }
 
     public class Organization

@@ -1,0 +1,1093 @@
+﻿@page "/valuation"
+@page "/properties/{ValuationRollId:int?}"
+@using LocalGov360.Data
+@using LocalGov360.Data.Models
+@using LocalGov360.Services
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IValuationUploadService UploadService
+@inject IValuationUploadService EvaluationService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<PageTitle>Property Valuation</PageTitle>
+
+<style>
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .header-buttons {
+        display: flex;
+        gap: 1rem;
+    }
+
+    /* Modern Form Styling */
+    .modern-form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-span-2 {
+        grid-column: 1 / -1;
+    }
+
+    .modern-label {
+        font-weight: 600;
+        color: #344767;
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.02em;
+    }
+
+    .input-wrapper {
+        position: relative;
+    }
+
+    .modern-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid #d2d6da;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        transition: all 0.15s ease-in-out;
+        background-color: #fff;
+        color: #495057;
+    }
+
+        .modern-input:focus {
+            outline: none;
+            border-color: #344767;
+            box-shadow: 0 0 0 0.2rem rgba(52, 71, 103, 0.1);
+            background-color: #fff;
+        }
+
+        .modern-input::placeholder {
+            color: #adb5bd;
+            opacity: 1;
+        }
+
+    .validation-message {
+        color: #dc3545;
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+        font-weight: 500;
+    }
+
+    .form-helper-text {
+        color: #6c757d;
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+        font-style: italic;
+    }
+
+    /* Modern Button Styling */
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid #dee2e6;
+    }
+
+    .btn-modern {
+        padding: 0.75rem 2rem;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.15s ease-in-out;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        letter-spacing: 0.02em;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #344767 0%, #2c3e50 100%);
+        color: white;
+        box-shadow: 0 4px 6px rgba(52, 71, 103, 0.3);
+    }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(52, 71, 103, 0.4);
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+        box-shadow: 0 4px 6px rgba(108, 117, 125, 0.3);
+    }
+
+        .btn-secondary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(108, 117, 125, 0.4);
+            background-color: #5a6268;
+        }
+
+    /* Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 1.25rem;
+        border-radius: 0.75rem;
+        text-align: center;
+        border: 1px solid #dee2e6;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #344767;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.8rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Use badges */
+    .use-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-align: center;
+        min-width: 60px;
+    }
+
+    .use-res {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .use-com {
+        background-color: #cce5ff;
+        color: #004085;
+    }
+
+    .use-ind {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    .use-hos {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    .use-ins {
+        background-color: #e2e3e5;
+        color: #383d41;
+    }
+
+    .use-pwr {
+        background-color: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .use-apt {
+        background-color: #ffeaa7;
+        color: #6c757d;
+    }
+
+    /* Editable cell */
+    .editable-cell {
+        background-color: #fffbf0;
+        border: 1px solid #ffc107;
+        border-radius: 4px;
+        padding: 0.25rem;
+        text-align: right;
+        width: 100px;
+    }
+
+        .editable-cell:focus {
+            outline: none;
+            border-color: #344767;
+            background-color: white;
+        }
+
+    /* Preview styles */
+    .preview-stats {
+        margin-bottom: 1rem;
+    }
+
+    .valid-row {
+        background-color: #f8fff9;
+    }
+
+    .invalid-row {
+        background-color: #fff5f5;
+    }
+
+    /* Responsive Design */
+    @@media (max-width: 768px) {
+        .modern-form-grid {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        .form-span-2 {
+            grid-column: 1;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .btn-modern {
+            width: 100%;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+
+<div class="container-fluid py-2">
+    <div class="row">
+        <!-- Upload Form Panel - Show on the left side when form is active -->
+        @if (showUploadForm)
+        {
+            <div class="col-lg-4 order-1">
+                <div class="card my-4">
+                    <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                        <div class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3">
+                            <h6 class="text-white text-capitalize ps-3">Upload Valuation Roll</h6>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="modern-form-grid">
+                            <div class="form-group">
+                                <label class="modern-label">Council Name</label>
+                                <div class="input-wrapper">
+                                    <input type="text" class="modern-input" @bind="councilName" placeholder="Enter council name" />
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="modern-label">Roll Year</label>
+                                <div class="input-wrapper">
+                                    <input type="number" class="modern-input" @bind="rollYear" placeholder="@DateTime.Now.Year" />
+                                </div>
+                            </div>
+
+                            <div class="form-group form-span-2">
+                                <label class="modern-label">Select File (CSV or Excel)</label>
+                                <div class="input-wrapper">
+                                    <InputFile class="modern-input" OnChange="OnFileSelected" accept=".csv,.xlsx,.xls" />
+                                    <div class="form-helper-text">Supported formats: CSV (.csv), Excel (.xlsx, .xls)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button class="btn-modern btn-primary" @onclick="UploadFile" disabled="@(selectedFile == null || isUploading)">
+                                @if (isUploading)
+                                {
+                                    <i class="fas fa-spinner fa-spin me-2"></i>
+                                    <span>Uploading...</span>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-upload me-2"></i>
+                                    <span>Upload</span>
+                                }
+                            </button>
+
+                            @if (selectedFile != null)
+                            {
+                                <button class="btn-modern btn-secondary" @onclick="PreviewFile" disabled="@isUploading">
+                                    <i class="fas fa-eye me-2"></i>
+                                    Preview Data
+                                </button>
+                            }
+
+                            <button class="btn-modern btn-secondary" @onclick="CancelUploadForm">
+                                <i class="fas fa-times me-2"></i>
+                                Cancel
+                            </button>
+                        </div>
+
+                        <!-- Preview Section -->
+                        @if (previewData.Any())
+                        {
+                            <div class="mt-4">
+                                <h6 class="mb-3">Data Preview</h6>
+                                <div class="preview-stats">
+                                    <span class="badge badge-sm bg-gradient-info me-2">Total: @previewData.Count</span>
+                                    <span class="badge badge-sm bg-gradient-success me-2">Valid: @previewData.Count(p => p.IsValid)</span>
+                                    <span class="badge badge-sm bg-gradient-danger">Invalid: @previewData.Count(p => !p.IsValid)</span>
+                                </div>
+
+                                <div class="table-responsive" style="max-height: 300px;">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Property #</th>
+                                                <th>Description</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var item in previewData.Take(5))
+                                            {
+                                                <tr class="@(item.IsValid ? "valid-row" : "invalid-row")">
+                                                    <td>@item.PropertyNumber</td>
+                                                    <td>@TruncateText(item.Description, 20)</td>
+                                                    <td>
+                                                        @if (item.IsValid)
+                                                        {
+                                                            <span class="badge badge-sm bg-gradient-success">Valid</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="badge badge-sm bg-gradient-danger">Invalid</span>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                @if (previewData.Count > 5)
+                                {
+                                    <small class="text-muted">Showing first 5 rows of @previewData.Count total rows</small>
+                                }
+
+                                <div class="text-center mt-3">
+                                    <button class="btn btn-sm btn-outline-secondary" @onclick="ClearPreview">Clear Preview</button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Main Content -->
+        <div class="@(showUploadForm ? "col-lg-8 order-2" : "col-12")">
+            <div class="card my-4">
+                <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                    <div class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3">
+                        <h6 class="text-white text-capitalize ps-3">Property Valuation Management</h6>
+                        <div class="ps-3 pb-2 d-flex align-items-center header-buttons">
+                            <button class="btn btn-sm btn-outline-light" @onclick="LoadAvailableRolls">
+                                <i class="fas fa-sync-alt me-1"></i> Refresh
+                            </button>
+                            <button class="btn btn-sm btn-outline-light" @onclick="ShowUploadForm">
+                                <i class="fas fa-plus me-1"></i> Upload Valuation Roll
+                            </button>
+                            @if (selectedRollId.HasValue)
+                            {
+                                <button class="btn btn-sm btn-outline-light" @onclick="RunEvaluation" disabled="@isRunningEvaluation">
+                                    @if (isRunningEvaluation)
+                                    {
+                                        <i class="fas fa-spinner fa-spin me-1"></i>
+                                        <span>Running...</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="fas fa-calculator me-1"></i>
+                                        <span>Run Evaluation</span>
+                                    }
+                                </button>
+                                <button class="btn btn-sm btn-outline-light" @onclick="GenerateInvoices">
+                                    <i class="fas fa-file-invoice me-1"></i> Generate Invoices
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (isLoading)
+                    {
+                        <div class="text-center p-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        @if (!string.IsNullOrEmpty(successMessage))
+                        {
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                @successMessage
+                                <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                @errorMessage
+                                <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+                            </div>
+                        }
+
+                        <!-- Valuation Roll Selector -->
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <label class="modern-label">Select Valuation Roll</label>
+                                <select class="modern-input" @onchange="OnRollSelectionChanged">
+                                    <option value="">-- Select a Valuation Roll --</option>
+                                    @foreach (var roll in availableRolls)
+                                    {
+                                        <option value="@roll.Id" selected="@(roll.Id == selectedRollId)">
+                                            @roll.Council - @roll.Year (@roll.RollNumber)
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        @if (selectedRollId.HasValue && properties.Any())
+                        {
+                            <!-- Statistics -->
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-number">@totalProperties</div>
+                                    <div class="stat-label">Total Properties</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number">@totalRateableValue.ToZMW()</div>
+                                    <div class="stat-label">Total Rateable Value</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number">@propertiesWithPoundage</div>
+                                    <div class="stat-label">With Poundage</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number">@(totalProperties - propertiesWithPoundage)</div>
+                                    <div class="stat-label">Missing Poundage</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number">@totalPoundage.ToZMW()</div>
+                                    <div class="stat-label">Total Poundage</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number">@totalAmount.ToZMW()</div>
+                                    <div class="stat-label">Total Amount</div>
+                                </div>
+                            </div>
+
+                            <!-- Evaluation Period Info -->
+                            <div class="alert alert-info">
+                                <strong>Current Evaluation Period:</strong> @GetCurrentPeriodDescription() |
+                                <strong>Next Period:</strong> @GetNextPeriodDescription()
+                            </div>
+
+                            <!-- Filters -->
+                            <div class="row mb-4">
+                                <div class="col-md-3">
+                                    <label class="modern-label">Search Property</label>
+                                    <input type="text" class="modern-input" placeholder="Property number or description..."
+                                           @bind="searchTerm" @oninput="OnSearchChanged" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="modern-label">Use Type</label>
+                                    <select class="modern-input" @bind="selectedUseType" @bind:after="OnFilterChanged">
+                                        <option value="">All Types</option>
+                                        @foreach (var useType in PropertyUseTypes.Descriptions)
+                                        {
+                                            <option value="@useType.Key">@useType.Value</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="modern-label">Evaluation Status</label>
+                                    <select class="modern-input" @bind="evaluationFilter" @bind:after="OnFilterChanged">
+                                        <option value="">All Properties</option>
+                                        <option value="with">With Evaluation</option>
+                                        <option value="without">Without Evaluation</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3 d-flex align-items-end">
+                                    <button class="btn btn-outline-secondary" @onclick="ClearFilters">Clear Filters</button>
+                                </div>
+                            </div>
+
+                            <!-- Properties Table -->
+                            <div class="table-responsive">
+                                <table class="table align-items-center mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Property #</th>
+                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Description</th>
+                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Address</th>
+                                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Use</th>
+                                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Land Value (K)</th>
+                                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Improvements (K)</th>
+                                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Total Rateable Value (K)</th>
+                                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Poundage Rate</th>
+
+                                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Amount (K)</th>
+                                            <th class="text-secondary opacity-7">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var property in pagedProperties)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <div class="d-flex px-2 py-1">
+                                                        <div class="d-flex flex-column justify-content-center">
+                                                            <h6 class="mb-0 text-sm">@property.PropertyNumber</h6>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <p class="text-xs text-secondary mb-0">@TruncateText(property.Description, 40)</p>
+                                                </td>
+                                                <td>
+                                                    <p class="text-xs text-secondary mb-0">@TruncateText(property.StreetAddress, 30)</p>
+                                                </td>
+                                                <td class="align-middle text-center text-sm">
+                                                    <span class="use-badge use-@property.Use.ToLower()">
+                                                        @GetUseDescription(property.Use)
+                                                    </span>
+                                                </td>
+                                                <td class="align-middle text-center">
+                                                    <span class="text-secondary text-xs font-weight-bold">@property.LandValue.ToZMW()</span>
+                                                </td>
+                                                <td class="align-middle text-center">
+                                                    <span class="text-secondary text-xs font-weight-bold">@property.ValueOfImprovements.ToZMW()</span>
+                                                </td>
+                                                <td class="align-middle text-center">
+                                                    <span class="text-secondary text-xs font-weight-bold">@property.TotalRateableValue.ToZMW()</span>
+                                                </td>
+                                                <td class="align-middle text-center">
+                                                    @if (property.PoundageRate.HasValue)
+                                                    {
+                                                        @if (editingPropertyId == property.Id)
+                                                        {
+                                                            <input type="number" step="0.000001" class="editable-cell"
+                                                                   @bind="editingRate" @onblur="() => SavePoundageRate(property.Id)"
+                                                                   @onkeypress="@(async (e) => { if (e.Key == "Enter") await SavePoundageRate(property.Id); })" />
+                                                        }
+                                                        else
+                                                        {
+                                                            <span @onclick="() => StartEditingRate(property.Id, property.PoundageRate.Value)"
+                                                                  style="cursor: pointer; text-decoration: underline;"
+                                                                  class="text-xs font-weight-bold">
+                                                                @property.PoundageRate.Value.ToString("0.000000")
+                                                            </span>
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-secondary text-xs">-</span>
+                                                    }
+                                                </td>
+                                            
+                                                <td class="align-middle text-center">
+                                                    @{
+                                                        var calculatedAmount = property.PoundageRate.HasValue ? property.TotalRateableValue * property.PoundageRate.Value : (decimal?)null;
+                                                    }
+                                                    @if (calculatedAmount.HasValue)
+                                                    {
+                                                        <span class="text-info text-xs font-weight-bold">@calculatedAmount.Value.ToZMW()</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-secondary text-xs">-</span>
+                                                    }
+                                                </td>
+                                                <td class="align-middle">
+                                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => GeneratePropertyInvoice(property.Id)">
+                                                        <i class="fas fa-file-invoice"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Pagination -->
+                            <div class="d-flex justify-content-between align-items-center mt-4">
+                                <button class="btn btn-outline-secondary btn-sm"
+                                        @onclick="PreviousPage"
+                                        disabled="@(currentPage <= 1)">
+                                    <i class="fas fa-chevron-left me-1"></i> Previous
+                                </button>
+
+                                <span class="text-muted">
+                                    Page @currentPage of @totalPages (@filteredProperties.Count() total properties)
+                                </span>
+
+                                <button class="btn btn-outline-secondary btn-sm"
+                                        @onclick="NextPage"
+                                        disabled="@(currentPage >= totalPages)">
+                                    Next <i class="fas fa-chevron-right ms-1"></i>
+                                </button>
+                            </div>
+                        }
+                        else if (selectedRollId.HasValue)
+                        {
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                No properties found for the selected valuation roll.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Please select a valuation roll to view properties or upload a new one.
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int? ValuationRollId { get; set; }
+
+    private List<LocalGov360.Data.Models.ValuationRoll> availableRolls = new();
+    private List<Property> properties = new();
+    private List<Property> filteredProperties = new();
+    private List<Property> pagedProperties = new();
+    private List<PropertyImport> previewData = new();
+
+    private int? selectedRollId;
+    private string searchTerm = string.Empty;
+    private string selectedUseType = string.Empty;
+    private string evaluationFilter = string.Empty;
+    private bool isLoading = true;
+    private bool isUploading = false;
+    private bool isRunningEvaluation = false;
+    private bool showUploadForm = false;
+    private string? successMessage;
+    private string? errorMessage;
+
+    // Upload fields
+    private string councilName = string.Empty;
+    private int rollYear = DateTime.Now.Year;
+    private IBrowserFile? selectedFile;
+
+    // Editing fields
+    private int? editingPropertyId;
+    private decimal editingRate;
+
+    // Statistics - Updated calculations
+    private int totalProperties => filteredProperties.Count;
+    private decimal totalRateableValue => filteredProperties.Sum(p => p.TotalRateableValue);
+    private decimal totalPoundage => filteredProperties.Where(p => p.Poundage.HasValue).Sum(p => p.Poundage.Value);
+    private decimal totalAmount => filteredProperties.Where(p => p.PoundageRate.HasValue).Sum(p => p.TotalRateableValue * p.PoundageRate.Value);
+    private int propertiesWithPoundage => filteredProperties.Count(p => p.Poundage.HasValue && p.Poundage > 0);
+
+    // Pagination
+    private int currentPage = 1;
+    private int pageSize = 50;
+    private int totalPages => (int)Math.Ceiling((double)filteredProperties.Count / pageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAvailableRolls();
+
+        if (ValuationRollId.HasValue)
+        {
+            selectedRollId = ValuationRollId.Value;
+            await LoadProperties();
+        }
+
+        isLoading = false;
+    }
+
+    private async Task LoadAvailableRolls()
+    {
+        using var context = await DbContextFactory.CreateDbContextAsync();
+        availableRolls = await context.CouncilValuationRolls
+            .OrderByDescending(r => r.CreatedDate)
+            .ToListAsync();
+    }
+
+    private async Task LoadProperties()
+    {
+        if (!selectedRollId.HasValue) return;
+
+        using var context = await DbContextFactory.CreateDbContextAsync();
+        properties = await context.CouncilProperties
+            .Where(p => p.ValuationRollId == selectedRollId.Value)
+            .OrderBy(p => p.PropertyNumber)
+            .ToListAsync();
+
+        ApplyFilters();
+    }
+
+    private void ShowUploadForm()
+    {
+        showUploadForm = true;
+        StateHasChanged();
+    }
+
+    private void CancelUploadForm()
+    {
+        showUploadForm = false;
+        selectedFile = null;
+        councilName = string.Empty;
+        rollYear = DateTime.Now.Year;
+        previewData.Clear();
+        errorMessage = null;
+        successMessage = null;
+        StateHasChanged();
+    }
+
+    private void OnFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        errorMessage = null;
+        previewData.Clear(); // Clear previous preview
+    }
+
+    private async Task PreviewFile()
+    {
+        if (selectedFile == null)
+        {
+            errorMessage = "Please select a file to preview.";
+            return;
+        }
+
+        isUploading = true;
+        errorMessage = null;
+        successMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            previewData = await UploadService.PreviewDataAsync(selectedFile);
+
+            if (previewData.Any() && previewData.First().Errors.Any() && previewData.First().RowNumber == 0)
+            {
+                errorMessage = previewData.First().Errors.First();
+                previewData.Clear();
+            }
+            else
+            {
+                successMessage = $"Preview loaded: {previewData.Count} rows found";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Preview failed: {ex.Message}";
+        }
+        finally
+        {
+            isUploading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ClearPreview()
+    {
+        previewData.Clear();
+        successMessage = null;
+        StateHasChanged();
+    }
+
+    private async Task UploadFile()
+    {
+        if (selectedFile == null)
+        {
+            errorMessage = "Please select a file to upload.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(councilName))
+        {
+            errorMessage = "Please enter a council name.";
+            return;
+        }
+
+        isUploading = true;
+        errorMessage = null;
+        successMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var result = await UploadService.UploadValuationRollAsync(selectedFile, councilName, rollYear, "system");
+
+            if (result.Success)
+            {
+                successMessage = $"Successfully uploaded {result.SuccessfulRows} properties. Invalid rows: {result.TotalRowsProcessed - result.SuccessfulRows}";
+
+                // Refresh the rolls and select the new one
+                await LoadAvailableRolls();
+                selectedRollId = result.ValuationRollId;
+                await LoadProperties();
+
+                // Clear upload fields and preview
+                CancelUploadForm();
+            }
+            else
+            {
+                errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Upload failed: {ex.Message}";
+        }
+        finally
+        {
+            isUploading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RunEvaluation()
+    {
+        if (!selectedRollId.HasValue) return;
+
+        isRunningEvaluation = true;
+        successMessage = null;
+        errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var result = await EvaluationService.RunEvaluationAsync(selectedRollId.Value, "system");
+
+            if (result.Success)
+            {
+                successMessage = result.Message;
+                await LoadProperties(); // Refresh the display
+            }
+            else
+            {
+                errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Evaluation failed: {ex.Message}";
+        }
+        finally
+        {
+            isRunningEvaluation = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnRollSelectionChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var rollId))
+        {
+            selectedRollId = rollId;
+            isLoading = true;
+            StateHasChanged();
+
+            await LoadProperties();
+            NavigationManager.NavigateTo($"/properties/{rollId}");
+        }
+        else
+        {
+            selectedRollId = null;
+            properties.Clear();
+            filteredProperties.Clear();
+            pagedProperties.Clear();
+        }
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        searchTerm = e.Value?.ToString() ?? string.Empty;
+        currentPage = 1;
+        ApplyFilters();
+    }
+
+    private void OnFilterChanged()
+    {
+        currentPage = 1;
+        ApplyFilters();
+        StateHasChanged();
+    }
+
+    private void ApplyFilters()
+    {
+        filteredProperties = properties.Where(p =>
+        {
+            // Search filter
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                var search = searchTerm.ToLower();
+                if (!p.PropertyNumber.ToLower().Contains(search) &&
+                    !p.Description.ToLower().Contains(search) &&
+                    !(p.StreetAddress?.ToLower().Contains(search) ?? false))
+                {
+                    return false;
+                }
+            }
+
+            // Use type filter
+            if (!string.IsNullOrWhiteSpace(selectedUseType) && p.Use != selectedUseType)
+            {
+                return false;
+            }
+
+            // Evaluation filter - Updated to check for PoundageRate instead of EvaluationAmount
+            if (!string.IsNullOrWhiteSpace(evaluationFilter))
+            {
+                var hasEvaluation = p.PoundageRate.HasValue && p.PoundageRate > 0;
+                if (evaluationFilter == "with" && !hasEvaluation) return false;
+                if (evaluationFilter == "without" && hasEvaluation) return false;
+            }
+
+            return true;
+        }).ToList();
+
+        UpdatePagination();
+    }
+
+    private void UpdatePagination()
+    {
+        var skip = (currentPage - 1) * pageSize;
+        pagedProperties = filteredProperties.Skip(skip).Take(pageSize).ToList();
+    }
+
+    private void PreviousPage()
+    {
+        if (currentPage > 1)
+        {
+            currentPage--;
+            UpdatePagination();
+        }
+    }
+
+    private void NextPage()
+    {
+        if (currentPage < totalPages)
+        {
+            currentPage++;
+            UpdatePagination();
+        }
+    }
+
+    private void ClearFilters()
+    {
+        searchTerm = string.Empty;
+        selectedUseType = string.Empty;
+        evaluationFilter = string.Empty;
+        currentPage = 1;
+        ApplyFilters();
+    }
+
+    private void StartEditingRate(int propertyId, decimal currentRate)
+    {
+        editingPropertyId = propertyId;
+        editingRate = currentRate;
+    }
+
+    private async Task SavePoundageRate(int propertyId)
+    {
+        try
+        {
+            var success = await EvaluationService.UpdatePropertyPoundageRateAsync(propertyId, editingRate);
+
+            if (success)
+            {
+                // Update local data with corrected calculation
+                var localProperty = properties.FirstOrDefault(p => p.Id == propertyId);
+                if (localProperty != null)
+                {
+                    localProperty.PoundageRate = editingRate;
+                    localProperty.Poundage = localProperty.TotalRateableValue * editingRate;
+                    // Remove the incorrect EvaluationAmount assignment since we're calculating Amount differently
+                }
+
+                ApplyFilters();
+                successMessage = "Poundage rate updated successfully.";
+            }
+            else
+            {
+                errorMessage = "Failed to update poundage rate.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to update poundage rate: {ex.Message}";
+        }
+        finally
+        {
+            editingPropertyId = null;
+            StateHasChanged();
+        }
+    }
+
+    private void GenerateInvoices()
+    {
+        if (selectedRollId.HasValue)
+        {
+            NavigationManager.NavigateTo($"/invoice-generator/{selectedRollId.Value}");
+        }
+    }
+
+    private void GeneratePropertyInvoice(int propertyId)
+    {
+        NavigationManager.NavigateTo($"/property-invoice/{propertyId}");
+    }
+
+    private string GetUseDescription(string useCode)
+    {
+        return PropertyUseTypes.Descriptions.TryGetValue(useCode, out var description)
+            ? description
+            : useCode;
+    }
+
+    private string? TruncateText(string? text, int maxLength)
+    {
+        if (string.IsNullOrEmpty(text)) return text;
+        return text.Length <= maxLength ? text : text.Substring(0, maxLength) + "...";
+    }
+
+    private string GetCurrentPeriodDescription()
+    {
+        var currentPeriod = DateTime.Now.Month <= 6 ? 1 : 2;
+        return currentPeriod == 1 ? "January - June" : "July - December";
+    }
+
+    private string GetNextPeriodDescription()
+    {
+        var currentPeriod = DateTime.Now.Month <= 6 ? 1 : 2;
+        return currentPeriod == 1 ? "July - December" : "January - June (Next Year)";
+    }
+}

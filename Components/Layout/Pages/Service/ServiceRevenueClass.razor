@@ -1,0 +1,716 @@
+﻿@page "/service-revenue-classes"
+@using LocalGov360.Data
+@using LocalGov360.Data.Models
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using System.ComponentModel.DataAnnotations
+@inject UserManager<ApplicationUser> UserManager
+@inject RoleManager<IdentityRole> RoleManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject NavigationManager NavigationManager
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "developer, CouncilAdmin")]
+
+<style>
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .header-buttons {
+        display: flex;
+        gap: 1rem;
+    }
+
+    /* Modern Form Styling */
+    .modern-form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-span-2 {
+        grid-column: 1 / -1;
+    }
+
+    .modern-label {
+        font-weight: 600;
+        color: #344767;
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.02em;
+    }
+
+    .input-wrapper {
+        position: relative;
+    }
+
+    .modern-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid #d2d6da;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        transition: all 0.15s ease-in-out;
+        background-color: #fff;
+        color: #495057;
+    }
+
+        .modern-input:focus {
+            outline: none;
+            border-color: #344767;
+            box-shadow: 0 0 0 0.2rem rgba(52, 71, 103, 0.1);
+            background-color: #fff;
+        }
+
+        .modern-input::placeholder {
+            color: #adb5bd;
+            opacity: 1;
+        }
+
+    .organization-readonly {
+        background-color: #f8f9fa !important;
+        color: #6c757d !important;
+        cursor: not-allowed;
+    }
+
+    .validation-message {
+        color: #dc3545;
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+        font-weight: 500;
+    }
+
+    .form-helper-text {
+        color: #6c757d;
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+        font-style: italic;
+    }
+
+    /* Modern Checkbox Styling */
+    .checkbox-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+
+    .modern-checkbox {
+        position: relative;
+    }
+
+    .checkbox-input {
+        position: absolute;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        font-size: 0.875rem;
+        color: #495057;
+        font-weight: 500;
+    }
+
+    .checkbox-custom {
+        width: 18px;
+        height: 18px;
+        border: 2px solid #d2d6da;
+        border-radius: 0.25rem;
+        margin-right: 0.75rem;
+        position: relative;
+        transition: all 0.15s ease-in-out;
+        background-color: #fff;
+    }
+
+    .checkbox-input:checked + .checkbox-label .checkbox-custom {
+        background-color: #344767;
+        border-color: #344767;
+    }
+
+        .checkbox-input:checked + .checkbox-label .checkbox-custom::after {
+            content: '\2713';
+            position: absolute;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+    .checkbox-input:focus + .checkbox-label .checkbox-custom {
+        box-shadow: 0 0 0 0.2rem rgba(52, 71, 103, 0.1);
+    }
+
+    /* Modern Button Styling */
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid #dee2e6;
+    }
+
+    .btn-modern {
+        padding: 0.75rem 2rem;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.15s ease-in-out;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        letter-spacing: 0.02em;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #344767 0%, #2c3e50 100%);
+        color: white;
+        box-shadow: 0 4px 6px rgba(52, 71, 103, 0.3);
+    }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(52, 71, 103, 0.4);
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+        box-shadow: 0 4px 6px rgba(108, 117, 125, 0.3);
+    }
+
+        .btn-secondary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(108, 117, 125, 0.4);
+            background-color: #5a6268;
+        }
+
+    /* Responsive Design */
+    @@media (max-width: 768px) {
+        .modern-form-grid
+
+    {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .form-span-2 {
+        grid-column: 1;
+    }
+
+    .checkbox-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .btn-modern {
+        width: 100%;
+    }
+
+    }
+</style>
+
+<div class="container-fluid py-2">
+    <div class="row">
+        <!-- Form Panel - Show on the left side when form is active -->
+        @if (showForm)
+        {
+            <div class="col-lg-4 order-1">
+                <div class="card my-4">
+                    <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                        <div class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3">
+                            <h6 class="text-white text-capitalize ps-3">
+                                @if (isEditing)
+                                {
+                                    <text>Edit Revenue Class</text>
+                                }
+                                else
+                                {
+                                    <text>Add New Revenue Class</text>
+                                }
+                            </h6>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <EditForm Model="@formModel" OnValidSubmit="SaveRevenueClass">
+                            <DataAnnotationsValidator />
+                            <div class="modern-form-grid">
+                                <div class="form-group">
+                                    <label for="code" class="modern-label">Code</label>
+                                    <div class="input-wrapper">
+                                        <InputText id="code" @bind-Value="formModel.Code" class="modern-input" placeholder="Enter code" />
+                                        <ValidationMessage For="@(() => formModel.Code)" class="validation-message" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="parentCode" class="modern-label">Parent Code</label>
+                                    <div class="input-wrapper">
+                                        <InputText id="parentCode" @bind-Value="formModel.ParentCode" class="modern-input" placeholder="Enter parent code" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group form-span-2">
+                                    <label for="description" class="modern-label">Description</label>
+                                    <div class="input-wrapper">
+                                        <InputText id="description" @bind-Value="formModel.Description" class="modern-input" placeholder="Enter description" />
+                                        <ValidationMessage For="@(() => formModel.Description)" class="validation-message" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="specialCode" class="modern-label">Special Code</label>
+                                    <div class="input-wrapper">
+                                        <InputText id="specialCode" @bind-Value="formModel.SpecialCode" class="modern-input" placeholder="Enter special code" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="budgetLine" class="modern-label">Budget Line</label>
+                                    <div class="input-wrapper">
+                                        <InputText id="budgetLine" @bind-Value="formModel.BudgetLine" class="modern-input" placeholder="Enter budget line" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group form-span-2">
+                                    <label for="status" class="modern-label">Status</label>
+                                    <div class="input-wrapper">
+                                        <InputSelect id="status" @bind-Value="formModel.Status" class="modern-input">
+                                            <option value="Active">Active</option>
+                                            <option value="Inactive">Inactive</option>
+                                            <option value="Suspended">Suspended</option>
+                                        </InputSelect>
+                                    </div>
+                                </div>
+
+                                <div class="form-group form-span-2">
+                                    <label class="modern-label">Options</label>
+                                    <div class="checkbox-grid">
+                                        <div class="modern-checkbox">
+                                            <InputCheckbox id="bills" @bind-Value="formModel.Bills" class="checkbox-input" />
+                                            <label for="bills" class="checkbox-label">
+                                                <span class="checkbox-custom"></span>
+                                                Bills
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn-modern btn-primary">
+                                    <i class="fas fa-@(isEditing ? "save" : "plus") me-2"></i>
+                                    @if (isEditing)
+                                    {
+                                        <text>Update Revenue Class</text>
+                                    }
+                                    else
+                                    {
+                                        <text>Create Revenue Class</text>
+                                    }
+                                </button>
+                                <button type="button" class="btn-modern btn-secondary" @onclick="CancelForm">
+                                    <i class="fas fa-times me-2"></i>
+                                    Cancel
+                                </button>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Revenue Classes List -->
+        <div class="@(showForm ? "col-lg-8 order-2" : "col-12")">
+            <div class="card my-4">
+                <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                    <div class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3">
+                        <h6 class="text-white text-capitalize ps-3">Revenue Classes Management</h6>
+                        <div class="ps-3 pb-2 d-flex align-items-center header-buttons">
+                            <button class="btn btn-sm btn-outline-light" @onclick="LoadRevenueClasses">
+                                <i class="fas fa-sync-alt me-1"></i> Refresh
+                            </button>
+                            <button class="btn btn-sm btn-outline-light" @onclick="ShowCreateForm">
+                                <i class="fas fa-plus me-1"></i> Add Revenue Class
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body px-0 pb-2">
+                    @if (isLoading)
+                    {
+                        <div class="text-center p-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    }
+                    else if (revenueClasses.Any())
+                    {
+                        <div class="table-responsive p-0">
+                            <table class="table align-items-center mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">System Code</th>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Code</th>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Description</th>
+                                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Bills</th>
+                                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
+                                        <th class="text-secondary opacity-7">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var revenueClass in revenueClasses)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex px-2 py-1">
+                                                    <div class="d-flex flex-column justify-content-center">
+                                                        <h6 class="mb-0 text-sm">@revenueClass.SystemCode</h6>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <p class="text-xs font-weight-bold mb-0">@revenueClass.Code</p>
+                                            </td>
+                                            <td>
+                                                <p class="text-xs text-secondary mb-0">@revenueClass.Description</p>
+                                            </td>
+                                            <td class="align-middle text-center text-sm">
+                                                @if (revenueClass.Bills)
+                                                {
+                                                    <span class="badge badge-sm bg-gradient-success">Yes</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge badge-sm bg-gradient-secondary">No</span>
+                                                }
+                                            </td>
+                                            <td class="align-middle text-center text-sm">
+                                                @if (revenueClass.Status == "Active")
+                                                {
+                                                    <span class="badge badge-sm bg-gradient-success">Active</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge badge-sm bg-gradient-warning">@revenueClass.Status</span>
+                                                }
+                                            </td>
+                                            <td class="align-middle">
+                                                <div class="btn-group action-buttons">
+                                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => EditRevenueClass(revenueClass.Id)">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteRevenueClass(revenueClass.Id)">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center p-4">
+                            <p class="text-muted">No revenue classes found.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Data collections
+    private List<RevenueClass> revenueClasses = new();
+    private Organisation? currentUserOrganization = null;
+    private bool isLoading = true;
+
+    // Form state
+    private bool showForm = false;
+    private bool isEditing = false;
+    private RevenueClassFormModel formModel = new();
+
+    public class RevenueClassFormModel
+    {
+        public Guid? Id { get; set; }
+
+        public string SystemCode { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Code is required")]
+        public string Code { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Description is required")]
+        public string Description { get; set; } = string.Empty;
+
+        public string? ParentCode { get; set; }
+
+        public string? SpecialCode { get; set; }
+
+        public bool Bills { get; set; } = false;
+
+        public string? BudgetLine { get; set; }
+
+        public string Status { get; set; } = "Active";
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCurrentUserOrganization();
+        await LoadRevenueClasses();
+    }
+
+    private async Task LoadCurrentUserOrganization()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = await UserManager.GetUserAsync(authState.User);
+
+            if (user?.OrganisationId != null)
+            {
+                using var context = DbContextFactory.CreateDbContext();
+                currentUserOrganization = await context.Organisations
+                    .FirstOrDefaultAsync(o => o.Id == user.OrganisationId);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading current user organization: {ex.Message}");
+        }
+    }
+
+    private async Task LoadRevenueClasses()
+    {
+        isLoading = true;
+        revenueClasses.Clear();
+        StateHasChanged();
+
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
+
+            // Load revenue classes for the current user's organization only
+            var query = context.Set<RevenueClass>()
+                .Include(rc => rc.Organisation)
+                .OrderBy(rc => rc.SystemCode);
+
+            if (currentUserOrganization != null)
+            {
+                query = (IOrderedQueryable<RevenueClass>)query.Where(rc => rc.OrganisationId == currentUserOrganization.Id);
+            }
+
+            revenueClasses = await query.ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading revenue classes: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task<string> GenerateSystemCodeAsync()
+    {
+        if (currentUserOrganization == null)
+            return "101"; // Default starting number
+
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
+
+            // Get all existing system codes for this organization
+            var existingCodes = await context.Set<RevenueClass>()
+                .Where(rc => rc.OrganisationId == currentUserOrganization.Id)
+                .Select(rc => rc.SystemCode)
+                .ToListAsync();
+
+            // If no existing codes, start with 101
+            if (!existingCodes.Any())
+                return "101";
+
+            // Parse existing codes and find the highest number
+            var numericCodes = existingCodes
+                .Where(code => int.TryParse(code, out _))
+                .Select(code => int.Parse(code))
+                .OrderByDescending(x => x)
+                .ToList();
+
+            // Get the next number (highest + 1, or start from 101 if no valid numeric codes)
+            var nextNumber = numericCodes.Any() ? numericCodes.First() + 1 : 101;
+
+            return nextNumber.ToString();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error generating system code: {ex.Message}");
+            return "101"; // Fallback to default
+        }
+    }
+
+    private async Task ShowCreateForm()
+    {
+        if (currentUserOrganization == null)
+        {
+            Console.WriteLine("Cannot create revenue class: User is not associated with an organization.");
+            return;
+        }
+
+        formModel = new RevenueClassFormModel();
+        // Auto-generate the next system code
+        formModel.SystemCode = await GenerateSystemCodeAsync();
+        isEditing = false;
+        showForm = true;
+        StateHasChanged();
+    }
+
+    private void EditRevenueClass(Guid revenueClassId)
+    {
+        var revenueClass = revenueClasses.FirstOrDefault(rc => rc.Id == revenueClassId);
+        if (revenueClass != null)
+        {
+            formModel = new RevenueClassFormModel
+            {
+                Id = revenueClass.Id,
+                SystemCode = revenueClass.SystemCode,
+                Code = revenueClass.Code,
+                Description = revenueClass.Description,
+                ParentCode = revenueClass.ParentCode,
+                SpecialCode = revenueClass.SpecialCode,
+                Bills = revenueClass.Bills,
+                BudgetLine = revenueClass.BudgetLine,
+                Status = revenueClass.Status
+            };
+            isEditing = true;
+            showForm = true;
+            StateHasChanged();
+        }
+    }
+
+    private void CancelForm()
+    {
+        showForm = false;
+        isEditing = false;
+        formModel = new RevenueClassFormModel();
+        StateHasChanged();
+    }
+
+    private async Task SaveRevenueClass()
+    {
+        if (currentUserOrganization == null)
+        {
+            Console.WriteLine("Cannot save revenue class: User is not associated with an organization.");
+            return;
+        }
+
+        // Ensure system code is generated for new records
+        if (!isEditing && string.IsNullOrEmpty(formModel.SystemCode))
+        {
+            formModel.SystemCode = await GenerateSystemCodeAsync();
+        }
+
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
+
+            if (isEditing && formModel.Id.HasValue)
+            {
+                // Update existing
+                var revenueClass = await context.Set<RevenueClass>().FindAsync(formModel.Id.Value);
+                if (revenueClass != null)
+                {
+                    revenueClass.SystemCode = formModel.SystemCode;
+                    revenueClass.Code = formModel.Code;
+                    revenueClass.Description = formModel.Description;
+                    revenueClass.ParentCode = formModel.ParentCode;
+                    revenueClass.SpecialCode = formModel.SpecialCode;
+                    revenueClass.Bills = formModel.Bills;
+                    revenueClass.BudgetLine = formModel.BudgetLine;
+                    revenueClass.Status = formModel.Status;
+                    revenueClass.UpdatedAt = DateTime.UtcNow;
+
+                    await context.SaveChangesAsync();
+                    Console.WriteLine("Revenue Class updated successfully");
+                }
+            }
+            else
+            {
+                // Create new
+                var revenueClass = new RevenueClass
+                {
+                    Id = Guid.NewGuid(),
+                    SystemCode = formModel.SystemCode,
+                    Code = formModel.Code,
+                    Description = formModel.Description,
+                    ParentCode = formModel.ParentCode,
+                    SpecialCode = formModel.SpecialCode,
+                    OrganisationId = currentUserOrganization.Id, // Automatically set to current user's organization
+                    Bills = formModel.Bills,
+               
+                    BudgetLine = formModel.BudgetLine,
+                    Status = formModel.Status,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                context.Set<RevenueClass>().Add(revenueClass);
+                await context.SaveChangesAsync();
+                Console.WriteLine("Revenue Class created successfully");
+            }
+
+            CancelForm();
+            await LoadRevenueClasses();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving revenue class: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteRevenueClass(Guid revenueClassId)
+    {
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
+            var revenueClass = await context.Set<RevenueClass>().FindAsync(revenueClassId);
+            if (revenueClass != null)
+            {
+                context.Set<RevenueClass>().Remove(revenueClass);
+                await context.SaveChangesAsync();
+                await LoadRevenueClasses();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting revenue class: {ex.Message}");
+        }
+    }
+}

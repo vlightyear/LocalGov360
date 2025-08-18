@@ -50,7 +50,8 @@ namespace LocalGov360.Data.Models
 
             [MaxLength(500)]
             public string Description { get; set; } = string.Empty;
-
+            public string?  Requirements { get; set; } = string.Empty;
+            public Guid? ServiceRevenueClassId { get; set; }
             public bool IsActive { get; set; } = true;
             public decimal? ServiceFee { get; set; } // Changed to nullable
             public FeeType FeeType { get; set; } = FeeType.Fixed;

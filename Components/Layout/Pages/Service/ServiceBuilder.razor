@@ -74,6 +74,24 @@
                                 <ValidationMessage For="() => BuilderModel.Description" />
                             </div>
 
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small">Requirements</label>
+                                <InputTextArea class="form-control form-control-sm" rows="3" @bind-Value="BuilderModel.Requirements" placeholder="Enter service requirements..." />
+                                <ValidationMessage For="() => BuilderModel.Requirements" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small">Service Revenue Class</label>
+                                <InputSelect class="form-select form-select-sm" @bind-Value="BuilderModel.ServiceRevenueClassId">
+                                    <option value="">-- Select Revenue Class --</option>
+                                    @foreach (var revenueClass in RevenueClasses)
+                                    {
+                                        <option value="@revenueClass.Id">@revenueClass.SystemCode - @revenueClass.Description</option>
+                                    }
+                                </InputSelect>
+                                <ValidationMessage For="() => BuilderModel.ServiceRevenueClassId" />
+                            </div>
+
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-semibold small">Service Fee</label>
@@ -264,6 +282,10 @@
                         {
                             <h5 class="mb-2">@BuilderModel.Name</h5>
                             <p class="text-muted mb-2 small">@(string.IsNullOrEmpty(BuilderModel.Description) ? "No description provided" : BuilderModel.Description)</p>
+                            @if (!string.IsNullOrEmpty(BuilderModel.Requirements))
+                            {
+                                <p class="mb-2 small"><strong>Requirements:</strong> @BuilderModel.Requirements</p>
+                            }
                             @if (BuilderModel.ServiceFee.HasValue)
                             {
                                 <p class="mb-2 small"><strong>Fee:</strong> K @BuilderModel.ServiceFee.Value.ToString("N2") (@BuilderModel.FeeType)</p>
@@ -628,6 +650,10 @@
                 <div>
                     <h6 class="mb-0">@FillModel.ServiceName</h6>
                     <p class="mb-0 text-muted small">@FillModel.ServiceDescription</p>
+                    @if (!string.IsNullOrEmpty(FillModel.Requirements))
+                    {
+                        <p class="mb-0 text-muted small"><strong>Requirements:</strong> @FillModel.Requirements</p>
+                    }
                     @if (FillModel.ServiceFee.HasValue)
                     {
                         <p class="mb-0 text-muted small"><strong>Fee:</strong> K @FillModel.ServiceFee.Value.ToString("N2") (@FillModel.FeeType)</p>
@@ -780,7 +806,6 @@
     }
 </div>
             
-
 @code
 {
     private string CurrentView = "list";
@@ -788,6 +813,7 @@
     private List<ServiceModels.Service>? Services;
     private List<WorkflowTemplate> WorkflowTemplates = new();
     private List<DocumentTemplate> DocumentTemplates = new();
+    private List<RevenueClass> RevenueClasses = new();
     private int? EditServiceId;
     private ServiceBuilderModel BuilderModel = new();
     private FillServiceModel? FillModel;
@@ -808,8 +834,8 @@
     private string SearchTerm = string.Empty;
     private int ServicesCurrentPage = 0;
     private const int ServicesPerPage = 10;
-    private List<ServiceModels.Service> FilteredServices => Services?.Where(s => 
-        string.IsNullOrWhiteSpace(SearchTerm) || 
+    private List<ServiceModels.Service> FilteredServices => Services?.Where(s =>
+        string.IsNullOrWhiteSpace(SearchTerm) ||
         s.Name.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ||
         (!string.IsNullOrEmpty(s.Description) && s.Description.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase))
     ).ToList() ?? new List<ServiceModels.Service>();
@@ -828,6 +854,7 @@
         await LoadServicesAsync();
         await LoadWorkflowTemplatesAsync();
         await LoadDocumentTemplatesAsync();
+        await LoadRevenueClassesAsync();
     }
 
     private async Task LoadServicesAsync()
@@ -872,6 +899,21 @@
         }
     }
 
+    private async Task LoadRevenueClassesAsync()
+    {
+        try
+        {
+            RevenueClasses = await _db.Set<RevenueClass>()
+                .Where(rc => rc.OrganisationId == currentUserOrgId && rc.Status == "Active")
+                .OrderBy(rc => rc.SystemCode)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            Feedback = $"Error loading revenue classes: {ex.Message}";
+        }
+    }
+
     private void ShowView(string view)
     {
         CurrentView = view;
@@ -887,7 +929,7 @@
             BuilderModel = new ServiceBuilderModel();
             EditServiceId = null;
         }
-        
+
         if (view == "fill")
         {
             CurrentPage = 0;
@@ -903,7 +945,7 @@
             ServicesCurrentPage = 0;
             SearchTerm = string.Empty;
         }
-        
+
         StateHasChanged();
     }
 
@@ -989,13 +1031,13 @@
             DefaultValue = "",
             IsRequired = false
         });
-        
+
         // Reset preview page if we're on the last page and it would be empty
         if (PreviewPage >= PreviewTotalPages - 1)
         {
             PreviewPage = Math.Max(0, PreviewTotalPages - 1);
         }
-        
+
         await InvokeAsync(StateHasChanged);
     }
 
@@ -1004,13 +1046,13 @@
         if (index >= 0 && index < BuilderModel.Fields.Count)
         {
             BuilderModel.Fields.RemoveAt(index);
-            
+
             // Adjust preview page if necessary
             if (PreviewPage >= PreviewTotalPages && PreviewPage > 0)
             {
                 PreviewPage = Math.Max(0, PreviewTotalPages - 1);
             }
-            
+
             await InvokeAsync(StateHasChanged);
         }
     }
@@ -1020,7 +1062,7 @@
         if (index >= 0 && index < BuilderModel.Fields.Count)
         {
             var field = BuilderModel.Fields[index];
-            
+
             // Clear options if field type doesn't support them
             if (field.Type != ServiceModels.FieldType.Select &&
                 field.Type != ServiceModels.FieldType.Radio &&
@@ -1029,7 +1071,7 @@
             {
                 field.OptionsRaw = null;
             }
-            
+
             await InvokeAsync(StateHasChanged);
         }
     }
@@ -1056,7 +1098,7 @@
                         Feedback = $"Error: Field '{field.Label}' requires at least one option";
                         return;
                     }
-                    
+
                     if (field.ParsedOptions.Count == 0)
                     {
                         Feedback = $"Error: Field '{field.Label}' has no valid options";
@@ -1089,6 +1131,8 @@
                 {
                     Name = BuilderModel.Name?.Trim() ?? "",
                     Description = BuilderModel.Description?.Trim() ?? "",
+                    Requirements = BuilderModel.Requirements?.Trim() ?? "",
+                    ServiceRevenueClassId = BuilderModel.ServiceRevenueClassId,
                     CreatedBy = user.Identity?.Name ?? "Anonymous",
                     OrganisationId = currentUserOrgId,
                     WorkflowTemplateId = BuilderModel.WorkflowTemplateId,
@@ -1109,7 +1153,7 @@
                     showConfirmButton = false,
                     customClass = new { popup = "swal2-popup" }
                 });
-                
+
                 Feedback = "Service created successfully!";
             }
             else
@@ -1118,6 +1162,8 @@
                 {
                     Name = BuilderModel.Name?.Trim() ?? "",
                     Description = BuilderModel.Description?.Trim() ?? "",
+                    Requirements = BuilderModel.Requirements?.Trim() ?? "",
+                    ServiceRevenueClassId = BuilderModel.ServiceRevenueClassId,
                     ModifiedBy = user.Identity?.Name ?? "Anonymous",
                     WorkflowTemplateId = BuilderModel.WorkflowTemplateId,
                     DocumentTemplateId = BuilderModel.DocumentTemplateId,
@@ -1142,7 +1188,7 @@
                     showConfirmButton = false,
                     customClass = new { popup = "swal2-popup" }
                 });
-                
+
                 Feedback = "Service updated successfully!";
             }
 
@@ -1186,7 +1232,7 @@
             });
 
             var resultDict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(result.ToString());
-            if (resultDict != null && resultDict.ContainsKey("isConfirmed") && 
+            if (resultDict != null && resultDict.ContainsKey("isConfirmed") &&
                 resultDict["isConfirmed"].ToString().ToLower() == "true")
             {
                 var deleteResult = await ServiceService.DeleteServiceAsync(EditServiceId.Value);
@@ -1201,7 +1247,7 @@
                         showConfirmButton = false,
                         customClass = new { popup = "swal2-popup" }
                     });
-                    
+
                     Feedback = "Service deleted successfully!";
                     await LoadServicesAsync();
                     EditServiceId = null;
@@ -1254,6 +1300,8 @@
             {
                 Name = svc.Name,
                 Description = svc.Description,
+                Requirements = svc.Requirements,
+                ServiceRevenueClassId = svc.ServiceRevenueClassId,
                 ServiceFee = svc.ServiceFee,
                 FeeType = svc.FeeType,
                 StartDate = svc.StartDate,
@@ -1299,6 +1347,7 @@
                 ServiceId = svc.Id,
                 ServiceName = svc.Name,
                 ServiceDescription = svc.Description,
+                Requirements = svc.Requirements,
                 ServiceFee = svc.ServiceFee,
                 FeeType = svc.FeeType,
                 StartDate = svc.StartDate,
@@ -1321,7 +1370,7 @@
                     MultiSelectValues = f.Options.ToDictionary(o => o.Value, o => false)
                 }).ToList()
             };
-            
+
             CurrentPage = 0;
             ShowView("fill");
         }
@@ -1433,6 +1482,10 @@
         [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
         public string Description { get; set; } = string.Empty;
 
+        public string? Requirements { get; set; }
+
+        public Guid? ServiceRevenueClassId { get; set; }
+
         [Range(0, double.MaxValue, ErrorMessage = "Fee must be a positive number")]
         public decimal? ServiceFee { get; set; }
 
@@ -1491,6 +1544,7 @@
         public int ServiceId { get; set; }
         public string ServiceName { get; set; } = string.Empty;
         public string ServiceDescription { get; set; } = string.Empty;
+        public string? Requirements { get; set; }
         [Range(0, double.MaxValue, ErrorMessage = "Fee must be a positive number")]
         public decimal? ServiceFee { get; set; }
         public ServiceModels.FeeType FeeType { get; set; } = ServiceModels.FeeType.Fixed;
@@ -1512,7 +1566,7 @@
         public string Placeholder { get; set; } = string.Empty;
         public string? DefaultValue { get; set; }
         public string? OptionsRaw { get; set; }
-        
+
         public List<string> ParsedOptions
         {
             get
@@ -1527,7 +1581,7 @@
                     .ToList();
             }
         }
-        
+
         public string Value { get; set; } = string.Empty;
         public Dictionary<string, bool> CheckboxValues { get; set; } = new();
         public Dictionary<string, bool> MultiSelectValues { get; set; } = new();

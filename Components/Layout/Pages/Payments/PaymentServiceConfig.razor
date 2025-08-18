@@ -24,117 +24,335 @@
         gap: 1rem;
     }
 
-    .blazor-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0,0,0,0.5);
-        z-index: 1000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .blazor-modal-content {
-        background: white;
-        border-radius: 0.5rem;
-        width: 90%;
-        max-width: 600px;
-        max-height: 90vh;
+    /* Modern Form Styling */
+    .modern-form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+        max-height: 400px;
         overflow-y: auto;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        padding-right: 0.5rem;
     }
 
-    .modal-header {
-        padding: 1.5rem;
-        border-bottom: 1px solid #dee2e6;
+    .form-group {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
+        flex-direction: column;
+        margin-bottom: 1rem;
     }
 
-    .modal-body {
-        padding: 1.5rem;
+    .form-span-2 {
+        grid-column: 1 / -1;
     }
 
-    .modal-footer {
-        padding: 1rem 1.5rem;
-        border-top: 1px solid #dee2e6;
-        display: flex;
-        justify-content: flex-end;
-        gap: 0.5rem;
+    .modern-label {
+        font-weight: 600;
+        color: #344767;
+        font-size: 0.8rem;
+        margin-bottom: 0.4rem;
+        letter-spacing: 0.02em;
     }
 
-    .btn-close {
-        background: none;
-        border: none;
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #000;
-        opacity: 0.5;
-        cursor: pointer;
-        line-height: 1;
+    .input-wrapper {
+        position: relative;
     }
 
-        .btn-close:hover {
-            opacity: 0.75;
+    .modern-input {
+        width: 100%;
+        padding: 0.6rem 0.8rem;
+        border: 1px solid #d2d6da;
+        border-radius: 0.4rem;
+        font-size: 0.8rem;
+        transition: all 0.15s ease-in-out;
+        background-color: #fff;
+        color: #495057;
+    }
+
+        .modern-input:focus {
+            outline: none;
+            border-color: #344767;
+            box-shadow: 0 0 0 0.15rem rgba(52, 71, 103, 0.1);
+            background-color: #fff;
         }
 
-    .btn-dark {
-        background-color: #343a40;
-        border-color: #343a40;
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 0.25rem;
+        .modern-input::placeholder {
+            color: #adb5bd;
+            opacity: 1;
+            font-size: 0.75rem;
+        }
+
+    .validation-message {
+        color: #dc3545;
+        font-size: 0.7rem;
+        margin-top: 0.2rem;
+        font-weight: 500;
     }
 
-        .btn-dark:hover {
-            background-color: #23272b;
-            border-color: #1d2124;
-            color: white;
+    .form-helper-text {
+        color: #6c757d;
+        font-size: 0.7rem;
+        margin-top: 0.2rem;
+        font-style: italic;
+    }
+
+    /* Modern Button Styling */
+    .form-actions {
+        display: flex;
+        gap: 0.8rem;
+        justify-content: center;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #dee2e6;
+    }
+
+    .btn-modern {
+        padding: 0.6rem 1.5rem;
+        border: none;
+        border-radius: 0.4rem;
+        font-weight: 600;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.15s ease-in-out;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        letter-spacing: 0.02em;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #344767 0%, #2c3e50 100%);
+        color: white;
+        box-shadow: 0 4px 6px rgba(52, 71, 103, 0.3);
+    }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(52, 71, 103, 0.4);
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
         }
 
     .btn-secondary {
         background-color: #6c757d;
-        border-color: #6c757d;
         color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 0.25rem;
-        text-decoration: none;
+        box-shadow: 0 4px 6px rgba(108, 117, 125, 0.3);
     }
 
         .btn-secondary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(108, 117, 125, 0.4);
             background-color: #5a6268;
-            border-color: #545b62;
-            color: white;
         }
 
-    .form-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
-    }
-
-    .form-full-width {
-        grid-column: 1 / -1;
-    }
-
+    /* Alert Styling */
     .alert {
+        padding: 0.75rem 1.25rem;
         margin-bottom: 1rem;
+        border: 1px solid transparent;
+        border-radius: 0.5rem;
+        font-weight: 500;
+    }
+
+    .alert-danger {
+        color: #721c24;
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+    }
+
+    .alert-success {
+        color: #155724;
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+    }
+
+    /* Responsive Design */
+    @@media (max-width: 768px) {
+       
+
+    {
+        .modern-form-grid
+
+    {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .form-span-2 {
+        grid-column: 1;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .btn-modern {
+        width: 100%;
+    }
+
     }
 </style>
 
 <div class="container-fluid py-2">
     <div class="row">
-        <div class="col-12">
-            @if (!string.IsNullOrEmpty(errorMessage))
-            {
-                <div class="alert alert-danger" role="alert">
-                    @errorMessage
+        <!-- Form Panel - Show on the left side when form is active -->
+        @if (showForm)
+        {
+            <div class="col-lg-4 order-1">
+                <div class="card my-4">
+                    <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                        <div class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3">
+                            <h6 class="text-white text-capitalize ps-3">
+                                @if (isEditing)
+                                {
+                                    <text>Edit Payment Configuration</text>
+                                }
+                                else
+                                {
+                                    <text>Add New Payment Configuration</text>
+                                }
+                            </h6>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger" role="alert">
+                                @errorMessage
+                            </div>
+                        }
+                        <EditForm Model="@currentConfig" OnValidSubmit="SaveConfiguration">
+                            <DataAnnotationsValidator />
+                            <div class="modern-form-grid">
+                                <div class="form-group">
+                                    <label for="serviceCode" class="modern-label">Service Code</label>
+                                    <div class="input-wrapper">
+                                        <InputText id="serviceCode" @bind-Value="currentConfig.ServiceCode" class="modern-input" placeholder="Service code" />
+                                        <ValidationMessage For="@(() => currentConfig.ServiceCode)" class="validation-message" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="countryCode" class="modern-label">Country Code</label>
+                                    <div class="input-wrapper">
+                                        <InputText id="countryCode" @bind-Value="currentConfig.CountryCode" class="modern-input" placeholder="Country code" />
+                                        <ValidationMessage For="@(() => currentConfig.CountryCode)" class="validation-message" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="currencyCode" class="modern-label">Currency Code</label>
+                                    <div class="input-wrapper">
+                                        <InputText id="currencyCode" @bind-Value="currentConfig.CurrencyCode" class="modern-input" placeholder="Currency code" />
+                                        <ValidationMessage For="@(() => currentConfig.CurrencyCode)" class="validation-message" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="paymentModeCode" class="modern-label">Payment Mode</label>
+                                    <div class="input-wrapper">
+                                        <InputText id="paymentModeCode" @bind-Value="currentConfig.PaymentModeCode" class="modern-input" placeholder="Payment mode" />
+                                        <ValidationMessage For="@(() => currentConfig.PaymentModeCode)" class="validation-message" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group form-span-2">
+                                    <label for="apiBaseUrl" class="modern-label">API Base URL</label>
+                                    <div class="input-wrapper">
+                                        <InputText id="apiBaseUrl" @bind-Value="currentConfig.ApiBaseUrl" class="modern-input" placeholder="https://api.example.com" />
+                                        <ValidationMessage For="@(() => currentConfig.ApiBaseUrl)" class="validation-message" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="clientId" class="modern-label">Client ID</label>
+                                    <div class="input-wrapper">
+                                        <InputText id="clientId" @bind-Value="currentConfig.ClientId" class="modern-input" placeholder="Client ID" />
+                                        <ValidationMessage For="@(() => currentConfig.ClientId)" class="validation-message" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="clientSecret" class="modern-label">Client Secret</label>
+                                    <div class="input-wrapper">
+                                        <InputText id="clientSecret" @bind-Value="currentConfig.ClientSecret" class="modern-input" placeholder="Client secret" type="password" />
+                                        <ValidationMessage For="@(() => currentConfig.ClientSecret)" class="validation-message" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group form-span-2">
+                                    <label for="apiKey" class="modern-label">API Key</label>
+                                    <div class="input-wrapper">
+                                        <InputText id="apiKey" @bind-Value="currentConfig.ApiKey" class="modern-input" placeholder="API key" type="password" />
+                                        <ValidationMessage For="@(() => currentConfig.ApiKey)" class="validation-message" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group form-span-2">
+                                    <label for="authTokenRequestUrl" class="modern-label">Auth Token URL</label>
+                                    <div class="input-wrapper">
+                                        <InputText id="authTokenRequestUrl" @bind-Value="currentConfig.AuthTokenRequestUrl" class="modern-input" placeholder="Auth token request URL" />
+                                        <ValidationMessage For="@(() => currentConfig.AuthTokenRequestUrl)" class="validation-message" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group form-span-2">
+                                    <label for="checkoutRequestUrl" class="modern-label">Checkout URL</label>
+                                    <div class="input-wrapper">
+                                        <InputText id="checkoutRequestUrl" @bind-Value="currentConfig.CheckoutRequestUrl" class="modern-input" placeholder="Checkout request URL" />
+                                        <ValidationMessage For="@(() => currentConfig.CheckoutRequestUrl)" class="validation-message" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group form-span-2">
+                                    <label for="callbackUrl" class="modern-label">Callback URL</label>
+                                    <div class="input-wrapper">
+                                        <InputText id="callbackUrl" @bind-Value="currentConfig.CallbackUrl" class="modern-input" placeholder="Callback URL" />
+                                        <ValidationMessage For="@(() => currentConfig.CallbackUrl)" class="validation-message" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="successRedirectUrl" class="modern-label">Success URL</label>
+                                    <div class="input-wrapper">
+                                        <InputText id="successRedirectUrl" @bind-Value="currentConfig.SuccessRedirectUrl" class="modern-input" placeholder="Success redirect URL" />
+                                        <ValidationMessage For="@(() => currentConfig.SuccessRedirectUrl)" class="validation-message" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="failRedirectUrl" class="modern-label">Fail URL</label>
+                                    <div class="input-wrapper">
+                                        <InputText id="failRedirectUrl" @bind-Value="currentConfig.FailRedirectUrl" class="modern-input" placeholder="Fail redirect URL" />
+                                        <ValidationMessage For="@(() => currentConfig.FailRedirectUrl)" class="validation-message" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn-modern btn-primary">
+                                    <i class="fas fa-@(isEditing ? "save" : "plus") me-2"></i>
+                                    @if (isEditing)
+                                    {
+                                        <text>Update Configuration</text>
+                                    }
+                                    else
+                                    {
+                                        <text>Create Configuration</text>
+                                    }
+                                </button>
+                                <button type="button" class="btn-modern btn-secondary" @onclick="CancelForm">
+                                    <i class="fas fa-times me-2"></i>
+                                    Cancel
+                                </button>
+                            </div>
+                        </EditForm>
+                    </div>
                 </div>
-            }
+            </div>
+        }
+
+        <!-- Configurations List -->
+        <div class="@(showForm ? "col-lg-8 order-2" : "col-12")">
             <div class="card my-4">
                 <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3">
@@ -145,7 +363,7 @@
                             </button>
                             @if (currentUserOrgId.HasValue)
                             {
-                                <button class="btn btn-sm btn-outline-light" @onclick="ShowCreateModal">
+                                <button class="btn btn-sm btn-outline-light" @onclick="ShowCreateForm">
                                     <i class="fas fa-plus-circle me-1"></i> Add Configuration
                                 </button>
                             }
@@ -153,6 +371,12 @@
                     </div>
                 </div>
                 <div class="card-body px-0 pb-2">
+                    @if (!string.IsNullOrEmpty(errorMessage) && !showForm)
+                    {
+                        <div class="alert alert-danger mx-3" role="alert">
+                            @errorMessage
+                        </div>
+                    }
                     @if (isLoading)
                     {
                         <div class="text-center p-4">
@@ -170,6 +394,7 @@
                                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Service Code</th>
                                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Country Code</th>
                                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Currency Code</th>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">API Base URL</th>
                                         <th class="text-secondary opacity-7">Actions</th>
                                     </tr>
                                 </thead>
@@ -181,7 +406,7 @@
                                                 <div class="d-flex px-2 py-1">
                                                     <div class="d-flex flex-column justify-content-center">
                                                         <h6 class="mb-0 text-sm">@config.ServiceCode</h6>
-                                                        <p class="text-xs text-secondary mb-0">@config.ApiBaseUrl</p>
+                                                        <p class="text-xs text-secondary mb-0">@config.PaymentModeCode</p>
                                                     </div>
                                                 </div>
                                             </td>
@@ -190,6 +415,9 @@
                                             </td>
                                             <td>
                                                 <p class="text-xs text-secondary mb-0">@config.CurrencyCode</p>
+                                            </td>
+                                            <td>
+                                                <p class="text-xs text-secondary mb-0">@config.ApiBaseUrl</p>
                                             </td>
                                             <td class="align-middle">
                                                 @if (config.OrganisationId == currentUserOrgId)
@@ -226,106 +454,12 @@
     </div>
 </div>
 
-<!-- Create/Edit Modal -->
-@if (showModal)
-{
-    <div class="blazor-modal" @onclick="CloseModal">
-        <div class="blazor-modal-content" @onclick:stopPropagation>
-            <div class="modal-header">
-                <h5 class="modal-title">@(currentConfig.Id == Guid.Empty ? "Create" : "Edit") Payment Service Configuration</h5>
-                <button type="button" class="btn-close" @onclick="CloseModal">×</button>
-            </div>
-            <div class="modal-body">
-                @if (!string.IsNullOrEmpty(errorMessage))
-                {
-                    <div class="alert alert-danger" role="alert">
-                        @errorMessage
-                    </div>
-                }
-                <EditForm Model="@currentConfig" OnValidSubmit="SaveConfiguration">
-                    <DataAnnotationsValidator />
-                    <div class="form-grid">
-                        <div class="mb-3">
-                            <label for="apiBaseUrl" class="form-label">API Base URL</label>
-                            <InputText id="apiBaseUrl" @bind-Value="currentConfig.ApiBaseUrl" class="form-control" />
-                            <ValidationMessage For="@(() => currentConfig.ApiBaseUrl)" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="apiKey" class="form-label">API Key</label>
-                            <InputText id="apiKey" @bind-Value="currentConfig.ApiKey" class="form-control" />
-                            <ValidationMessage For="@(() => currentConfig.ApiKey)" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="authTokenRequestUrl" class="form-label">Auth Token Request URL</label>
-                            <InputText id="authTokenRequestUrl" @bind-Value="currentConfig.AuthTokenRequestUrl" class="form-control" />
-                            <ValidationMessage For="@(() => currentConfig.AuthTokenRequestUrl)" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="callbackUrl" class="form-label">Callback URL</label>
-                            <InputText id="callbackUrl" @bind-Value="currentConfig.CallbackUrl" class="form-control" />
-                            <ValidationMessage For="@(() => currentConfig.CallbackUrl)" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="checkoutRequestUrl" class="form-label">Checkout Request URL</label>
-                            <InputText id="checkoutRequestUrl" @bind-Value="currentConfig.CheckoutRequestUrl" class="form-control" />
-                            <ValidationMessage For="@(() => currentConfig.CheckoutRequestUrl)" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="clientId" class="form-label">Client ID</label>
-                            <InputText id="clientId" @bind-Value="currentConfig.ClientId" class="form-control" />
-                            <ValidationMessage For="@(() => currentConfig.ClientId)" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="clientSecret" class="form-label">Client Secret</label>
-                            <InputText id="clientSecret" @bind-Value="currentConfig.ClientSecret" class="form-control" />
-                            <ValidationMessage For="@(() => currentConfig.ClientSecret)" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="countryCode" class="form-label">Country Code</label>
-                            <InputText id="countryCode" @bind-Value="currentConfig.CountryCode" class="form-control" />
-                            <ValidationMessage For="@(() => currentConfig.CountryCode)" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="currencyCode" class="form-label">Currency Code</label>
-                            <InputText id="currencyCode" @bind-Value="currentConfig.CurrencyCode" class="form-control" />
-                            <ValidationMessage For="@(() => currentConfig.CurrencyCode)" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="failRedirectUrl" class="form-label">Fail Redirect URL</label>
-                            <InputText id="failRedirectUrl" @bind-Value="currentConfig.FailRedirectUrl" class="form-control" />
-                            <ValidationMessage For="@(() => currentConfig.FailRedirectUrl)" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="paymentModeCode" class="form-label">Payment Mode Code</label>
-                            <InputText id="paymentModeCode" @bind-Value="currentConfig.PaymentModeCode" class="form-control" />
-                            <ValidationMessage For="@(() => currentConfig.PaymentModeCode)" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="serviceCode" class="form-label">Service Code</label>
-                            <InputText id="serviceCode" @bind-Value="currentConfig.ServiceCode" class="form-control" />
-                            <ValidationMessage For="@(() => currentConfig.ServiceCode)" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="successRedirectUrl" class="form-label">Success Redirect URL</label>
-                            <InputText id="successRedirectUrl" @bind-Value="currentConfig.SuccessRedirectUrl" class="form-control" />
-                            <ValidationMessage For="@(() => currentConfig.SuccessRedirectUrl)" />
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
-                        <button type="submit" class="btn btn-dark">Save</button>
-                    </div>
-                </EditForm>
-            </div>
-        </div>
-    </div>
-}
-
 @code {
     private List<TinggConfiguration> configurations = new();
     private TinggConfiguration currentConfig = new();
     private bool isLoading = true;
-    private bool showModal = false;
+    private bool showForm = false;
+    private bool isEditing = false;
     private string errorMessage = string.Empty;
     private Guid? currentUserOrgId;
 
@@ -370,7 +504,7 @@
         }
     }
 
-    private void ShowCreateModal()
+    private void ShowCreateForm()
     {
         if (!currentUserOrgId.HasValue)
         {
@@ -381,10 +515,12 @@
         currentConfig = new TinggConfiguration
         {
             Id = Guid.Empty,
-            OrganisationId = currentUserOrgId // Automatically set from current user
+            OrganisationId = currentUserOrgId.Value
         };
-        showModal = true;
+        isEditing = false;
+        showForm = true;
         errorMessage = string.Empty;
+        StateHasChanged();
     }
 
     private void EditConfiguration(TinggConfiguration config)
@@ -419,8 +555,19 @@
             ServiceCode = config.ServiceCode,
             SuccessRedirectUrl = config.SuccessRedirectUrl
         };
-        showModal = true;
+        isEditing = true;
+        showForm = true;
         errorMessage = string.Empty;
+        StateHasChanged();
+    }
+
+    private void CancelForm()
+    {
+        showForm = false;
+        isEditing = false;
+        currentConfig = new TinggConfiguration();
+        errorMessage = string.Empty;
+        StateHasChanged();
     }
 
     private async Task SaveConfiguration()
@@ -475,19 +622,12 @@
 
             await context.SaveChangesAsync();
             await LoadConfigurations();
-            showModal = false;
+            CancelForm();
         }
         catch (Exception ex)
         {
             errorMessage = $"Error saving configuration: {ex.Message}";
         }
-    }
-
-    private void CloseModal()
-    {
-        showModal = false;
-        currentConfig = new TinggConfiguration();
-        errorMessage = string.Empty;
     }
 
     private async Task ConfirmDelete(TinggConfiguration config)
