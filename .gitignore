@@ -67,3 +67,13 @@ bin/Debug/net8*/
 /obj/Debug/net8.0/LocalGov360.AssemblyInfoInputs.cache
 /obj/Debug/net8.0/rpswa.dswa.cache.json
 /.gitignore
+/bin/Debug/net8.0/LocalGov360.dll
+/bin/Debug/net8.0/LocalGov360.exe
+/bin/Debug/net8.0/LocalGov360.pdb
+/obj/Debug/net8.0/ref/LocalGov360.dll
+/obj/Debug/net8.0/LocalGov360.AssemblyInfoInputs.cache
+/obj/Debug/net8.0/LocalGov360.dll
+/obj/Debug/net8.0/LocalGov360.sourcelink.json
+/obj/Debug/net8.0/rpswa.dswa.cache.json
+/obj/LocalGov360.csproj.nuget.g.props
+/.gitignore

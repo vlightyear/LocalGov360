@@ -192,6 +192,7 @@ using (var scope = app.Services.CreateScope())
                 {
                     Id = configId,
                     OrganisationId = Guid.Parse("E30FB762-28A3-486D-8D3C-D696A4AE33C8"),
+                    //OrganisationId = Guid.Parse("2D5D70CD-0E60-4731-A169-341F6C03B427"),
                     ApiBaseUrl = "https://sandbox.tingg.africa",
                     ApiKey = "AViR64sAFdAkvAoGaJqATWcW3tXREXGf",
                     AuthTokenRequestUrl = "https://api-approval.tingg.africa/v1/oauth/token/request",

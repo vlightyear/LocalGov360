@@ -343,7 +343,7 @@
                 <div class="info-value">
                     @if (workflowInstance.Service?.ServiceFee.HasValue == true)
                     {
-                        <span>K@workflowInstance.Service.ServiceFee.Value.ToString("F2")</span>
+                        <span>K @workflowInstance.Service.ServiceFee.Value.ToString("F2")</span>
                         @if (workflowInstance.Service.FeeType == ServiceModels.FeeType.Variable)
                         {
                             <small class="text-muted d-block">Variable Fee</small>
