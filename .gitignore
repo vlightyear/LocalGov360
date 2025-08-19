@@ -64,3 +64,6 @@ packages/
 /obj/project.nuget.cache
 bin/Debug/net8*/
 /bin/Debug/net8.0/LocalGov360.pdb
+/obj/Debug/net8.0/LocalGov360.AssemblyInfoInputs.cache
+/obj/Debug/net8.0/rpswa.dswa.cache.json
+/.gitignore
